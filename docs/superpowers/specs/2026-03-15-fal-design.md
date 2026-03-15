@@ -144,7 +144,7 @@ A player scoring 50 runs gets: +50 (runs) + +4 (30 bonus) + +8 (50 bonus) = 62 f
 | **Bowling Boost** | Bowling points doubled |
 
 ### Chip + Captain Stacking:
-Multipliers stack **multiplicatively**. Example: Captain who is a bowler + Bowling Boost active = 2x (captain) × 2x (chip) = **4x total**. Triple Captain + Powerplay on a batting captain = 3x × 2x = **6x total**.
+Multipliers stack **multiplicatively**. Example: Captain who is a bowler + Bowling Boost active = 2x (captain) × 2x (chip) = **4x total**. Triple Captain on a batting captain who hits a 50 = base pts × 3x = **3x total** (note: only one chip per gameweek, so Triple Captain cannot combine with Powerplay or Bowling Boost).
 
 ## 8. Bench Substitution
 
@@ -319,28 +319,28 @@ Match header with team colors, player scoring breakdowns (event-by-event with po
 | Run | +1 | +1 | +1 |
 | Four bonus | +1 | +1 | +1 |
 | Six bonus | +2 | +2 | +2 |
-| 30-run bonus | +4 | — | — |
-| 50-run bonus | +8 | +8 | — |
-| 100-run bonus | +16 | +16 | — |
+| 30-run bonus | +4 | — | unconfirmed |
+| 50-run bonus | +8 | +8 | unconfirmed |
+| 100-run bonus | +16 | +16 | unconfirmed |
 | Wicket | +25 | +25 | +25 |
 | **Dot ball** | **+1** | **—** | **—** |
 | Maiden over | +8 | +8 | +8 |
-| 3-wicket bonus | +8 | — (4W: +8) | — |
-| 5-wicket bonus | +16 | +16 | — |
+| 3-wicket bonus | +8 | — (4W: +8) | unconfirmed |
+| 5-wicket bonus | +16 | +16 | unconfirmed |
 | **SR bonus/penalty** | **—** | **-2 to -6** (SR < 70, min 10 balls) | **+2** (SR ≥ 120, min 10 balls) |
 | **ER bonus/penalty** | **—** | **+6 to -6** (tiered, min 2 overs) | **+2 to +4 bonus** (ER < 8, min 2 overs) |
 | Duck | -2 (all players) | -2 (excludes bowlers) | -10 (excludes bowlers) |
 | Catch | +8 | +8 | +10 |
 | Runout | +6 (flat) | +12 direct / +8 thrower / +4 catcher | +12 |
 | Stumping | +12 | +12 | +20 |
-| Starting XI bonus | — | +4 | — |
+| Starting XI bonus | — | +4 | unconfirmed |
 
 ### Scoring Balance
 
 | # | Issue | Detail | Benchmark | Status |
 |---|-------|--------|-----------|--------|
 | 1 | **Bowling points overpowered** | 25 pts per wicket is industry standard, but Dream11 balances this with ER penalties (up to -6 for ER > 11). FAL has no such counterweight, making bowling disproportionately rewarding. | Dream11: ER penalties balance wicket value | Open |
-| 2 | **Dot ball scoring — unique to FAL** | Neither Dream11 nor IPL Official award dot ball points. FAL's +1 per dot inflates bowling by ~8-15 pts per match (a typical 4-over spell has 12-16 dots). This is the single biggest scoring deviation from industry. Consider removing entirely or reducing to maiden-only rewards. | Dream11: no dot ball pts. IPL Official: no dot ball pts | Open |
+| 2 | **Dot ball scoring — unique to FAL** | Neither Dream11 nor IPL Official award dot ball points. FAL's +1 per dot inflates bowling by ~8-15 pts per match (a typical 4-over T20 spell has 10-14 dots). This is the single biggest scoring deviation from industry. Consider removing entirely or reducing to maiden-only rewards. | Dream11: no dot ball pts. IPL Official: no dot ball pts | Open |
 | 3 | **No strike rate / economy rate modifiers** | Both Dream11 and IPL Official use SR/ER modifiers. Dream11: SR < 70 gets -2 to -6 penalty (min 10 balls); ER < 4 gets +6, ER > 11 gets -6 (min 2 overs). IPL Official: SR ≥ 120 gets +2; ER < 6 gets +4. FAL missing both is a significant gap. | Dream11: SR penalties + ER bonus/penalty. IPL: SR bonus + ER bonus | Open |
 | 4 | **No penalty for expensive bowling** | Dream11 penalizes ER 9-10: -2, 10-11: -4, 11+: -6 (min 2 overs bowled). FAL has zero downside for conceding 12+ RPO. Recommend adopting similar tiered ER penalties. | Dream11: -2 to -6 tiered penalties | Open |
 | 5 | **Duck rule should exclude bowlers** | Both Dream11 and IPL Official exempt bowlers from duck penalties. FAL penalizes all players equally. A #11 tailender getting -2 for a duck is unfair. Recommend: exclude players with "BOWL" role from duck penalty. | Dream11: excludes bowlers. IPL: excludes bowlers | Open |
