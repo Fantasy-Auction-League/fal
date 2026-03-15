@@ -267,42 +267,42 @@ Interactive mockups are in `docs/superpowers/specs/mockups/` (HTML files).
 #### 1. Dashboard
 Gameweek countdown, lineup status, mini leaderboard, GW recap with top scorers (IPL team color stripes), upcoming matches with team color gradients, chip tracker.
 
-![Dashboard](mockups/screenshots/01-dashboard.png)
+![Dashboard](https://raw.githubusercontent.com/viiveek83/fal/feat/design-spec/docs/superpowers/specs/mockups/screenshots/01-dashboard.png)
 
 ---
 
 #### 2. Lineup Management
 Playing XI with IPL team color bars, Captain (CSK gold badge) and VC (KKR purple badge), bench section with priority ordering, chip selector, validation checklist, lock countdown.
 
-![Lineup Management](mockups/screenshots/02-lineup.png)
+![Lineup Management](https://raw.githubusercontent.com/viiveek83/fal/feat/design-spec/docs/superpowers/specs/mockups/screenshots/02-lineup.png)
 
 ---
 
 #### 3. Leaderboard
 Podium for top 3 (gold/blue/teal gradients), full rankings with avatars, position deltas, GW history bar chart.
 
-![Leaderboard](mockups/screenshots/03-leaderboard.png)
+![Leaderboard](https://raw.githubusercontent.com/viiveek83/fal/feat/design-spec/docs/superpowers/specs/mockups/screenshots/03-leaderboard.png)
 
 ---
 
 #### 4. League Admin
 League info card, invite code with copy button, manager list with IPL-colored avatars, roster upload (CSV drag-drop), team roster status (complete/incomplete indicators), league settings.
 
-![League Admin](mockups/screenshots/04-league-admin.png)
+![League Admin](https://raw.githubusercontent.com/viiveek83/fal/feat/design-spec/docs/superpowers/specs/mockups/screenshots/04-league-admin.png)
 
 ---
 
 #### 5. Player Registry
 Search bar, role filter pills (BAT/BOWL/ALL/WK in role colors), IPL team filter chips, player cards with team accent bars, mini stats, season points, ownership badges.
 
-![Player Registry](mockups/screenshots/05-players.png)
+![Player Registry](https://raw.githubusercontent.com/viiveek83/fal/feat/design-spec/docs/superpowers/specs/mockups/screenshots/05-players.png)
 
 ---
 
 #### 6. Match Scores
 Match header with team colors, player scoring breakdowns (event-by-event with points), captain/VC multiplier display, bench substitution indicators, match point totals.
 
-![Match Scores](mockups/screenshots/06-match-scores.png)
+![Match Scores](https://raw.githubusercontent.com/viiveek83/fal/feat/design-spec/docs/superpowers/specs/mockups/screenshots/06-match-scores.png)
 
 ### Role Badge Colors:
 - BAT → CSK Yellow (#F9CD05)
