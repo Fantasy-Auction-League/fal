@@ -83,27 +83,127 @@ Gameweek 1──N ChipUsage
 - `ChipUsage`: unique(`teamId`, `chipType`) — each chip used once per season
 - `LineupSlot`: unique(`lineupId`, `playerId`) — a player appears once per lineup
 
-## 4. Data Ingestion
+## 4. Cricket Data API Evaluation
 
 > Scoring rules and pipeline details are defined in the [Design Spec](2026-03-15-fal-design.md) Sections 6, 9, and 11. This section covers implementation-specific concerns only.
 
-### API Strategy:
-- **Primary:** CricketData.org (free tier: 100 req/day) or SportMonks (€29/mo with 14-day trial)
-- **Evaluation needed** as part of implementation — both provide the required stats
-- **Fallback:** Admin can manually input match stats if API is unavailable
-- **Rate budget:** ~40-60 requests on a double-header IPL day (match status polling + scorecard fetches + retries). 100 req/day free tier is workable but tight — no margin for debugging or re-imports. Consider SportMonks for reliability.
+### API Comparison
 
-### Required Stats from API:
-- Runs scored, Fours hit, Sixes hit, Balls faced
-- Wickets taken, Dot balls bowled, Maiden overs
-- Catches taken, Runouts effected, Stumpings
-- Did player bat? (for duck rule)
-- Did player play? (for bench substitution)
+| | CricketData.org | SportMonks |
+|---|---|---|
+| **Base URL** | `https://api.cricapi.com/v1/` | `https://cricket.sportmonks.com/api/v2.0/` |
+| **Auth** | API key in query param | API token in query param |
+| **Free tier** | 500 req/day (match list, current matches only) | 14-day trial, then forever-free plan (limited) |
+| **Paid tier** | Required for Fantasy API (scorecard, points) | €29/mo Major plan (20 leagues inc. IPL) |
+| **IPL coverage** | Yes | Yes (confirmed IPL 2026) |
+| **Scorecard endpoint** | `v1/match_scorecard?id={matchId}` | `GET /fixtures/{id}?include=batting,bowling,lineup,runs` |
+| **Composable includes** | No (fixed response shape) | Yes (`batting`, `bowling`, `lineup`, `runs`, `balls`, `venue`, `toss`) |
+| **Ball-by-ball** | "Testing" — not production ready | Available via `?include=balls` |
+| **Fantasy points** | Built-in (`v1/match_points`) | Not built-in (calculate ourselves) |
 
-### Ingestion Trigger:
-Phase 1: Vercel Cron job polls the API periodically during match days (e.g., every 30 min). Detects completed matches and triggers the scoring pipeline. Admin can also manually trigger a re-import via API route.
+### Batting Scorecard Fields
 
-**Cron execution strategy:** If the full pipeline exceeds the Vercel Cron time limit, split into two cron invocations: (1) import + parse, (2) score + aggregate. Use a `Match.scoringStatus` field (pending/scoring/completed) to coordinate.
+| FAL Stat Needed | CricketData Field | SportMonks Field |
+|---|---|---|
+| Runs scored | `r` | `score` |
+| Balls faced | `b` | `ball` |
+| Fours hit | `4s` | `four_x` |
+| Sixes hit | `6s` | `six_x` |
+| Strike rate | `sr` | `rate` |
+| Dismissal type | `dismissal` | `dismissal` |
+| Did player bat? | Present in batting array = yes | Present in batting array = yes |
+
+### Bowling Scorecard Fields
+
+| FAL Stat Needed | CricketData Field | SportMonks Field |
+|---|---|---|
+| Overs bowled | `o` | `overs` |
+| Maidens | `m` | `medians` |
+| Runs conceded | `r` | `runs` |
+| Wickets taken | `w` | `wickets` |
+| Economy rate | `eco` | `rate` |
+| No balls | `nb` | — |
+| Wides | `wd` | — |
+| **Dot balls** | **Not available** | **Not available** |
+
+### Fielding Scorecard Fields
+
+| FAL Stat Needed | CricketData Field | SportMonks Field |
+|---|---|---|
+| Catches | `catch` (in catching array) | — (not in standard includes) |
+| Stumpings | `stumped` | — |
+| Runouts | `runout` | — |
+
+### Critical Finding: Dot Ball Gap
+
+**Neither API provides a dot ball count in the bowling scorecard.** Options:
+
+1. **Compute from ball-by-ball data** — SportMonks provides this via `?include=balls` (each ball has `score`, `wicket`, `six`, `four`). Count balls where `score=0` and not a wide/no-ball. CricketData's ball-by-ball is still in testing.
+2. **Compute from summary stats** — `dots = balls_bowled - (runs from bat / SR * balls)` — unreliable due to extras.
+3. **Drop dot ball scoring** — This aligns with industry (neither Dream11 nor IPL Official awards dot ball points). See Design Spec Issue #2.
+
+**Recommendation:** Use SportMonks with ball-by-ball if dot balls are kept. If dot balls are dropped (per Issue #2), either API works without ball-by-ball data.
+
+### API Decision: SportMonks Recommended
+
+| Factor | CricketData.org | SportMonks | Winner |
+|---|---|---|---|
+| Scorecard access | Paid only | Paid (€29/mo) | Tie |
+| Composable includes | No | Yes (1 request = full scorecard) | SportMonks |
+| Ball-by-ball | Testing/unreliable | Production ready | SportMonks |
+| Fielding data | Dedicated catching array | Needs separate computation | CricketData |
+| Built-in fantasy points | Yes (but our rules differ) | No | N/A |
+| IPL 2026 confirmed | Unclear | Yes (blog post) | SportMonks |
+
+**Verdict:** SportMonks is the primary recommendation. CricketData's built-in fantasy points are tempting but use their own rules (not ours), and their ball-by-ball API isn't production-ready.
+
+## 5. Data Ingestion Pipeline
+
+### Requests Per Match (SportMonks)
+
+| Step | Endpoint | Includes | Requests |
+|---|---|---|---|
+| Poll for completed matches | `GET /livescores` or `GET /fixtures?filter[status]=Finished` | — | 1 (shared) |
+| Fetch full scorecard | `GET /fixtures/{id}` | `batting,bowling,lineup,runs` | 1 per match |
+| Fetch ball-by-ball (if dot balls kept) | `GET /fixtures/{id}` | `balls` | 1 per match |
+
+**Double-header day total:** 1 poll + 2 scorecards + 2 ball-by-ball = **5 requests** (well within any rate limit).
+
+### Cron Splitting Strategy (Vercel 60s limit)
+
+Two separate Vercel Cron jobs to stay within execution limits:
+
+**Cron 1: Import** (runs every 30 min on match days)
+```
+1. GET /livescores → check for newly completed matches
+2. For each completed match not yet imported:
+   a. GET /fixtures/{id}?include=batting,bowling,lineup,runs,balls
+   b. Parse response → write PlayerPerformance rows
+   c. Set Match.scoringStatus = 'imported'
+```
+Estimated time: ~5-10s per match (1 API call + DB writes)
+
+**Cron 2: Score** (runs every 30 min, offset by 15 min from Cron 1)
+```
+1. Find matches where scoringStatus = 'imported'
+2. For each: run Fantasy Points Engine → write PlayerScore rows
+3. Aggregate gameweek totals
+4. Apply bench subs (only at gameweek end)
+5. Apply captain/VC multipliers + chip effects
+6. Update leaderboard
+7. Set Match.scoringStatus = 'scored'
+```
+Estimated time: ~10-20s (pure computation + DB, no API calls)
+
+### Match.scoringStatus State Machine
+```
+scheduled → in_progress → completed → imported → scored
+                                         ↑
+                                    (re-import resets to 'imported')
+```
+
+### Manual Override
+Admin can trigger re-import via `POST /api/scoring/import` and re-score via `POST /api/scoring/recalculate/[matchId]`. These run as API route handlers (not cron), with Vercel's 60s API route timeout (300s on Pro).
 
 ## 5. API Routes (Phase 1)
 

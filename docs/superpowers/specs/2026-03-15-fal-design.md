@@ -197,19 +197,21 @@ Leaderboard recalculates after each match completes (live updates within a gamew
 Cricket Data API → Match Import Service → Raw Match Data Storage → Stat Parser → Fantasy Points Engine → Gameweek Aggregator → Leaderboard Service
 
 ### API Strategy:
-- **Primary:** CricketData.org (free tier: 100 req/day) or SportMonks (€29/mo with 14-day trial)
-- **Evaluation needed** as part of implementation — both provide the required stats
+- **Primary (Recommended):** SportMonks Cricket API (€29/mo Major plan, 14-day free trial) — composable includes, production-ready ball-by-ball, confirmed IPL 2026 coverage
+- **Alternative:** CricketData.org (paid plan required for scorecards; free tier only covers match lists)
 - **Fallback:** Admin can manually input match stats if API is unavailable
+- See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 4 for full API evaluation and field mapping
 
 ### Required Stats from API:
 - Runs scored, Fours hit, Sixes hit, Balls faced
-- Wickets taken, Dot balls bowled, Maiden overs
+- Wickets taken, Maiden overs
 - Catches taken, Runouts effected, Stumpings
 - Did player bat? (for duck rule)
 - Did player play? (for bench substitution)
+- **Dot balls:** Not available in either API's bowling summary — requires ball-by-ball data computation (SportMonks) or dropping dot ball scoring (see Issue #2)
 
 ### Ingestion Trigger:
-Phase 1: Cron job polls the API periodically during match days (e.g., every 30 min). Detects completed matches and triggers the scoring pipeline. Admin can also manually trigger a re-import.
+Phase 1: Two Vercel Cron jobs split the work to stay within 60s execution limits. See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 5 for cron splitting strategy.
 
 ## 12. Edge Cases
 
