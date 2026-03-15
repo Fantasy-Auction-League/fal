@@ -19,12 +19,13 @@
 | Database | Vercel Postgres (powered by Neon) |
 | ORM | Prisma |
 | Auth | Auth.js (OAuth + credentials) |
-| Deployment | Vercel |
-| Cron | Vercel Cron Jobs |
+| Deployment | Vercel (Pro plan — $20/mo) |
+| Cron | Vercel Cron Jobs (Pro required for sub-daily frequency) |
+| Database | Neon PostgreSQL (free tier — 0.5GB, 100 compute-hrs/mo) |
 
 ### Platform Constraints:
-- **Vercel Cron execution limit:** 60s on Hobby, 300s on Pro. Scoring pipeline must complete within this window or be chunked into separate invocations.
-- **Vercel Postgres:** Included in Vercel platform (Hobby: 256MB storage, 60 compute hrs/mo; Pro: 512MB+). Powered by Neon — connection pooling built in.
+- **Vercel Pro required:** Hobby plan limits cron jobs to once per day and non-commercial use. Pro provides minute-level cron, 300s function duration, and commercial use rights.
+- **Neon free tier:** 0.5GB storage, 100 compute-hrs/mo, 10K pooled connections. Sufficient for Phase 1 (~15 managers, 74 matches). Auto-suspends after 5 min idle.
 
 ### System Architecture
 
@@ -32,10 +33,13 @@
 graph TB
     User["👤 Manager<br/>(Mobile Browser)"]
 
-    subgraph Vercel["Vercel"]
+    subgraph Vercel["Vercel (Pro — $20/mo)"]
         App["Next.js App<br/>React Frontend + API Routes + Auth.js"]
         Cron["Vercel Cron Jobs<br/>Import & Score"]
-        DB[("Vercel Postgres<br/>(Neon)")]
+    end
+
+    subgraph NeonDB["Neon (Free tier)"]
+        DB[("PostgreSQL<br/>0.5GB / 100 CU-hrs")]
     end
 
     SportMonks["SportMonks<br/>Cricket API"]
@@ -47,6 +51,7 @@ graph TB
     Cron -.->|"every 30m<br/>during IPL season"| SportMonks
 
     style Vercel fill:#0a0a1a,color:#fff,stroke:#333
+    style NeonDB fill:#004BA0,color:#fff
     style App fill:#111128,color:#fff
     style DB fill:#004BA0,color:#fff
     style SportMonks fill:#2d1b69,color:#fff
@@ -341,7 +346,64 @@ Admin can trigger re-import via `POST /api/scoring/import` and re-score via `POS
 - `GET /api/gameweeks/current` — Current gameweek info (lock time, matches)
 - `GET /api/gameweeks` — List all gameweeks with status
 
-## 6. Future Architecture (Phase 2+)
+## 6. Hosting & Cost Breakdown
+
+### Why Hobby Plan Won't Work
+
+| Requirement | FAL Needs | Hobby (Free) | Pro ($20/mo) |
+|---|---|---|---|
+| **Cron frequency** | Every 30 min during matches | **Once per day only** | Once per minute |
+| **Cron precision** | Precise timing for match scoring | ±59 min window | Per-minute precision |
+| **Function duration** | 10-20s (scoring pipeline) | 10s default, max 60s | 15s default, max 300s |
+| **Commercial use** | Private league with friends (gray area) | **Non-commercial only** | Commercial allowed |
+| **Team collaboration** | Solo dev for now | 1 seat | $20/seat/mo |
+
+**Hobby is a blocker** — cron jobs limited to once per day makes real-time match scoring impossible. FAL requires **Vercel Pro**.
+
+### Monthly Cost Estimate (IPL Season — ~2 months)
+
+| Service | Plan | Cost | Notes |
+|---|---|---|---|
+| **Vercel Pro** | 1 developer seat | **$20/mo** | Includes: 1TB bandwidth, 24K build mins, 16 CPU-hrs, minute-level cron |
+| **SportMonks** | Major plan | **€29/mo (~$31)** | 26 cricket leagues, 3,000 calls/hr, 14-day free trial |
+| **Neon Postgres** | Free tier | **$0** | 0.5GB storage, 100 compute-hrs/mo, 10K pooled connections — sufficient for Phase 1 |
+| **Auth.js** | Open source | **$0** | Self-hosted, no per-user costs |
+| **Domain** | Optional | ~$12/yr | Custom domain (Vercel provides free `.vercel.app` subdomain) |
+| | | **~$51/mo** | **Total during IPL season** |
+
+### Annual Cost Estimate
+
+| Period | Duration | Monthly Cost | Total |
+|---|---|---|---|
+| **IPL season** | ~2 months (Mar-May) | $51/mo | $102 |
+| **Off-season (keep Vercel Pro)** | 10 months | $20/mo | $200 |
+| **Off-season (cancel SportMonks)** | 10 months | $0 | $0 |
+| | | **Annual total** | **~$302/yr** |
+
+Alternatively, cancel Vercel Pro during off-season too (downgrade to Hobby for dev work) → **~$102/yr** during IPL season only.
+
+### Neon Free Tier Fit Analysis
+
+| Resource | Neon Free Provides | FAL Phase 1 Needs | Fits? |
+|---|---|---|---|
+| Storage | 0.5 GB | ~74 matches × ~30 players × ~50 bytes ≈ <1 MB match data + players, leagues, lineups | Yes (well under 0.5GB) |
+| Compute hours | 100 CU-hrs/mo | Cron queries every 30m + user API calls (~15 managers) | Yes |
+| Connections | 10,000 pooled (pgBouncer) | Serverless function connections (~10 concurrent) | Yes |
+| Branches | 10 | 1 (production) | Yes |
+| Idle timeout | 5 min auto-suspend | Crons keep it warm during match hours | OK |
+
+**Neon free tier is sufficient for Phase 1.** The 0.5GB storage limit only becomes a concern if we store ball-by-ball data (each match ≈ 300 balls × 100 bytes = 30KB, all 74 matches ≈ 2.2MB — still fine).
+
+### Cost Scaling (Phase 2+)
+
+| Trigger | Action | Added Cost |
+|---|---|---|
+| >0.5GB DB storage | Neon Launch plan | $19/mo |
+| Multiple admins/devs | Vercel Pro seats | $20/seat/mo |
+| WebSocket auction engine | Vercel or external WS hosting | TBD |
+| Heavy traffic (public leagues) | Vercel bandwidth overages | $0.06/GB over 1TB |
+
+## 7. Future Architecture (Phase 2+)
 
 ### Auction Engine:
 - Real-time bidding with WebSockets
