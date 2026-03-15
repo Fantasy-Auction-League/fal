@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0c0c10; color: #e8e8ed; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+  body { background: #f2f3f8; color: #1a1a2e; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
 
   .phone-frame {
-    max-width: 393px; margin: 20px auto; background: #101014;
-    border-radius: 44px; border: 2.5px solid #1c1c24; overflow: hidden;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 0 0 0.5px rgba(255,255,255,0.03);
+    max-width: 393px; margin: 20px auto; background: #f2f3f8;
+    border-radius: 44px; border: 2.5px solid #d0d4e0; overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.12);
     position: relative;
   }
-  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 6px; font-size: 12px; font-weight: 600; color: #fff; }
-  .dynamic-island { width: 124px; height: 36px; background: #000; border-radius: 20px; margin: 0 auto; position: relative; top: -2px; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 6px; font-size: 12px; font-weight: 600; color: #fff; position: relative; z-index: 2; }
+  .dynamic-island { width: 124px; height: 36px; background: #000; border-radius: 20px; margin: 0 auto; position: relative; top: -2px; z-index: 2; }
   .scroll-area { height: 720px; overflow-y: auto; padding-bottom: 90px; scrollbar-width: none; }
   .scroll-area::-webkit-scrollbar { display: none; }
 
@@ -22,76 +22,68 @@
     --mi: #004BA0; --csk: #F9CD05; --rcb: #EC1C24; --kkr: #3A225D;
     --dc: #004C93; --rr: #EA1A85; --srh: #FF822A; --gt-teal: #0EB1A2;
     --lsg: #00AEEF; --pbks: #ED1B24;
-    --mint: #a8e6cf; --rose: #ffc6d9; --sky: #a0c4ff; --butter: #ffe5a0;
-    --card-bg: rgba(255,255,255,0.025); --card-border: rgba(255,255,255,0.04);
+    --mint: #0d9e5f; --rose: #d63060; --card-bg: #fff; --card-border: rgba(0,0,0,0.06);
   }
 
+  /* Gradient hero header */
+  .hero-header {
+    background: linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%);
+    padding: 0 0 22px; margin-top: -58px; padding-top: 58px;
+  }
   .app-bar {
     display: flex; align-items: center; justify-content: space-between;
     padding: 6px 20px 10px; position: relative;
   }
-  .app-bar::after {
-    content: ''; position: absolute; bottom: 0; left: 20px; right: 20px;
-    height: 1px; background: linear-gradient(90deg, transparent, rgba(249,205,5,0.08), rgba(255,130,42,0.06), transparent);
-  }
   .app-bar .logo {
     font-size: 15px; font-weight: 900; letter-spacing: -0.5px;
-    background: linear-gradient(135deg, var(--csk), var(--srh), var(--rcb));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.7;
+    background: linear-gradient(135deg, var(--csk), var(--srh));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .app-bar .page-title {
     font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px;
     position: absolute; left: 50%; transform: translateX(-50%);
   }
-  .app-bar .league-name { font-size: 11px; color: #444; font-weight: 500; }
+  .app-bar .league-name { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; }
 
-  .content { padding: 0 14px; display: flex; flex-direction: column; gap: 10px; }
-  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 16px; }
-  .section-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #666; }
-
-  /* Match header card */
+  /* Match header inside hero */
   .match-header {
-    background: linear-gradient(135deg, rgba(0,75,160,0.12), rgba(236,28,36,0.08));
-    border: 1px solid rgba(255,255,255,0.04); border-radius: 20px;
-    padding: 18px 16px; text-align: center; position: relative; overflow: hidden;
-  }
-  .match-header::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 30% 50%, rgba(0,75,160,0.06) 0%, transparent 60%),
-                radial-gradient(ellipse at 70% 50%, rgba(236,28,36,0.06) 0%, transparent 60%);
+    padding: 14px 16px; text-align: center;
   }
   .match-teams {
     display: flex; align-items: center; justify-content: center; gap: 12px;
-    position: relative; z-index: 1;
   }
   .team-label {
     display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 800;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.3px; color: #fff;
   }
   .team-dot {
     width: 8px; height: 8px; border-radius: 50%;
   }
   .match-vs {
-    font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase;
+    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase;
     letter-spacing: 1px;
   }
   .match-result {
-    font-size: 13px; font-weight: 600; color: var(--mint); margin-top: 8px;
-    position: relative; z-index: 1;
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 8px;
   }
   .match-date {
-    font-size: 11px; color: #555; margin-top: 4px; position: relative; z-index: 1;
+    font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px;
   }
   .match-badge {
     display: inline-block; font-size: 9px; font-weight: 700; padding: 3px 8px;
-    border-radius: 6px; background: rgba(168,230,207,0.1); color: var(--mint);
-    letter-spacing: 0.5px; margin-top: 6px; position: relative; z-index: 1;
+    border-radius: 6px; background: rgba(255,255,255,0.15); color: #fff;
+    letter-spacing: 0.5px; margin-top: 6px;
   }
+
+  /* Content area */
+  .content { padding: 0 14px; display: flex; flex-direction: column; gap: 10px; }
+  .section-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: #999; letter-spacing: 0.3px; }
 
   /* Score player card */
   .score-card {
-    background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.025);
+    background: var(--card-bg); border: 1px solid var(--card-border);
     border-radius: 16px; overflow: hidden; position: relative;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
   .score-card + .score-card { margin-top: 6px; }
   .score-card .team-accent {
@@ -107,7 +99,7 @@
   }
   .score-card .info { flex: 1; min-width: 0; padding-left: 2px; }
   .score-card .name {
-    font-size: 14px; font-weight: 600; color: #ddd; letter-spacing: -0.2px;
+    font-size: 14px; font-weight: 600; color: #1a1a2e; letter-spacing: -0.2px;
   }
   .score-card .meta {
     display: flex; align-items: center; gap: 6px; margin-top: 3px;
@@ -116,27 +108,27 @@
     font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
     text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .role-bat { background: rgba(249,205,5,0.1); color: var(--csk); }
-  .role-bowl { background: rgba(0,75,160,0.12); color: var(--sky); }
-  .role-ar { background: rgba(14,177,162,0.12); color: var(--gt-teal); }
-  .role-wk { background: rgba(234,26,133,0.1); color: #ff7ab8; }
+  .role-bat { background: rgba(249,205,5,0.12); color: #b8940a; }
+  .role-bowl { background: rgba(0,75,160,0.1); color: var(--mi); }
+  .role-ar { background: rgba(14,177,162,0.1); color: #0a8a72; }
+  .role-wk { background: rgba(234,26,133,0.08); color: #c0186e; }
   .score-card .team-name { font-size: 10px; font-weight: 600; }
   .cap-badge {
     font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
-    background: rgba(249,205,5,0.15); color: var(--csk); letter-spacing: 0.3px;
+    background: rgba(249,205,5,0.15); color: #b8940a; letter-spacing: 0.3px;
   }
   .vc-badge {
     font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
-    background: rgba(58,34,93,0.25); color: #b8a0e8; letter-spacing: 0.3px;
+    background: rgba(58,34,93,0.1); color: #6b4fa0; letter-spacing: 0.3px;
   }
   .score-total {
     text-align: right; flex-shrink: 0;
   }
   .score-total .pts-value {
-    font-size: 20px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums;
+    font-size: 20px; font-weight: 800; color: #1a1a2e; font-variant-numeric: tabular-nums;
   }
   .score-total .pts-unit {
-    font-size: 9px; color: #444; margin-top: 1px;
+    font-size: 9px; color: #999; margin-top: 1px;
   }
 
   /* Breakdown grid */
@@ -145,14 +137,14 @@
   }
   .breakdown-row {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.02);
+    padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
   }
   .breakdown-row:last-child { border-bottom: none; }
   .breakdown-event {
-    font-size: 11px; color: #666; font-weight: 500;
+    font-size: 11px; color: #555; font-weight: 500;
   }
   .breakdown-event span {
-    color: #555; font-weight: 400;
+    color: #999; font-weight: 400;
   }
   .breakdown-pts {
     font-size: 11px; font-weight: 700; color: var(--mint);
@@ -160,35 +152,38 @@
   }
   .breakdown-pts.negative { color: var(--rose); }
 
-  /* Multiplier row */
+  /* Multiplier row - Captain */
   .multiplier-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 6px 12px; margin-left: 50px; margin-top: -2px; margin-bottom: 4px;
-    background: rgba(249,205,5,0.03); border-radius: 0 0 10px 10px;
-  }
-  .multiplier-row.vc-mult {
-    background: rgba(58,34,93,0.08);
+    background: rgba(255,235,150,0.25); border-radius: 0 0 10px 10px;
   }
   .multiplier-label {
-    font-size: 10px; font-weight: 600; color: var(--csk); letter-spacing: 0.3px;
+    font-size: 10px; font-weight: 600; color: #8a6d00; letter-spacing: 0.3px;
   }
-  .multiplier-row.vc-mult .multiplier-label { color: #b8a0e8; }
   .multiplier-value {
-    font-size: 11px; font-weight: 700; color: var(--csk);
+    font-size: 11px; font-weight: 700; color: #8a6d00;
   }
-  .multiplier-row.vc-mult .multiplier-value { color: #b8a0e8; }
+
+  /* Vice-captain multiplier */
+  .multiplier-row.vc-mult {
+    background: rgba(180,160,232,0.18);
+  }
+  .multiplier-row.vc-mult .multiplier-label { color: #6b4fa0; }
+  .multiplier-row.vc-mult .multiplier-value { color: #6b4fa0; }
 
   /* Bench sub badge */
   .bench-sub-badge {
     font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
-    background: rgba(255,130,42,0.12); color: var(--srh); letter-spacing: 0.5px;
+    background: rgba(255,160,60,0.15); color: #c96a10; letter-spacing: 0.5px;
   }
 
   /* Match totals */
   .match-totals {
-    background: linear-gradient(135deg, rgba(168,230,207,0.04), rgba(160,196,255,0.04));
-    border: 1px solid rgba(168,230,207,0.06); border-radius: 16px;
+    background: linear-gradient(135deg, rgba(13,158,95,0.08), rgba(0,75,160,0.08));
+    border: 1px solid rgba(13,158,95,0.1); border-radius: 16px;
     padding: 16px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
   .totals-label {
     font-size: 11px; color: #555; font-weight: 500;
@@ -198,56 +193,52 @@
     font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
   }
   .totals-sub {
-    font-size: 11px; color: #444; margin-top: 2px;
+    font-size: 11px; color: #999; margin-top: 2px;
   }
 
+  /* Bottom nav */
   .bottom-nav {
     position: absolute; bottom: 0; left: 0; right: 0;
     display: flex; justify-content: space-around; padding: 6px 0 30px;
-    background: rgba(16,16,20,0.92); backdrop-filter: blur(24px);
-    border-top: 1px solid rgba(255,255,255,0.03);
+    background: #fff;
+    border-top: 1px solid rgba(0,0,0,0.06);
   }
-  .nav-item { text-align: center; font-size: 9px; color: #333; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 500; }
-  .nav-item.active { color: var(--csk); }
-  .nav-icon { font-size: 20px; line-height: 1; }
-  .nav-active-bar { width: 18px; height: 2.5px; border-radius: 2px; background: linear-gradient(90deg, var(--csk), var(--srh)); margin-top: 1px; }
-
-  .options-area { max-width: 500px; margin: 24px auto; display: flex; gap: 12px; padding: 0 16px; }
-  .opt-btn { flex: 1; padding: 16px; border-radius: 14px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
-  .opt-approve { background: rgba(168,230,207,0.08); border: 1px solid rgba(168,230,207,0.1); color: var(--mint); }
-  .opt-revise { background: var(--card-bg); border: 1px solid var(--card-border); color: #777; }
-  .opt-btn:hover { transform: scale(1.02); }
+  .nav-item { text-align: center; font-size: 11px; color: #8e8e93; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 500; cursor: pointer; }
+  .nav-item.active { color: var(--mi); }
+  .nav-item.active .nav-pill { width: 36px; height: 3px; border-radius: 2px; background: var(--mi); margin-bottom: 2px; }
+  .nav-icon { line-height: 1; }
+  .nav-label { font-size: 11px; }
 </style>
 </head>
 <body>
 <div style="text-align: center; padding: 24px 16px 8px;">
-  <h2 style="font-size: 20px; font-weight: 700; color: #e5e5e5; letter-spacing: -0.5px;">Screen 6 of 6: Match Scores</h2>
+  <h2 style="font-size: 20px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.5px;">Screen 6 of 6: Match Scores</h2>
   <p style="color: #555; font-size: 13px; margin-top: 4px;">Player fantasy points breakdown after a match</p>
 </div>
 
 <div class="phone-frame">
-  <div class="status-bar"><span>9:41</span><span style="color: #666;">●●● WiFi 🔋</span></div>
+  <div class="status-bar"><span>9:41</span><span style="color: rgba(255,255,255,0.6);">●●● WiFi 🔋</span></div>
   <div class="dynamic-island"></div>
 
   <div class="scroll-area">
-    <div class="app-bar">
-      <div class="logo">FAL</div>
-      <div class="page-title">Match Scores</div>
-      <div class="league-name">Weekend Warriors</div>
-    </div>
+    <!-- Gradient hero header -->
+    <div class="hero-header">
+      <div class="app-bar">
+        <div class="logo">FAL</div>
+        <div class="page-title">Match Scores</div>
+        <div class="league-name">Weekend Warriors</div>
+      </div>
 
-    <div class="content" style="margin-top: 8px;">
-
-      <!-- Match Header -->
+      <!-- Match Header inside hero -->
       <div class="match-header">
         <div class="match-teams">
           <div class="team-label">
             <div class="team-dot" style="background: var(--mi);"></div>
-            <span style="color: var(--sky);">MI</span>
+            <span>MI</span>
           </div>
           <div class="match-vs">vs</div>
           <div class="team-label">
-            <span style="color: #ff6b6b;">RCB</span>
+            <span>RCB</span>
             <div class="team-dot" style="background: var(--rcb);"></div>
           </div>
         </div>
@@ -255,6 +246,9 @@
         <div class="match-date">Tue, Mar 17</div>
         <div class="match-badge">COMPLETED</div>
       </div>
+    </div>
+
+    <div class="content" style="margin-top: 14px;">
 
       <!-- Your Players Section -->
       <div class="section-title" style="margin-top: 4px;">YOUR PLAYERS IN THIS MATCH</div>
@@ -268,7 +262,7 @@
             <div class="name">Virat Kohli</div>
             <div class="meta">
               <span class="role-badge role-bat">BAT</span>
-              <span class="team-name" style="color: #ff6b6b;">RCB</span>
+              <span class="team-name" style="color: var(--rcb);">RCB</span>
               <span class="cap-badge">CAP</span>
             </div>
           </div>
@@ -296,7 +290,7 @@
           </div>
           <div class="breakdown-row">
             <div class="breakdown-event">Base total</div>
-            <div class="breakdown-pts" style="color: #888;">83</div>
+            <div class="breakdown-pts" style="color: #555;">83</div>
           </div>
         </div>
         <div class="multiplier-row">
@@ -314,7 +308,7 @@
             <div class="name">Jasprit Bumrah</div>
             <div class="meta">
               <span class="role-badge role-bowl">BOWL</span>
-              <span class="team-name" style="color: var(--sky);">MI</span>
+              <span class="team-name" style="color: var(--mi);">MI</span>
             </div>
           </div>
           <div class="score-total">
@@ -351,7 +345,7 @@
             <div class="name">Hardik Pandya</div>
             <div class="meta">
               <span class="role-badge role-ar">ALL</span>
-              <span class="team-name" style="color: var(--sky);">MI</span>
+              <span class="team-name" style="color: var(--mi);">MI</span>
               <span class="vc-badge">VC</span>
             </div>
           </div>
@@ -379,7 +373,7 @@
           </div>
           <div class="breakdown-row">
             <div class="breakdown-event">Base total</div>
-            <div class="breakdown-pts" style="color: #888;">65</div>
+            <div class="breakdown-pts" style="color: #555;">65</div>
           </div>
         </div>
         <div class="multiplier-row vc-mult">
@@ -399,12 +393,12 @@
             <div class="name">Glenn Maxwell</div>
             <div class="meta">
               <span class="role-badge role-ar">ALL</span>
-              <span class="team-name" style="color: #ff6b6b;">RCB</span>
+              <span class="team-name" style="color: var(--rcb);">RCB</span>
               <span class="bench-sub-badge">BENCH SUB</span>
             </div>
           </div>
           <div class="score-total">
-            <div class="pts-value" style="color: #888;">42</div>
+            <div class="pts-value" style="color: #999;">42</div>
             <div class="pts-unit">pts</div>
           </div>
         </div>
@@ -440,24 +434,29 @@
   </div>
 
   <div class="bottom-nav">
-    <div class="nav-item"><div class="nav-icon">⊞</div>Home</div>
-    <div class="nav-item"><div class="nav-icon">⊟</div>Lineup</div>
-    <div class="nav-item"><div class="nav-icon">▥</div>Board</div>
-    <div class="nav-item"><div class="nav-icon">◉</div>Players</div>
-    <div class="nav-item"><div class="nav-icon">⚙</div>League</div>
+    <div class="nav-item active">
+      <div class="nav-pill"></div>
+      <div class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="nav-label">Home</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+      <div class="nav-label">Lineup</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="nav-label">Board</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="nav-label">Players</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      <div class="nav-label">League</div>
+    </div>
   </div>
 </div>
 
-<div class="options-area">
-  <div class="opt-btn opt-approve" data-choice="approve" onclick="toggleSelect(this)">✓ Looks Good</div>
-  <div class="opt-btn opt-revise" data-choice="revise" onclick="toggleSelect(this)">✎ Needs Changes</div>
-</div>
-<script>
-function toggleSelect(el) {
-  document.querySelectorAll('.opt-btn').forEach(b => { b.style.opacity = '0.4'; b.style.transform = 'scale(1)'; });
-  el.style.opacity = '1'; el.style.transform = 'scale(1.03)';
-  if (window.__recordChoice) window.__recordChoice(el.dataset.choice, el.textContent);
-}
-</script>
 </body>
 </html>

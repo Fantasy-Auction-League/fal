@@ -16,7 +16,7 @@ FAL is a fantasy cricket platform for IPL where teams are built via auction (man
 - Weekly lineup management (Playing XI, Captain, VC, bench order)
 - Post-match scoring automation via cricket data APIs
 - Bench auto-substitution
-- 4 strategy chips (Triple Captain, Bench Boost, Power Bowler, Power Batter)
+- 4 strategy chips (Triple Captain, Bench Boost, Powerplay, Bowling Boost)
 - Leaderboard tracking
 - API-sourced IPL player registry (CricketData.org free tier or SportMonks)
 
@@ -138,13 +138,13 @@ A player scoring 50 runs gets: +50 (runs) + +4 (30 bonus) + +8 (50 bonus) = 62 f
 
 | Chip | Effect |
 |---|---|
-| **Triple Captain** | Captain scores 3x instead of 2x |
-| **Bench Boost** | All bench players' points count towards total |
-| **Power Bowler** | All bowlers in Playing XI score 2x |
-| **Power Batter** | All batters in Playing XI score 2x |
+| **Triple Captain** | Captain earns 3× points |
+| **Bench Boost** | Bench player points also count |
+| **Powerplay** | Batting points doubled |
+| **Bowling Boost** | Bowling points doubled |
 
 ### Chip + Captain Stacking:
-Multipliers stack **multiplicatively**. Example: Captain who is a bowler + Power Bowler active = 2x (captain) × 2x (chip) = **4x total**. Triple Captain + Power Batter on a batting captain = 3x × 2x = **6x total**.
+Multipliers stack **multiplicatively**. Example: Captain who is a bowler + Bowling Boost active = 2x (captain) × 2x (chip) = **4x total**. Triple Captain + Powerplay on a batting captain = 3x × 2x = **6x total**.
 
 ## 8. Bench Substitution
 
