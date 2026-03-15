@@ -16,7 +16,7 @@
 | Frontend | Next.js + React + TypeScript |
 | Styling | Tailwind CSS |
 | Backend | Next.js API Routes |
-| Database | PostgreSQL (Vercel Postgres or Neon) |
+| Database | Vercel Postgres (powered by Neon) |
 | ORM | Prisma |
 | Auth | Auth.js (OAuth + credentials) |
 | Deployment | Vercel |
@@ -24,205 +24,61 @@
 
 ### Platform Constraints:
 - **Vercel Cron execution limit:** 60s on Hobby, 300s on Pro. Scoring pipeline must complete within this window or be chunked into separate invocations.
-- **Vercel Postgres connections:** Limited compute hours on Hobby. Use connection pooling (Prisma Data Proxy or PgBouncer via Neon).
+- **Vercel Postgres:** Included in Vercel platform (Hobby: 256MB storage, 60 compute hrs/mo; Pro: 512MB+). Powered by Neon — connection pooling built in.
 
 ### System Architecture
 
 ```mermaid
 graph TB
-    subgraph Client["Client (Mobile-first Browser)"]
-        UI["React Frontend<br/>Next.js + Tailwind CSS"]
+    User["👤 Manager<br/>(Mobile Browser)"]
+
+    subgraph Vercel["Vercel"]
+        App["Next.js App<br/>React Frontend + API Routes + Auth.js"]
+        Cron["Vercel Cron Jobs<br/>Import & Score"]
+        DB[("Vercel Postgres<br/>(Neon)")]
     end
 
-    subgraph Vercel["Vercel Platform"]
-        subgraph NextJS["Next.js Monolith"]
-            Pages["Pages / App Router"]
-            API["API Routes"]
-            Auth["Auth.js<br/>OAuth + Credentials"]
+    SportMonks["SportMonks<br/>Cricket API"]
 
-            subgraph Services["Core Services"]
-                LVS["Lineup Validation<br/>Service"]
-                MIS["Match Import<br/>Service"]
-                SP["Stat Parser"]
-                FPE["Fantasy Points<br/>Engine"]
-                GWA["Gameweek<br/>Aggregator"]
-                LBS["Leaderboard<br/>Service"]
-            end
-        end
+    User -->|"HTTPS"| App
+    App -->|"Prisma ORM"| DB
+    Cron -->|"triggers scoring pipeline"| App
+    App -->|"fetch scorecards"| SportMonks
+    Cron -.->|"every 30m<br/>during IPL season"| SportMonks
 
-        Cron1["Vercel Cron 1<br/>Import (every 30m)"]
-        Cron2["Vercel Cron 2<br/>Score (every 30m, +15m offset)"]
-    end
-
-    subgraph External["External"]
-        SportMonks["SportMonks API<br/>€29/mo"]
-    end
-
-    subgraph Database["PostgreSQL (Neon)"]
-        DB[(Database)]
-    end
-
-    UI -->|"HTTPS"| Pages
-    UI -->|"REST"| API
-    API --> Auth
-    API --> LVS
-    API --> LBS
-
-    Cron1 -->|"triggers"| MIS
-    MIS -->|"GET /fixtures?include=<br/>batting,bowling,balls"| SportMonks
-    MIS --> SP
-    SP -->|"PlayerPerformance"| DB
-
-    Cron2 -->|"triggers"| FPE
-    FPE -->|"reads PlayerPerformance"| DB
-    FPE --> GWA
-    GWA -->|"bench subs, multipliers,<br/>chips"| GWA
-    GWA --> LBS
-    LBS -->|"PlayerScore,<br/>Leaderboard"| DB
-
-    LVS -->|"validates"| DB
-    API -->|"Prisma ORM"| DB
-
-    style Client fill:#1a1a2e,color:#fff
-    style Vercel fill:#0a0a1a,color:#fff
-    style NextJS fill:#111128,color:#fff
-    style Services fill:#1a1a3e,color:#fff
-    style External fill:#2d1b69,color:#fff
-    style Database fill:#004BA0,color:#fff
+    style Vercel fill:#0a0a1a,color:#fff,stroke:#333
+    style App fill:#111128,color:#fff
+    style DB fill:#004BA0,color:#fff
+    style SportMonks fill:#2d1b69,color:#fff
+    style Cron fill:#1a1a3e,color:#fff
 ```
 
-### Entity Relationship Diagram
-
-```mermaid
-erDiagram
-    User ||--o{ Team : manages
-    League ||--o{ Team : contains
-    League ||--|| User : "admin (adminUserId)"
-    Team ||--o{ TeamPlayer : has
-    Player ||--o{ TeamPlayer : "assigned to"
-    Team ||--o{ Lineup : submits
-    Gameweek ||--o{ Lineup : "per gameweek"
-    Lineup ||--o{ LineupSlot : contains
-    Player ||--o{ LineupSlot : fills
-    Gameweek ||--o{ Match : includes
-    Match ||--o{ PlayerPerformance : "raw stats"
-    Player ||--o{ PlayerPerformance : performs
-    Gameweek ||--o{ PlayerScore : "aggregated"
-    Player ||--o{ PlayerScore : scores
-    Team ||--o{ ChipUsage : activates
-    Gameweek ||--o{ ChipUsage : "used in"
-
-    User {
-        string id PK
-        string email
-        string name
-        string image
-    }
-    League {
-        string id PK
-        string name
-        string inviteCode UK
-        string adminUserId FK
-        int maxManagers
-        string season
-    }
-    Team {
-        string id PK
-        string name
-        string userId FK
-        string leagueId FK
-    }
-    TeamPlayer {
-        string id PK
-        string teamId FK
-        string playerId FK
-        string leagueId FK
-    }
-    Player {
-        string id PK
-        string name
-        string iplTeam
-        string role "BAT/BOWL/ALL/WK"
-        string apiPlayerId
-    }
-    Gameweek {
-        string id PK
-        int number
-        datetime lockTime
-        datetime startDate
-        datetime endDate
-        string status
-    }
-    Match {
-        string id PK
-        string gameweekId FK
-        string homeTeam
-        string awayTeam
-        datetime date
-        string scoringStatus "scheduled/imported/scored"
-        string apiMatchId
-    }
-    Lineup {
-        string id PK
-        string teamId FK
-        string gameweekId FK
-    }
-    LineupSlot {
-        string id PK
-        string lineupId FK
-        string playerId FK
-        string slotType "XI/BENCH"
-        int benchPriority "1-4 or null"
-        string role "CAPTAIN/VC/null"
-    }
-    PlayerPerformance {
-        string id PK
-        string playerId FK
-        string matchId FK
-        int runs
-        int ballsFaced
-        int fours
-        int sixes
-        int wickets
-        int maidens
-        float overs
-        int catches
-        int stumpings
-        int runouts
-        int dotBalls
-        boolean didBat
-        boolean didPlay
-    }
-    PlayerScore {
-        string id PK
-        string playerId FK
-        string gameweekId FK
-        int totalPoints
-        json breakdown
-    }
-    ChipUsage {
-        string id PK
-        string teamId FK
-        string gameweekId FK
-        string chipType "TC/BB/PP/BWL"
-    }
-```
+**Everything runs on Vercel** — frontend, API, cron jobs, and database. Vercel Postgres is powered by Neon under the hood and is included in Vercel's platform (Hobby: 256MB storage, Pro: 512MB+). No separate DB hosting needed.
 
 ### Scoring Pipeline Flow
 
 ```mermaid
 flowchart LR
-    subgraph Cron1["Cron 1: Import"]
-        A["Poll SportMonks<br/>/livescores"] --> B{"New completed<br/>matches?"}
-        B -->|Yes| C["GET /fixtures/{id}<br/>?include=batting,<br/>bowling,balls"]
-        B -->|No| Z1["Sleep"]
+    subgraph Init["Season Init (one-time)"]
+        S1["GET /fixtures<br/>?filter[season_id]=X"] --> S2["Pre-load all<br/>Match rows with<br/>dates & teams"]
+    end
+
+    subgraph Cron1["Cron 1: Import (every 30m, 2pm-midnight IST, Mar-May)"]
+        A["Query local Match<br/>table: any matches<br/>today?"] --> A1{"Matches<br/>today?"}
+        A1 -->|No| Z1["Exit early<br/>(no API call)"]
+        A1 -->|Yes| B["GET /livescores<br/>→ check completed"]
+        B --> B1{"New completed<br/>matches?"}
+        B1 -->|No| Z1
+        B1 -->|Yes| C["GET /fixtures/{id}<br/>?include=batting,<br/>bowling,balls"]
         C --> D["Parse response"]
         D --> E["Write<br/>PlayerPerformance"]
         E --> F["Set Match<br/>scoringStatus =<br/>'imported'"]
     end
 
-    subgraph Cron2["Cron 2: Score"]
-        G["Find matches<br/>status = 'imported'"] --> H["Calculate base<br/>fantasy points"]
+    subgraph Cron2["Cron 2: Score (every 30m, +15m offset)"]
+        G["Find matches<br/>status = 'imported'"] --> G1{"Any to<br/>score?"}
+        G1 -->|No| Z2["Exit early"]
+        G1 -->|Yes| H["Calculate base<br/>fantasy points"]
         H --> I["Aggregate across<br/>matches in GW"]
         I --> J{"Gameweek<br/>ended?"}
         J -->|Yes| K["Apply bench<br/>auto-subs"]
@@ -234,6 +90,7 @@ flowchart LR
         O --> P["Set Match<br/>scoringStatus =<br/>'scored'"]
     end
 
+    Init -.->|"Match table<br/>pre-populated"| Cron1
     Cron1 -.->|"Match.scoringStatus<br/>coordinates"| Cron2
 ```
 
@@ -380,23 +237,49 @@ No cricket API provides scorecard-level data (batting, bowling, fielding stats) 
 
 **Double-header day total:** 1 poll + 2 scorecards + 2 ball-by-ball = **5 requests** (well within any rate limit).
 
+### Season Initialization (one-time)
+
+At the start of the IPL season, admin triggers a one-time fixture import:
+```
+1. GET /fixtures?filter[season_id]=X → fetch all ~74 IPL matches
+2. Create Match rows with date, homeTeam, awayTeam, apiMatchId
+3. Auto-generate Gameweek rows (Mon-Sun windows covering the season)
+4. Assign each Match to its Gameweek based on match date
+```
+This pre-populates the Match table so cron jobs can check locally whether matches are scheduled today — **zero API calls on non-match days.**
+
+### Cron Schedule
+
+Both crons run on a fixed Vercel Cron schedule during IPL season hours:
+```
+# Cron 1: Import — every 30 min, 2pm-midnight IST (8:30am-6:30pm UTC), Mar-May
+*/30 8-18 * 3-5 *
+
+# Cron 2: Score — same window, offset by 15 min
+15,45 8-18 * 3-5 *
+```
+
 ### Cron Splitting Strategy (Vercel 60s limit)
 
 Two separate Vercel Cron jobs to stay within execution limits:
 
-**Cron 1: Import** (runs every 30 min on match days)
+**Cron 1: Import**
 ```
-1. GET /livescores → check for newly completed matches
-2. For each completed match not yet imported:
+1. Query local Match table: any matches scheduled today?
+   → No matches today → exit immediately (no API call, ~1s)
+2. GET /livescores → check for newly completed matches
+   → No new completions → exit (~2s)
+3. For each completed match not yet imported:
    a. GET /fixtures/{id}?include=batting,bowling,lineup,runs,balls
    b. Parse response → write PlayerPerformance rows
    c. Set Match.scoringStatus = 'imported'
 ```
-Estimated time: ~5-10s per match (1 API call + DB writes)
+Estimated time: ~1s (non-match day) / ~5-10s (match day with new completions)
 
-**Cron 2: Score** (runs every 30 min, offset by 15 min from Cron 1)
+**Cron 2: Score**
 ```
 1. Find matches where scoringStatus = 'imported'
+   → None found → exit immediately (~1s)
 2. For each: run Fantasy Points Engine → write PlayerScore rows
 3. Aggregate gameweek totals
 4. Apply bench subs (only at gameweek end)
@@ -404,7 +287,7 @@ Estimated time: ~5-10s per match (1 API call + DB writes)
 6. Update leaderboard
 7. Set Match.scoringStatus = 'scored'
 ```
-Estimated time: ~10-20s (pure computation + DB, no API calls)
+Estimated time: ~1s (nothing to score) / ~10-20s (scoring, pure computation + DB, no API calls)
 
 ### Match.scoringStatus State Machine
 ```
@@ -442,6 +325,9 @@ Admin can trigger re-import via `POST /api/scoring/import` and re-score via `POS
 - `GET /api/scores/[gameweekId]?leagueId=X` — Get gameweek scores for a league
 - `POST /api/scoring/import` — Trigger match import (admin)
 - `POST /api/scoring/recalculate/[matchId]` — Re-import and recalculate a specific match (admin)
+
+### Season Admin:
+- `POST /api/admin/season/init` — Import IPL fixture list from SportMonks, create Match + Gameweek rows (admin, one-time per season)
 
 ### Leaderboard:
 - `GET /api/leaderboard/[leagueId]` — Get league standings
