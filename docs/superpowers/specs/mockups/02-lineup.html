@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0c0c10; color: #e8e8ed; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .phone-frame {
+    max-width: 393px; margin: 20px auto; background: #101014;
+    border-radius: 44px; border: 2.5px solid #1c1c24; overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 0 0 0.5px rgba(255,255,255,0.03);
+    position: relative;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 6px; font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .dynamic-island {
+    width: 124px; height: 36px; background: #000; border-radius: 20px;
+    margin: 0 auto; position: relative; top: -2px;
+  }
+  .scroll-area {
+    height: 720px; overflow-y: auto; padding-bottom: 90px; scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  :root {
+    --mi: #004BA0; --csk: #F9CD05; --rcb: #EC1C24; --kkr: #3A225D;
+    --dc: #004C93; --rr: #EA1A85; --srh: #FF822A; --gt-teal: #0EB1A2;
+    --lsg: #00AEEF; --pbks: #ED1B24;
+    --mint: #a8e6cf; --rose: #ffc6d9; --sky: #a0c4ff; --butter: #ffe5a0;
+    --card-bg: rgba(255,255,255,0.025); --card-border: rgba(255,255,255,0.04);
+  }
+
+  .content { padding: 0 14px; display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 16px; }
+
+  /* App bar */
+  .app-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 20px 10px; position: relative;
+  }
+  .app-bar::after {
+    content: ''; position: absolute; bottom: 0; left: 20px; right: 20px;
+    height: 1px; background: linear-gradient(90deg, transparent, rgba(249,205,5,0.08), rgba(255,130,42,0.06), transparent);
+  }
+  .app-bar .logo {
+    font-size: 15px; font-weight: 900; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--csk), var(--srh), var(--rcb));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.7;
+  }
+  .app-bar .page-title {
+    font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px;
+    position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .app-bar .league-name { font-size: 11px; color: #444; font-weight: 500; }
+
+  .gw-pill {
+    font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 10px;
+    background: rgba(0,75,160,0.1); color: var(--sky); border: 1px solid rgba(0,75,160,0.12);
+  }
+  .gw-pill-bar {
+    display: flex; justify-content: center; padding: 6px 20px 4px;
+  }
+
+  /* Lock banner */
+  .lock-banner {
+    margin: 8px 14px 2px; padding: 10px 14px; border-radius: 12px;
+    background: rgba(255,198,217,0.06); border: 1px solid rgba(255,198,217,0.08);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px;
+  }
+  .lock-banner .label { color: var(--rose); font-weight: 600; }
+  .lock-banner .timer {
+    font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; font-size: 14px;
+  }
+
+  /* Chip selector */
+  .chip-selector {
+    margin: 0 14px; padding: 12px 14px; border-radius: 14px;
+    background: rgba(249,205,5,0.04); border: 1px solid rgba(249,205,5,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chip-selector .left { display: flex; align-items: center; gap: 8px; }
+  .chip-selector .chip-badge {
+    width: 28px; height: 28px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 13px;
+    background: rgba(249,205,5,0.1);
+  }
+  .chip-selector .chip-label { font-size: 12px; color: #999; }
+  .chip-selector .chip-value { font-size: 13px; font-weight: 600; color: var(--csk); }
+  .chip-selector .change-btn {
+    font-size: 11px; font-weight: 600; color: var(--sky); padding: 4px 10px;
+    border-radius: 8px; background: rgba(0,75,160,0.1); border: none; cursor: pointer;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    color: #444; margin: 6px 0 6px 4px;
+  }
+
+  /* Player row */
+  .player-row {
+    display: flex; align-items: center; padding: 10px 12px;
+    border-radius: 14px; gap: 10px; position: relative;
+    background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.025);
+    transition: all 0.2s;
+  }
+  .player-row + .player-row { margin-top: 4px; }
+  .player-row.captain {
+    background: rgba(249,205,5,0.05); border-color: rgba(249,205,5,0.1);
+  }
+  .player-row.vice-captain {
+    background: rgba(58,34,93,0.08); border-color: rgba(58,34,93,0.12);
+  }
+
+  .player-pos {
+    width: 20px; font-size: 10px; font-weight: 700; color: #444; text-align: center;
+  }
+
+  .team-bar {
+    width: 3px; height: 32px; border-radius: 2px; flex-shrink: 0;
+  }
+
+  .player-info { flex: 1; min-width: 0; }
+  .player-name {
+    font-size: 13px; font-weight: 600; color: #ccc; letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .player-meta {
+    display: flex; align-items: center; gap: 6px; margin-top: 2px;
+  }
+  .player-role {
+    font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .role-bat { background: rgba(249,205,5,0.1); color: var(--csk); }
+  .role-bowl { background: rgba(0,75,160,0.12); color: var(--sky); }
+  .role-ar { background: rgba(14,177,162,0.12); color: var(--gt-teal); }
+  .role-wk { background: rgba(234,26,133,0.1); color: #ff7ab8; }
+  .player-team {
+    font-size: 9px; font-weight: 600; color: #444;
+  }
+  .player-last {
+    font-size: 11px; font-weight: 600; color: #555; font-variant-numeric: tabular-nums;
+  }
+
+  .captain-badge {
+    font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 6px;
+    letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .badge-c { background: rgba(249,205,5,0.15); color: var(--csk); }
+  .badge-vc { background: rgba(58,34,93,0.25); color: #b8a0e8; }
+
+  .drag-handle {
+    color: #2a2a2a; font-size: 14px; cursor: grab; flex-shrink: 0;
+    padding: 4px;
+  }
+
+  /* Bench divider */
+  .bench-divider {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0;
+  }
+  .bench-divider .line { flex: 1; height: 1px; background: rgba(255,255,255,0.04); }
+  .bench-divider .label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #333; padding: 0 4px;
+  }
+
+  /* Save button */
+  .save-bar {
+    margin: 10px 0 0; padding: 0;
+  }
+  .btn-save {
+    width: 100%; padding: 14px; border: none; border-radius: 16px;
+    color: #1a1a2e; font-size: 14px; font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, var(--csk), var(--srh));
+    box-shadow: 0 4px 20px rgba(249,205,5,0.15);
+    position: relative; overflow: hidden;
+  }
+  .btn-save::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%;
+    background: linear-gradient(rgba(255,255,255,0.3), transparent);
+    border-radius: 16px 16px 0 0; pointer-events: none;
+  }
+
+  /* Validation */
+  .validation-row {
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+    padding: 4px 0;
+  }
+  .check { color: var(--mint); }
+  .validation-text { color: #666; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-around; padding: 6px 0 30px;
+    background: rgba(16,16,20,0.92); backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+  .nav-item {
+    text-align: center; font-size: 9px; color: #333;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 500;
+  }
+  .nav-item.active { color: var(--csk); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-active-bar {
+    width: 18px; height: 2.5px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--csk), var(--srh));
+    margin-top: 1px; box-shadow: 0 0 8px rgba(249,205,5,0.2);
+  }
+
+  .options-area { max-width: 500px; margin: 24px auto; display: flex; gap: 12px; padding: 0 16px; }
+  .opt-btn {
+    flex: 1; padding: 16px; border-radius: 14px; text-align: center;
+    cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;
+  }
+  .opt-approve { background: rgba(168,230,207,0.08); border: 1px solid rgba(168,230,207,0.1); color: var(--mint); }
+  .opt-revise { background: var(--card-bg); border: 1px solid var(--card-border); color: #777; }
+  .opt-btn:hover { transform: scale(1.02); }
+</style>
+</head>
+<body>
+
+<div style="text-align: center; padding: 24px 16px 8px;">
+  <h2 style="font-size: 20px; font-weight: 700; color: #e5e5e5; letter-spacing: -0.5px;">Screen 2 of 6: Lineup Management</h2>
+  <p style="color: #555; font-size: 13px; margin-top: 4px;">Set Playing XI, Captain, VC, bench order & chip</p>
+</div>
+
+<div class="phone-frame">
+  <div class="status-bar"><span>9:41</span><span style="color: #666;">●●● WiFi 🔋</span></div>
+  <div class="dynamic-island"></div>
+
+  <div class="scroll-area">
+    <div class="app-bar">
+      <div class="logo">FAL</div>
+      <div class="page-title">Lineup</div>
+      <div class="league-name">Weekend Warriors</div>
+    </div>
+
+    <div class="gw-pill-bar">
+      <div class="gw-pill">GW 7</div>
+    </div>
+
+    <!-- Lock countdown -->
+    <div class="lock-banner">
+      <div class="label">⏱ Lineup locks in</div>
+      <div class="timer">1d 14h 32m</div>
+    </div>
+
+    <!-- Chip selector -->
+    <div class="chip-selector" style="margin-top: 8px;">
+      <div class="left">
+        <div class="chip-badge">⚡</div>
+        <div>
+          <div class="chip-label">Active Chip</div>
+          <div class="chip-value">Triple Captain</div>
+        </div>
+      </div>
+      <button class="change-btn">Change</button>
+    </div>
+
+    <div class="content" style="margin-top: 10px;">
+      <!-- Validation -->
+      <div style="padding: 0 4px;">
+        <div class="validation-row"><span class="check">✓</span><span class="validation-text">11 players selected</span></div>
+        <div class="validation-row"><span class="check">✓</span><span class="validation-text">Captain & Vice Captain set</span></div>
+        <div class="validation-row"><span class="check">✓</span><span class="validation-text">Bench priority ordered</span></div>
+      </div>
+
+      <!-- Playing XI -->
+      <div>
+        <div class="section-label">Playing XI</div>
+
+        <div class="player-row captain">
+          <div class="player-pos">1</div>
+          <div class="team-bar" style="background: linear-gradient(to bottom, var(--rcb), #c41820);"></div>
+          <div class="player-info">
+            <div class="player-name">Virat Kohli</div>
+            <div class="player-meta">
+              <span class="player-role role-bat">BAT</span>
+              <span class="player-team">RCB</span>
+            </div>
+          </div>
+          <div class="player-last">83</div>
+          <div class="captain-badge badge-c">C</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">2</div>
+          <div class="team-bar" style="background: var(--mi);"></div>
+          <div class="player-info">
+            <div class="player-name">Shubman Gill</div>
+            <div class="player-meta">
+              <span class="player-role role-bat">BAT</span>
+              <span class="player-team">MI</span>
+            </div>
+          </div>
+          <div class="player-last">54</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row vice-captain">
+          <div class="player-pos">3</div>
+          <div class="team-bar" style="background: var(--mi);"></div>
+          <div class="player-info">
+            <div class="player-name">Hardik Pandya</div>
+            <div class="player-meta">
+              <span class="player-role role-ar">ALL</span>
+              <span class="player-team">MI</span>
+            </div>
+          </div>
+          <div class="player-last">90</div>
+          <div class="captain-badge badge-vc">VC</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">4</div>
+          <div class="team-bar" style="background: var(--kkr);"></div>
+          <div class="player-info">
+            <div class="player-name">Andre Russell</div>
+            <div class="player-meta">
+              <span class="player-role role-ar">ALL</span>
+              <span class="player-team">KKR</span>
+            </div>
+          </div>
+          <div class="player-last">87</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">5</div>
+          <div class="team-bar" style="background: var(--csk);"></div>
+          <div class="player-info">
+            <div class="player-name">Ravindra Jadeja</div>
+            <div class="player-meta">
+              <span class="player-role role-ar">ALL</span>
+              <span class="player-team">CSK</span>
+            </div>
+          </div>
+          <div class="player-last">48</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">6</div>
+          <div class="team-bar" style="background: var(--rr);"></div>
+          <div class="player-info">
+            <div class="player-name">Sanju Samson</div>
+            <div class="player-meta">
+              <span class="player-role role-wk">WK</span>
+              <span class="player-team">RR</span>
+            </div>
+          </div>
+          <div class="player-last">45</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">7</div>
+          <div class="team-bar" style="background: var(--mi);"></div>
+          <div class="player-info">
+            <div class="player-name">Jasprit Bumrah</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">MI</span>
+            </div>
+          </div>
+          <div class="player-last">103</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">8</div>
+          <div class="team-bar" style="background: var(--gt-teal);"></div>
+          <div class="player-info">
+            <div class="player-name">Mohammed Shami</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">GT</span>
+            </div>
+          </div>
+          <div class="player-last">52</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">9</div>
+          <div class="team-bar" style="background: var(--dc);"></div>
+          <div class="player-info">
+            <div class="player-name">Kuldeep Yadav</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">DC</span>
+            </div>
+          </div>
+          <div class="player-last">60</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">10</div>
+          <div class="team-bar" style="background: var(--rcb);"></div>
+          <div class="player-info">
+            <div class="player-name">Yuzvendra Chahal</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">RCB</span>
+            </div>
+          </div>
+          <div class="player-last">41</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row">
+          <div class="player-pos">11</div>
+          <div class="team-bar" style="background: var(--srh);"></div>
+          <div class="player-info">
+            <div class="player-name">Bhuvneshwar Kumar</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">SRH</span>
+            </div>
+          </div>
+          <div class="player-last">35</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+      </div>
+
+      <!-- Bench -->
+      <div class="bench-divider">
+        <div class="line"></div>
+        <div class="label">Bench</div>
+        <div class="line"></div>
+      </div>
+
+      <div>
+        <div class="player-row" style="opacity: 0.65;">
+          <div class="player-pos" style="color: var(--mint); font-size: 9px;">B1</div>
+          <div class="team-bar" style="background: var(--rcb);"></div>
+          <div class="player-info">
+            <div class="player-name">Glenn Maxwell</div>
+            <div class="player-meta">
+              <span class="player-role role-ar">ALL</span>
+              <span class="player-team">RCB</span>
+            </div>
+          </div>
+          <div class="player-last">42</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row" style="opacity: 0.65;">
+          <div class="player-pos" style="color: var(--sky); font-size: 9px;">B2</div>
+          <div class="team-bar" style="background: var(--csk);"></div>
+          <div class="player-info">
+            <div class="player-name">Deepak Chahar</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">CSK</span>
+            </div>
+          </div>
+          <div class="player-last">22</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row" style="opacity: 0.65;">
+          <div class="player-pos" style="color: var(--butter); font-size: 9px;">B3</div>
+          <div class="team-bar" style="background: var(--lsg);"></div>
+          <div class="player-info">
+            <div class="player-name">KL Rahul</div>
+            <div class="player-meta">
+              <span class="player-role role-wk">WK</span>
+              <span class="player-team">LSG</span>
+            </div>
+          </div>
+          <div class="player-last">18</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+
+        <div class="player-row" style="opacity: 0.65;">
+          <div class="player-pos" style="color: var(--rose); font-size: 9px;">B4</div>
+          <div class="team-bar" style="background: var(--pbks);"></div>
+          <div class="player-info">
+            <div class="player-name">Arshdeep Singh</div>
+            <div class="player-meta">
+              <span class="player-role role-bowl">BOWL</span>
+              <span class="player-team">PBKS</span>
+            </div>
+          </div>
+          <div class="player-last">12</div>
+          <div class="drag-handle">⋮⋮</div>
+        </div>
+      </div>
+
+      <!-- Save -->
+      <div class="save-bar">
+        <button class="btn-save">Save Lineup</button>
+      </div>
+
+      <div style="height: 40px;"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon">⊞</div>Home</div>
+    <div class="nav-item active">
+      <div class="nav-icon">⊟</div>
+      <div class="nav-active-bar"></div>
+      Lineup
+    </div>
+    <div class="nav-item"><div class="nav-icon">▥</div>Board</div>
+    <div class="nav-item"><div class="nav-icon">◉</div>Players</div>
+    <div class="nav-item"><div class="nav-icon">⚙</div>League</div>
+  </div>
+</div>
+
+<div class="options-area">
+  <div class="opt-btn opt-approve" data-choice="approve" onclick="toggleSelect(this)">✓ Looks Good</div>
+  <div class="opt-btn opt-revise" data-choice="revise" onclick="toggleSelect(this)">✎ Needs Changes</div>
+</div>
+
+<script>
+function toggleSelect(el) {
+  document.querySelectorAll('.opt-btn').forEach(b => { b.style.opacity = '0.4'; b.style.transform = 'scale(1)'; });
+  el.style.opacity = '1'; el.style.transform = 'scale(1.03)';
+  if (window.__recordChoice) window.__recordChoice(el.dataset.choice, el.textContent);
+}
+</script>
+</body>
+</html>

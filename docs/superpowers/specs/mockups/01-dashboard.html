@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0c0c10; color: #e8e8ed; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .phone-frame {
+    max-width: 393px; margin: 20px auto; background: #101014;
+    border-radius: 44px; border: 2.5px solid #1c1c24; overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 0 0 0.5px rgba(255,255,255,0.03);
+    position: relative;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 6px; font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .dynamic-island {
+    width: 124px; height: 36px; background: #000; border-radius: 20px;
+    margin: 0 auto; position: relative; top: -2px;
+  }
+  .scroll-area {
+    height: 720px; overflow-y: auto; padding-bottom: 90px; scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* IPL Team Colors */
+  :root {
+    --mi: #004BA0;
+    --csk: #F9CD05;
+    --rcb: #EC1C24;
+    --kkr: #3A225D;
+    --kkr-gold: #F2C400;
+    --dc: #004C93;
+    --dc-red: #EF1B23;
+    --rr: #EA1A85;
+    --srh: #FF822A;
+    --pbks: #ED1B24;
+    --gt: #1B2133;
+    --gt-teal: #0EB1A2;
+    --lsg: #00AEEF;
+
+    /* Pastels derived from IPL palette */
+    --peach: #ffb4a2;
+    --lavender: #b8b8ff;
+    --mint: #a8e6cf;
+    --sky: #a0c4ff;
+    --rose: #ffc6d9;
+    --butter: #ffe5a0;
+    --card-bg: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.04);
+  }
+
+  /* Header */
+  .app-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 20px 10px; position: relative;
+  }
+  .app-bar::after {
+    content: ''; position: absolute; bottom: 0; left: 20px; right: 20px;
+    height: 1px; background: linear-gradient(90deg, transparent, rgba(249,205,5,0.08), rgba(255,130,42,0.06), transparent);
+  }
+  .app-bar .logo {
+    font-size: 15px; font-weight: 900; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--csk), var(--srh), var(--rcb));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.7;
+  }
+  .app-bar .page-title {
+    font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px;
+    position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .app-bar .league-name { font-size: 11px; color: #444; font-weight: 500; }
+
+  .content { padding: 0 14px; display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 20px; padding: 16px;
+  }
+
+  /* Gameweek Hero — IPL gradient */
+  .gw-hero {
+    background: linear-gradient(160deg, rgba(0,75,160,0.12), rgba(58,34,93,0.1), rgba(234,26,133,0.06));
+    border: 1px solid rgba(0,75,160,0.15);
+    border-radius: 24px; padding: 20px;
+    position: relative; overflow: hidden;
+  }
+  .gw-hero::before {
+    content: ''; position: absolute; top: -50%; right: -20%;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(249,205,5,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .gw-hero::after {
+    content: ''; position: absolute; bottom: -40%; left: -15%;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(236,28,36,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .gw-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--sky); font-weight: 600; opacity: 0.8;
+  }
+  .gw-title {
+    font-size: 26px; font-weight: 800; margin: 4px 0 2px;
+    color: #fff; letter-spacing: -0.5px;
+  }
+  .gw-dates { font-size: 12px; color: #4a4a6a; }
+  .lock-timer { text-align: right; position: relative; }
+  .lock-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--rose); font-weight: 700; opacity: 0.8;
+  }
+  .timer {
+    font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff, var(--rose));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .badges { display: flex; gap: 6px; margin-top: 14px; position: relative; }
+  .badge { padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-success {
+    background: rgba(168,230,207,0.1); color: var(--mint);
+    border: 1px solid rgba(168,230,207,0.1);
+  }
+  .badge-neutral {
+    background: var(--card-bg); color: #555;
+    border: 1px solid var(--card-border);
+  }
+
+  /* Actions */
+  .actions { display: flex; gap: 8px; }
+  .btn-primary {
+    flex: 1; padding: 14px; border: none; border-radius: 16px;
+    color: #1a1a2e; font-size: 14px; font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, var(--csk), var(--srh));
+    box-shadow: 0 4px 20px rgba(249,205,5,0.15);
+    position: relative; overflow: hidden; letter-spacing: -0.3px;
+  }
+  .btn-primary::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%;
+    background: linear-gradient(rgba(255,255,255,0.3), transparent);
+    border-radius: 16px 16px 0 0; pointer-events: none;
+  }
+  .btn-secondary {
+    flex: 1; padding: 14px; border-radius: 16px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    color: #888; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+
+  .section-title {
+    font-size: 13px; font-weight: 700; margin-bottom: 10px;
+    color: #666; letter-spacing: -0.2px;
+  }
+
+  /* Standings */
+  .standings-row {
+    display: flex; align-items: center; padding: 10px 12px;
+    border-radius: 12px; gap: 10px; font-size: 13px;
+  }
+  .standings-row + .standings-row { margin-top: 3px; }
+  .standings-row.first { background: rgba(249,205,5,0.05); }
+  .standings-row.you {
+    background: rgba(0,75,160,0.08);
+    border: 1px solid rgba(0,75,160,0.12);
+  }
+  .rank {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 11px; font-weight: 700;
+    background: rgba(255,255,255,0.04); color: #555;
+  }
+  .rank.gold { background: rgba(249,205,5,0.12); color: var(--csk); }
+  .rank.you-rank { background: rgba(0,75,160,0.15); color: var(--sky); }
+  .standings-name { flex: 1; font-weight: 500; color: #777; }
+  .standings-pts { font-weight: 700; font-variant-numeric: tabular-nums; color: #666; }
+  .standings-delta { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px; }
+  .delta-up { color: var(--mint); background: rgba(168,230,207,0.08); }
+  .delta-down { color: var(--rose); background: rgba(255,198,217,0.08); }
+
+  /* Recap */
+  .recap-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+  }
+  .recap-title { font-size: 13px; font-weight: 700; color: #666; }
+  .recap-pts {
+    font-size: 18px; font-weight: 800;
+    background: linear-gradient(135deg, var(--mint), #6dd5a0);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .top-scorers {
+    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+    margin: 0 -4px; padding: 0 4px 4px;
+  }
+  .top-scorers::-webkit-scrollbar { display: none; }
+  .scorer {
+    min-width: 76px; background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 12px 8px 10px; text-align: center;
+    position: relative;
+  }
+  .scorer .team-stripe {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+  .scorer .score {
+    font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px;
+  }
+  .scorer .name { font-size: 10px; color: #555; margin-top: 3px; }
+  .scorer .team-tag {
+    font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 4px;
+    margin-top: 3px; display: inline-block; letter-spacing: 0.5px;
+  }
+  .role-tag {
+    font-size: 8px; font-weight: 800; padding: 2px 6px; border-radius: 5px;
+    margin-top: 4px; display: inline-block; letter-spacing: 0.5px;
+  }
+  .role-c { background: rgba(249,205,5,0.15); color: var(--csk); }
+  .role-vc { background: rgba(58,34,93,0.25); color: #b8a0e8; }
+
+  /* Matches — IPL team colors */
+  .match-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; background: rgba(255,255,255,0.02);
+    border-radius: 14px; border: 1px solid rgba(255,255,255,0.025);
+    position: relative; overflow: hidden;
+  }
+  .match-row + .match-row { margin-top: 5px; }
+  .match-row .team-gradient {
+    position: absolute; top: 0; left: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px;
+  }
+  .match-info { padding-left: 8px; }
+  .match-teams-row {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+  }
+  .team-name { letter-spacing: -0.2px; }
+  .team-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .vs-text { font-size: 10px; color: #444; font-weight: 500; }
+  .match-time { font-size: 11px; color: #444; margin-top: 3px; }
+  .match-day {
+    font-size: 10px; font-weight: 600; padding: 3px 10px;
+    border-radius: 8px; background: rgba(255,255,255,0.03);
+    color: #555; border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Chips */
+  .chips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 12px; background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.03); border-radius: 14px;
+  }
+  .chip.available { border-color: rgba(168,230,207,0.08); }
+  .chip-icon {
+    width: 30px; height: 30px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .chip-icon.tc { background: rgba(236,28,36,0.1); border: 1px solid rgba(236,28,36,0.1); }
+  .chip-icon.bb { background: rgba(168,230,207,0.08); border: 1px solid rgba(168,230,207,0.08); }
+  .chip-icon.pb { background: rgba(0,75,160,0.12); border: 1px solid rgba(0,75,160,0.1); }
+  .chip-icon.pba { background: rgba(249,205,5,0.1); border: 1px solid rgba(249,205,5,0.08); }
+  .chip-icon.used { opacity: 0.25; border-color: transparent; }
+  .chip-info { flex: 1; }
+  .chip-name { font-weight: 600; font-size: 11px; color: #bbb; }
+  .chip-name.spent { color: #444; }
+  .chip-status { font-size: 9px; margin-top: 2px; font-weight: 500; }
+  .chip-status.avail { color: var(--mint); }
+  .chip-status.used-text { color: #3a3a3a; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-around;
+    padding: 6px 0 30px;
+    background: rgba(16,16,20,0.92); backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+  .nav-item {
+    text-align: center; font-size: 9px; color: #333;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; font-weight: 500;
+  }
+  .nav-item.active { color: var(--csk); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-active-bar {
+    width: 18px; height: 2.5px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--csk), var(--srh));
+    margin-top: 1px; box-shadow: 0 0 8px rgba(249,205,5,0.2);
+  }
+
+  .options-area { max-width: 500px; margin: 24px auto; display: flex; gap: 12px; padding: 0 16px; }
+  .opt-btn {
+    flex: 1; padding: 16px; border-radius: 14px; text-align: center;
+    cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;
+  }
+  .opt-approve { background: rgba(168,230,207,0.08); border: 1px solid rgba(168,230,207,0.1); color: var(--mint); }
+  .opt-revise { background: var(--card-bg); border: 1px solid var(--card-border); color: #777; }
+  .opt-btn:hover { transform: scale(1.02); }
+</style>
+</head>
+<body>
+
+<div style="text-align: center; padding: 24px 16px 8px;">
+  <h2 style="font-size: 20px; font-weight: 700; color: #e5e5e5; letter-spacing: -0.5px;">Screen 1 of 6: Dashboard</h2>
+  <p style="color: #555; font-size: 13px; margin-top: 4px;">Mobile-first • IPL team colors</p>
+</div>
+
+<div class="phone-frame">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span style="color: #666;">●●● WiFi 🔋</span>
+  </div>
+  <div class="dynamic-island"></div>
+
+  <div class="scroll-area">
+    <div class="app-bar">
+      <div class="logo">FAL</div>
+      <div class="page-title">Dashboard</div>
+      <div class="league-name">Weekend Warriors</div>
+    </div>
+
+    <div class="content">
+      <!-- Gameweek Hero -->
+      <div class="gw-hero">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
+          <div>
+            <div class="gw-label">Current Gameweek</div>
+            <div class="gw-title">Gameweek 7</div>
+            <div class="gw-dates">Mar 16 – Mar 22, 2026</div>
+          </div>
+          <div class="lock-timer">
+            <div class="lock-label">Locks in</div>
+            <div class="timer">1d 14h</div>
+          </div>
+        </div>
+        <div class="badges">
+          <span class="badge badge-success">✓ Lineup Set</span>
+          <span class="badge badge-neutral">No Chip</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button class="btn-primary">Edit Lineup</button>
+        <button class="btn-secondary">Leaderboard</button>
+      </div>
+
+      <!-- Standings -->
+      <div class="card">
+        <div class="section-title">Standings</div>
+        <div class="standings-row first">
+          <div class="rank gold">1</div>
+          <div class="standings-name" style="color: #ccc; font-weight: 600;">Rahul</div>
+          <div class="standings-delta delta-up">▲ 2</div>
+          <div class="standings-pts" style="color: var(--csk);">3,240</div>
+        </div>
+        <div class="standings-row you">
+          <div class="rank you-rank">2</div>
+          <div class="standings-name" style="color: #fff; font-weight: 700;">You</div>
+          <div class="standings-delta delta-down">▼ 1</div>
+          <div class="standings-pts" style="color: #e5e5e5;">3,195</div>
+        </div>
+        <div class="standings-row">
+          <div class="rank">3</div>
+          <div class="standings-name">Priya</div>
+          <div class="standings-pts">3,110</div>
+        </div>
+        <div class="standings-row">
+          <div class="rank">4</div>
+          <div class="standings-name">Shaheel</div>
+          <div class="standings-pts">2,980</div>
+        </div>
+      </div>
+
+      <!-- GW Recap with IPL team colors on players -->
+      <div class="card">
+        <div class="recap-header">
+          <div class="recap-title">GW6 Recap</div>
+          <div class="recap-pts">+788</div>
+        </div>
+        <div class="top-scorers">
+          <div class="scorer">
+            <div class="team-stripe" style="background: linear-gradient(90deg, var(--rcb), #c41820);"></div>
+            <div class="score">166</div>
+            <div class="name">Kohli</div>
+            <span class="role-tag role-c">CAP</span>
+            <div><span class="team-tag" style="background: rgba(236,28,36,0.12); color: #ff6b6b;">RCB</span></div>
+          </div>
+          <div class="scorer">
+            <div class="team-stripe" style="background: linear-gradient(90deg, var(--mi), #0066cc);"></div>
+            <div class="score">103</div>
+            <div class="name">Bumrah</div>
+            <div><span class="team-tag" style="background: rgba(0,75,160,0.15); color: var(--sky);">MI</span></div>
+          </div>
+          <div class="scorer">
+            <div class="team-stripe" style="background: linear-gradient(90deg, var(--mi), #0066cc);"></div>
+            <div class="score">90</div>
+            <div class="name">Hardik</div>
+            <span class="role-tag role-vc">VC</span>
+            <div><span class="team-tag" style="background: rgba(0,75,160,0.15); color: var(--sky);">MI</span></div>
+          </div>
+          <div class="scorer">
+            <div class="team-stripe" style="background: linear-gradient(90deg, var(--kkr), #5a3a8a);"></div>
+            <div class="score">87</div>
+            <div class="name">Russell</div>
+            <div><span class="team-tag" style="background: rgba(58,34,93,0.2); color: #b8a0e8;">KKR</span></div>
+          </div>
+          <div class="scorer">
+            <div class="team-stripe" style="background: linear-gradient(90deg, var(--csk), #e0b800);"></div>
+            <div class="score">60</div>
+            <div class="name">Kuldeep</div>
+            <div><span class="team-tag" style="background: rgba(249,205,5,0.1); color: var(--csk);">CSK</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matches with IPL team colors -->
+      <div class="card">
+        <div class="section-title">This Week</div>
+
+        <!-- MI vs RCB -->
+        <div class="match-row">
+          <div class="team-gradient" style="background: linear-gradient(to bottom, var(--mi), var(--rcb));"></div>
+          <div class="match-info">
+            <div class="match-teams-row">
+              <div class="team-dot" style="color: var(--mi); background: var(--mi);"></div>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+              <span class="vs-text">vs</span>
+              <span class="team-name" style="color: #ff6b6b;">RCB</span>
+              <div class="team-dot" style="color: var(--rcb); background: var(--rcb);"></div>
+            </div>
+            <div class="match-time">Tue, Mar 17 • 7:30 PM</div>
+          </div>
+          <div class="match-day">TUE</div>
+        </div>
+
+        <!-- CSK vs KKR -->
+        <div class="match-row">
+          <div class="team-gradient" style="background: linear-gradient(to bottom, var(--csk), var(--kkr));"></div>
+          <div class="match-info">
+            <div class="match-teams-row">
+              <div class="team-dot" style="color: var(--csk); background: var(--csk);"></div>
+              <span class="team-name" style="color: var(--csk);">CSK</span>
+              <span class="vs-text">vs</span>
+              <span class="team-name" style="color: #b8a0e8;">KKR</span>
+              <div class="team-dot" style="color: var(--kkr); background: var(--kkr);"></div>
+            </div>
+            <div class="match-time">Thu, Mar 19 • 7:30 PM</div>
+          </div>
+          <div class="match-day">THU</div>
+        </div>
+
+        <!-- RR vs DC -->
+        <div class="match-row">
+          <div class="team-gradient" style="background: linear-gradient(to bottom, var(--rr), var(--dc));"></div>
+          <div class="match-info">
+            <div class="match-teams-row">
+              <div class="team-dot" style="color: var(--rr); background: var(--rr);"></div>
+              <span class="team-name" style="color: #ff7ab8;">RR</span>
+              <span class="vs-text">vs</span>
+              <span class="team-name" style="color: var(--sky);">DC</span>
+              <div class="team-dot" style="color: var(--dc); background: var(--dc);"></div>
+            </div>
+            <div class="match-time">Sat, Mar 21 • 3:30 PM</div>
+          </div>
+          <div class="match-day">SAT</div>
+        </div>
+      </div>
+
+      <!-- Chips -->
+      <div class="card">
+        <div class="section-title">Chips</div>
+        <div class="chips-grid">
+          <div class="chip available">
+            <div class="chip-icon tc">⚡</div>
+            <div class="chip-info">
+              <div class="chip-name">Triple Captain</div>
+              <div class="chip-status avail">Available</div>
+            </div>
+          </div>
+          <div class="chip available">
+            <div class="chip-icon bb">↑</div>
+            <div class="chip-info">
+              <div class="chip-name">Bench Boost</div>
+              <div class="chip-status avail">Available</div>
+            </div>
+          </div>
+          <div class="chip">
+            <div class="chip-icon pb used">🎯</div>
+            <div class="chip-info">
+              <div class="chip-name spent">Power Bowler</div>
+              <div class="chip-status used-text">Used GW3</div>
+            </div>
+          </div>
+          <div class="chip available">
+            <div class="chip-icon pba">🏏</div>
+            <div class="chip-info">
+              <div class="chip-name">Power Batter</div>
+              <div class="chip-status avail">Available</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 40px;"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <div class="nav-icon">⊞</div>
+      <div class="nav-active-bar"></div>
+      Home
+    </div>
+    <div class="nav-item"><div class="nav-icon">⊟</div>Lineup</div>
+    <div class="nav-item"><div class="nav-icon">▥</div>Board</div>
+    <div class="nav-item"><div class="nav-icon">◉</div>Players</div>
+    <div class="nav-item"><div class="nav-icon">⚙</div>League</div>
+  </div>
+</div>
+
+<div class="options-area">
+  <div class="opt-btn opt-approve" data-choice="approve" onclick="toggleSelect(this)">✓ Looks Good</div>
+  <div class="opt-btn opt-revise" data-choice="revise" onclick="toggleSelect(this)">✎ Needs Changes</div>
+</div>
+
+<script>
+function toggleSelect(el) {
+  document.querySelectorAll('.opt-btn').forEach(b => { b.style.opacity = '0.4'; b.style.transform = 'scale(1)'; });
+  el.style.opacity = '1'; el.style.transform = 'scale(1.03)';
+  if (window.__recordChoice) window.__recordChoice(el.dataset.choice, el.textContent);
+}
+</script>
+</body>
+</html>

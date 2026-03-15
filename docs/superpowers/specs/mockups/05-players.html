@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0c0c10; color: #e8e8ed; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .phone-frame {
+    max-width: 393px; margin: 20px auto; background: #101014;
+    border-radius: 44px; border: 2.5px solid #1c1c24; overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 0 0 0.5px rgba(255,255,255,0.03);
+    position: relative;
+  }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 6px; font-size: 12px; font-weight: 600; color: #fff; }
+  .dynamic-island { width: 124px; height: 36px; background: #000; border-radius: 20px; margin: 0 auto; position: relative; top: -2px; }
+  .scroll-area { height: 720px; overflow-y: auto; padding-bottom: 90px; scrollbar-width: none; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  :root {
+    --mi: #004BA0; --csk: #F9CD05; --rcb: #EC1C24; --kkr: #3A225D;
+    --dc: #004C93; --rr: #EA1A85; --srh: #FF822A; --gt-teal: #0EB1A2;
+    --lsg: #00AEEF; --pbks: #ED1B24;
+    --mint: #a8e6cf; --rose: #ffc6d9; --sky: #a0c4ff; --butter: #ffe5a0;
+    --card-bg: rgba(255,255,255,0.025); --card-border: rgba(255,255,255,0.04);
+  }
+
+  .app-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 20px 10px; position: relative;
+  }
+  .app-bar::after {
+    content: ''; position: absolute; bottom: 0; left: 20px; right: 20px;
+    height: 1px; background: linear-gradient(90deg, transparent, rgba(249,205,5,0.08), rgba(255,130,42,0.06), transparent);
+  }
+  .app-bar .logo {
+    font-size: 15px; font-weight: 900; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--csk), var(--srh), var(--rcb));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.7;
+  }
+  .app-bar .page-title {
+    font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px;
+    position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .app-bar .league-name { font-size: 11px; color: #444; font-weight: 500; }
+
+  .content { padding: 0 14px; display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 16px; }
+  .section-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #666; }
+
+  /* Search bar */
+  .search-bar {
+    margin: 8px 14px 2px; position: relative;
+  }
+  .search-input {
+    width: 100%; padding: 12px 14px 12px 38px; border-radius: 14px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    color: #ccc; font-size: 14px; outline: none;
+    font-family: inherit;
+  }
+  .search-input::placeholder { color: #444; }
+  .search-input:focus { border-color: rgba(249,205,5,0.15); }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; color: #444;
+  }
+
+  /* Filter pills */
+  .filter-bar {
+    display: flex; gap: 6px; margin: 4px 14px; overflow-x: auto;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: 600;
+    white-space: nowrap; cursor: pointer; border: 1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.03); color: #666;
+    transition: all 0.2s;
+  }
+  .filter-pill.active { border-color: rgba(249,205,5,0.15); color: var(--csk); background: rgba(249,205,5,0.06); }
+
+  /* Team filter chips */
+  .team-filter-bar {
+    display: flex; gap: 4px; margin: 0 14px; overflow-x: auto;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .team-filter-bar::-webkit-scrollbar { display: none; }
+  .team-chip {
+    padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 700;
+    white-space: nowrap; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.02);
+    color: #555; letter-spacing: 0.3px; transition: all 0.2s;
+  }
+  .team-chip.active-mi { border-color: rgba(0,75,160,0.3); color: var(--sky); background: rgba(0,75,160,0.08); }
+  .team-chip.active-csk { border-color: rgba(249,205,5,0.3); color: var(--csk); background: rgba(249,205,5,0.06); }
+
+  /* Player card */
+  .player-card {
+    display: flex; align-items: center; padding: 12px;
+    border-radius: 14px; gap: 10px; position: relative;
+    background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.025);
+    overflow: hidden;
+  }
+  .player-card + .player-card { margin-top: 4px; }
+  .player-card .team-accent {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  }
+  .player-card .avatar {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .player-card .info { flex: 1; min-width: 0; padding-left: 2px; }
+  .player-card .name {
+    font-size: 14px; font-weight: 600; color: #ddd; letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .player-card .meta {
+    display: flex; align-items: center; gap: 6px; margin-top: 3px;
+  }
+  .player-card .role-badge {
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .role-bat { background: rgba(249,205,5,0.1); color: var(--csk); }
+  .role-bowl { background: rgba(0,75,160,0.12); color: var(--sky); }
+  .role-ar { background: rgba(14,177,162,0.12); color: var(--gt-teal); }
+  .role-wk { background: rgba(234,26,133,0.1); color: #ff7ab8; }
+  .player-card .team-name { font-size: 10px; font-weight: 600; }
+  .player-card .stats { text-align: right; flex-shrink: 0; }
+  .player-card .total-pts {
+    font-size: 16px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums;
+  }
+  .player-card .pts-label { font-size: 9px; color: #444; margin-top: 1px; }
+  .player-card .owned-badge {
+    position: absolute; top: 8px; right: 8px;
+    font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+  .owned-you { background: rgba(168,230,207,0.1); color: var(--mint); }
+  .owned-other { background: rgba(255,255,255,0.04); color: #444; }
+
+  /* Stats row in player card */
+  .mini-stats {
+    display: flex; gap: 8px; margin-top: 3px;
+  }
+  .mini-stat {
+    font-size: 9px; color: #444;
+  }
+  .mini-stat span { color: #777; font-weight: 600; }
+
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-around; padding: 6px 0 30px;
+    background: rgba(16,16,20,0.92); backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+  .nav-item { text-align: center; font-size: 9px; color: #333; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 500; }
+  .nav-item.active { color: var(--csk); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-active-bar { width: 18px; height: 2.5px; border-radius: 2px; background: linear-gradient(90deg, var(--csk), var(--srh)); margin-top: 1px; }
+
+  .options-area { max-width: 500px; margin: 24px auto; display: flex; gap: 12px; padding: 0 16px; }
+  .opt-btn { flex: 1; padding: 16px; border-radius: 14px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+  .opt-approve { background: rgba(168,230,207,0.08); border: 1px solid rgba(168,230,207,0.1); color: var(--mint); }
+  .opt-revise { background: var(--card-bg); border: 1px solid var(--card-border); color: #777; }
+  .opt-btn:hover { transform: scale(1.02); }
+</style>
+</head>
+<body>
+<div style="text-align: center; padding: 24px 16px 8px;">
+  <h2 style="font-size: 20px; font-weight: 700; color: #e5e5e5; letter-spacing: -0.5px;">Screen 5 of 6: Player Registry</h2>
+  <p style="color: #555; font-size: 13px; margin-top: 4px;">Browse IPL players, filter by team & role</p>
+</div>
+
+<div class="phone-frame">
+  <div class="status-bar"><span>9:41</span><span style="color: #666;">●●● WiFi 🔋</span></div>
+  <div class="dynamic-island"></div>
+
+  <div class="scroll-area">
+    <div class="app-bar">
+      <div class="logo">FAL</div>
+      <div class="page-title">Players</div>
+      <div class="league-name">Weekend Warriors</div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <div class="search-icon">🔍</div>
+      <input class="search-input" placeholder="Search players..." />
+    </div>
+
+    <!-- Role filters -->
+    <div class="filter-bar">
+      <div class="filter-pill active">All</div>
+      <div class="filter-pill" style="border-color: rgba(249,205,5,0.1); color: var(--csk);">BAT</div>
+      <div class="filter-pill" style="border-color: rgba(0,75,160,0.1); color: var(--sky);">BOWL</div>
+      <div class="filter-pill" style="border-color: rgba(14,177,162,0.1); color: var(--gt-teal);">ALL</div>
+      <div class="filter-pill" style="border-color: rgba(234,26,133,0.1); color: #ff7ab8;">WK</div>
+    </div>
+
+    <!-- Team filters -->
+    <div class="team-filter-bar">
+      <div class="team-chip" style="color: var(--csk);">ALL</div>
+      <div class="team-chip active-mi">MI</div>
+      <div class="team-chip" style="color: var(--csk);">CSK</div>
+      <div class="team-chip" style="color: #ff6b6b;">RCB</div>
+      <div class="team-chip" style="color: #b8a0e8;">KKR</div>
+      <div class="team-chip" style="color: var(--sky);">DC</div>
+      <div class="team-chip" style="color: #ff7ab8;">RR</div>
+      <div class="team-chip" style="color: var(--srh);">SRH</div>
+      <div class="team-chip" style="color: var(--gt-teal);">GT</div>
+      <div class="team-chip" style="color: var(--lsg);">LSG</div>
+      <div class="team-chip" style="color: #ff6b6b;">PBKS</div>
+    </div>
+
+    <div class="content" style="margin-top: 8px;">
+      <!-- Player list -->
+      <div>
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">JB</div>
+          <div class="info">
+            <div class="name">Jasprit Bumrah</div>
+            <div class="meta">
+              <span class="role-badge role-bowl">BOWL</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Wkts: <span>18</span></div>
+              <div class="mini-stat">Econ: <span>6.8</span></div>
+              <div class="mini-stat">Avg: <span>72</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">504</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-you">YOUR TEAM</div>
+        </div>
+
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">RO</div>
+          <div class="info">
+            <div class="name">Rohit Sharma</div>
+            <div class="meta">
+              <span class="role-badge role-bat">BAT</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Runs: <span>342</span></div>
+              <div class="mini-stat">SR: <span>148</span></div>
+              <div class="mini-stat">Avg: <span>58</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">462</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-other">Rahul</div>
+        </div>
+
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">HP</div>
+          <div class="info">
+            <div class="name">Hardik Pandya</div>
+            <div class="meta">
+              <span class="role-badge role-ar">ALL</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Runs: <span>280</span></div>
+              <div class="mini-stat">Wkts: <span>8</span></div>
+              <div class="mini-stat">Avg: <span>65</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">455</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-you">YOUR TEAM</div>
+        </div>
+
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">SG</div>
+          <div class="info">
+            <div class="name">Shubman Gill</div>
+            <div class="meta">
+              <span class="role-badge role-bat">BAT</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Runs: <span>310</span></div>
+              <div class="mini-stat">SR: <span>139</span></div>
+              <div class="mini-stat">Avg: <span>54</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">378</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-you">YOUR TEAM</div>
+        </div>
+
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">IS</div>
+          <div class="info">
+            <div class="name">Ishan Kishan</div>
+            <div class="meta">
+              <span class="role-badge role-wk">WK</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Runs: <span>245</span></div>
+              <div class="mini-stat">SR: <span>142</span></div>
+              <div class="mini-stat">Avg: <span>42</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">295</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-other">Priya</div>
+        </div>
+
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">TA</div>
+          <div class="info">
+            <div class="name">Tim David</div>
+            <div class="meta">
+              <span class="role-badge role-bat">BAT</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Runs: <span>198</span></div>
+              <div class="mini-stat">SR: <span>165</span></div>
+              <div class="mini-stat">Avg: <span>38</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">266</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-other">Shaheel</div>
+        </div>
+
+        <div class="player-card">
+          <div class="team-accent" style="background: var(--mi);"></div>
+          <div class="avatar" style="background: linear-gradient(135deg, var(--mi), #0066cc);">JA</div>
+          <div class="info">
+            <div class="name">Jofra Archer</div>
+            <div class="meta">
+              <span class="role-badge role-bowl">BOWL</span>
+              <span class="team-name" style="color: var(--sky);">MI</span>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">Wkts: <span>12</span></div>
+              <div class="mini-stat">Econ: <span>7.4</span></div>
+              <div class="mini-stat">Avg: <span>45</span>/gw</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="total-pts">248</div>
+            <div class="pts-label">season pts</div>
+          </div>
+          <div class="owned-badge owned-other">Amit</div>
+        </div>
+      </div>
+
+      <div style="height: 40px;"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon">⊞</div>Home</div>
+    <div class="nav-item"><div class="nav-icon">⊟</div>Lineup</div>
+    <div class="nav-item"><div class="nav-icon">▥</div>Board</div>
+    <div class="nav-item active"><div class="nav-icon">◉</div><div class="nav-active-bar"></div>Players</div>
+    <div class="nav-item"><div class="nav-icon">⚙</div>League</div>
+  </div>
+</div>
+
+<div class="options-area">
+  <div class="opt-btn opt-approve" data-choice="approve" onclick="toggleSelect(this)">✓ Looks Good</div>
+  <div class="opt-btn opt-revise" data-choice="revise" onclick="toggleSelect(this)">✎ Needs Changes</div>
+</div>
+<script>
+function toggleSelect(el) {
+  document.querySelectorAll('.opt-btn').forEach(b => { b.style.opacity = '0.4'; b.style.transform = 'scale(1)'; });
+  el.style.opacity = '1'; el.style.transform = 'scale(1.03)';
+  if (window.__recordChoice) window.__recordChoice(el.dataset.choice, el.textContent);
+}
+</script>
+</body>
+</html>
