@@ -35,7 +35,7 @@ graph TB
     subgraph Vercel["Vercel Hobby - Free"]
         App["Next.js App<br/>React Frontend + API Routes + Auth.js"]
         Cron["Daily Cron<br/>(safety net)"]
-        AdminBtn["Admin 'Import Scores'<br/>button (on-demand)"]
+        AdminBtn["Admin Import Scores<br/>button on-demand"]
     end
 
     subgraph NeonDB["Neon - Free tier"]
@@ -66,23 +66,23 @@ graph TB
 ```mermaid
 flowchart LR
     subgraph Init["Season Init (one-time, admin)"]
-        S1["GET /fixtures<br/>?filter[season_id]=X"] --> S2["Pre-load all<br/>Match + Gameweek<br/>rows"]
+        S1["GET /fixtures<br/>by season_id"] --> S2["Pre-load all<br/>Match + Gameweek<br/>rows"]
     end
 
     subgraph Trigger["Two ways to trigger scoring"]
-        T1["Admin taps<br/>'Import Scores'<br/>(after each match)"]
+        T1["Admin taps<br/>Import Scores<br/>after each match"]
         T2["Daily Cron<br/>(midnight, safety net)"]
     end
 
     subgraph Pipeline["Scoring Pipeline (same code, either trigger)"]
-        A["Claim matches:<br/>SET status='scoring'<br/>WHERE status='completed'"] --> A1{"Rows<br/>claimed?"}
+        A["Claim matches:<br/>SET status=scoring<br/>WHERE status=completed"] --> A1{"Rows<br/>claimed?"}
         A1 -->|No| Z["Exit (nothing to do<br/>or already claimed)"]
-        A1 -->|Yes| B["GET /fixtures/{id}<br/>?include=batting,<br/>bowling,balls"]
+        A1 -->|Yes| B["GET /fixtures by id<br/>include batting<br/>bowling balls"]
         B --> C["Parse + upsert<br/>PlayerPerformance"]
         C --> D["Set Match<br/>status = 'scored'"]
         D --> E{"GW ended?<br/>(all matches scored)"}
         E -->|No| Z2["Done for now"]
-        E -->|Yes| F["Bench subs →<br/>C/VC multipliers →<br/>Chip effects →<br/>Update leaderboard"]
+        E -->|Yes| F["Bench subs then<br/>C/VC multipliers then<br/>Chip effects then<br/>Update leaderboard"]
     end
 
     Init -.->|"Match table<br/>pre-populated"| Trigger
