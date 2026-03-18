@@ -30,15 +30,15 @@
 
 ```mermaid
 graph TB
-    User["👤 Manager<br/>(Mobile Browser)"]
+    User["Manager<br/>(Mobile Browser)"]
 
-    subgraph Vercel["Vercel (Hobby — Free)"]
+    subgraph Vercel["Vercel Hobby - Free"]
         App["Next.js App<br/>React Frontend + API Routes + Auth.js"]
         Cron["Daily Cron<br/>(safety net)"]
         AdminBtn["Admin 'Import Scores'<br/>button (on-demand)"]
     end
 
-    subgraph NeonDB["Neon (Free tier)"]
+    subgraph NeonDB["Neon - Free tier"]
         DB[("PostgreSQL<br/>0.5GB / 100 CU-hrs")]
     end
 
@@ -70,8 +70,8 @@ flowchart LR
     end
 
     subgraph Trigger["Two ways to trigger scoring"]
-        T1["👤 Admin taps<br/>'Import Scores'<br/>(after each match)"]
-        T2["🕐 Daily Cron<br/>(midnight, safety net)"]
+        T1["Admin taps<br/>'Import Scores'<br/>(after each match)"]
+        T2["Daily Cron<br/>(midnight, safety net)"]
     end
 
     subgraph Pipeline["Scoring Pipeline (same code, either trigger)"]
