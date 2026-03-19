@@ -6,624 +6,561 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #111; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { background: #0a0a0a; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
 
   :root {
     --mi: #004BA0; --csk: #F9CD05; --rcb: #EC1C24; --kkr: #3A225D;
-    --dc: #004C93; --rr: #EA1A85; --srh: #FF822A; --gt-teal: #0EB1A2;
-    --lsg: #00AEEF; --pbks: #ED1B24;
-    --bat: #F9CD05; --bowl: #a0c4ff; --all: #0EB1A2; --wk: #EA1A85;
-    --green-cta: #00ff87;
-    --pitch-1: #3aad5c; --pitch-2: #35a254; --pitch-3: #30964c;
-    --pitch-4: #2b8a45; --pitch-5: #267f3e; --pitch-bench: #217438;
+    --dc: #004C93; --rr: #EA1A85; --srh: #FF822A; --gt: #0EB1A2;
+    --lsg: #00AEEF; --mint: #0d9e5f;
   }
 
-  .phone-frame {
-    max-width: 393px; margin: 20px auto; background: #f2f3f8;
-    border-radius: 44px; border: 2.5px solid #d0d4e0; overflow: hidden;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.25);
-    position: relative; height: 852px;
+  .phone {
+    max-width: 393px; margin: 20px auto; height: 852px;
+    border-radius: 44px; border: 2.5px solid #d0d4e0;
+    overflow: hidden; position: relative;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3);
     display: flex; flex-direction: column;
+    background: #f2f3f8;
   }
 
-  /* Status bar + island */
+  /* ═══ Top Bar — Clean white like old pitch view ═══ */
+  .top-bar {
+    background: #fff; padding: 52px 20px 8px;
+    flex-shrink: 0; position: relative; z-index: 5;
+    text-align: center;
+  }
   .status-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 28px 6px; font-size: 12px; font-weight: 600; color: #1a1a1a;
-    background: #fff; position: relative; z-index: 2; flex-shrink: 0;
+    position: absolute; top: 14px; left: 28px; right: 28px;
+    display: flex; justify-content: space-between;
+    font-size: 12px; font-weight: 600; color: #1a1a2e;
   }
-  .dynamic-island {
-    width: 124px; height: 36px; background: #000; border-radius: 20px;
-    margin: 0 auto; position: relative; z-index: 2; flex-shrink: 0;
+  .notch {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000; border-radius: 18px; z-index: 10;
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin-bottom: 4px;
+  }
+  .btn-back {
+    position: absolute; left: 0;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.08); background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none; color: #333; font-size: 14px; cursor: pointer;
+  }
+  .header-title { font-size: 16px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.5px; }
+  .meta-line {
+    font-size: 11.5px; font-weight: 400; color: #888; margin-bottom: 10px;
+  }
+  .meta-line strong { font-weight: 700; color: #1a1a2e; }
+
+  /* ═══ Chips — clean white row ═══ */
+  .chips-bar {
+    background: #fff; padding: 0 16px 10px;
+    display: flex; justify-content: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .chip-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; width: 76px;
+  }
+  .chip-circle {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+  .chip-circle.on {
+    background: linear-gradient(135deg, #edf9f0, #d9f2e3);
+    border: 1.5px solid var(--mint);
+  }
+  .chip-circle.off {
+    background: #f5f4f6; border: 1.5px solid #e0dde2; opacity: 0.4;
+  }
+  .chip-label { font-size: 9px; font-weight: 600; color: #333; text-align: center; line-height: 1.2; }
+  .chip-tag { font-size: 8px; font-weight: 600; }
+  .chip-tag.on { color: var(--mint); border: 1px solid rgba(13,158,95,0.3); padding: 1px 6px; border-radius: 6px; background: rgba(13,158,95,0.06); }
+  .chip-tag.off { color: #999; }
+
+  /* ═══ PITCH — rich green, Dream11 style ═══ */
+  .pitch {
+    flex: 1; position: relative; overflow: hidden; max-height: 380px;
+    background: linear-gradient(180deg,
+      #3aad5c 0%, #35a254 15%,
+      #30964c 30%, #34a058 45%,
+      #3aad5c 50%, #30964c 65%,
+      #2b8a45 80%, #267f3e 100%
+    );
   }
 
-  /* Thin header bar ~10% */
-  .header-bar {
-    background: #fff;
-    padding: 0 18px 8px;
-    margin-top: -18px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: relative; z-index: 1; flex-shrink: 0;
+  /* Concentric circle markings */
+  .pitch::before {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 300px; height: 300px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.07);
   }
-  .header-left {
-    display: flex; align-items: center; gap: 10px;
-  }
-  .header-logo {
-    font-size: 16px; font-weight: 900; letter-spacing: -0.5px;
-    background: linear-gradient(135deg, var(--csk), var(--srh));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .header-title {
-    font-size: 15px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.3px;
-  }
-  .header-deadline {
-    font-size: 10px; font-weight: 600; color: #999;
-    background: #f2f3f8; padding: 4px 8px; border-radius: 6px;
-    letter-spacing: -0.1px;
-  }
-  .header-deadline strong {
-    color: #e53935; font-weight: 700;
+  .pitch::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 180px; height: 180px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.05);
   }
 
-  /* Pitch area — fills available space */
-  .pitch-area {
-    flex: 1; display: flex; flex-direction: column;
-    position: relative; overflow: hidden;
-    background:
-      repeating-linear-gradient(180deg,
-        rgba(255,255,255,0) 0px, rgba(255,255,255,0) 36px,
-        rgba(255,255,255,0.04) 36px, rgba(255,255,255,0.04) 72px
-      ),
-      linear-gradient(180deg,
-        var(--pitch-1) 0%, var(--pitch-2) 20%, var(--pitch-3) 40%,
-        var(--pitch-4) 60%, var(--pitch-5) 80%, var(--pitch-bench) 100%
-      );
+  /* ═══ Players Layout — even vertical distribution ═══ */
+  .players-layout {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 0 10px; z-index: 3;
   }
 
-  /* Pitch markings */
-  .pitch-marks { position: absolute; inset: 0; pointer-events: none; }
-  .mark-circle {
-    position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%);
-    width: 60px; height: 60px; border: 1.5px solid rgba(255,255,255,0.1);
-    border-radius: 50%;
-  }
-  .mark-strip {
-    position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%);
-    width: 8px; height: 44px; background: #c4a265; border-radius: 2px;
-    box-shadow: 0 0 8px rgba(180,150,80,0.25);
-  }
-  .mark-crease {
-    position: absolute; left: 50%; transform: translateX(-50%);
-    width: 24px; border-top: 1px solid rgba(255,255,255,0.1);
-  }
-  .mark-crease.top { top: 16%; }
-  .mark-crease.bot { top: 60%; }
-  .mark-boundary {
-    position: absolute; top: 6px; left: 20px; right: 20px; height: 24px;
-    border-top: 1.5px solid rgba(255,255,255,0.06);
-    border-radius: 50% 50% 0 0;
-  }
-  .mark-boundary-bot {
-    position: absolute; bottom: 6px; left: 20px; right: 20px; height: 24px;
-    border-bottom: 1.5px solid rgba(255,255,255,0.06);
-    border-radius: 0 0 50% 50%;
+  .player-row {
+    display: flex; justify-content: center; gap: 0;
   }
 
-  /* XI container — centered on pitch */
-  .xi-container {
-    flex: 1; display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    position: relative; z-index: 1;
-    padding: 6px 0 4px;
-    gap: 6px;
-  }
-
-  .row {
-    display: flex; justify-content: center; gap: 4px;
-    width: 100%;
-  }
-
-  /* Row label (OPENERS, MIDDLE, etc) */
-  .row-label {
-    font-size: 8px; font-weight: 700; letter-spacing: 1.2px;
-    text-transform: uppercase; color: rgba(255,255,255,0.25);
-    text-align: center; margin-bottom: -2px;
-  }
-
+  /* ═══ Player Card ═══ */
   .player {
     display: flex; flex-direction: column; align-items: center;
-    width: 66px; text-align: center; cursor: pointer;
-    transition: transform 0.15s;
-    animation: playerIn 0.35s ease-out both;
+    width: 82px; text-decoration: none; cursor: pointer;
   }
-  .player:hover { transform: scale(1.05); }
-  .player:active { transform: scale(0.97); }
 
-  @keyframes playerIn {
-    from { opacity: 0; transform: translateY(6px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+  /* Upper body cutout — head + shoulders */
+  .player-figure {
+    width: 56px; height: 58px; position: relative;
+    margin-bottom: 2px;
   }
-  .row:nth-child(2) .player { animation-delay: 0.05s; }
-  .row:nth-child(4) .player { animation-delay: 0.1s; }
-  .row:nth-child(6) .player { animation-delay: 0.18s; }
-
-  /* Role icon circle */
-  .role-icon {
-    position: relative;
-    width: 36px; height: 36px; border-radius: 50%;
+  /* Head — player photo or initials */
+  .fig-head {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 34px; height: 34px; border-radius: 50%; z-index: 3;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 800; color: #fff;
-    margin-bottom: 3px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    border: 2px solid rgba(255,255,255,0.2);
-    transition: box-shadow 0.15s;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    border: 2.5px solid rgba(255,255,255,0.35);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    overflow: hidden;
   }
-  .role-icon.bat {
-    background: linear-gradient(135deg, #F9CD05, #e0b800);
-    color: #1a1a1a;
+  .fig-head img {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 50%;
   }
-  .role-icon.bowl {
-    background: linear-gradient(135deg, #004BA0, #0060cc);
-  }
-  .role-icon.all {
-    background: linear-gradient(135deg, #0EB1A2, #089e90);
-  }
-  .role-icon.wk {
-    background: linear-gradient(135deg, #EA1A85, #c4166e);
-  }
-
-  /* C / VC badge on role icon */
-  .cap-badge {
-    position: absolute; top: -4px; right: -4px;
-    width: 16px; height: 16px; border-radius: 50%;
-    font-size: 7.5px; font-weight: 800;
+  /* Shoulders/torso */
+  .fig-body {
+    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    width: 52px; height: 36px; z-index: 2;
+    border-radius: 12px 12px 4px 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
     display: flex; align-items: center; justify-content: center;
-    z-index: 2; border: 2px solid rgba(255,255,255,0.9);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow: hidden;
   }
-  .cap-badge.c {
-    background: #F9CD05; color: #1a1a1a;
+  .fig-body::after {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 5px; border-radius: 0 0 7px 7px;
+    background: rgba(255,255,255,0.2);
   }
-  .cap-badge.vc {
-    background: #C0C7D0; color: #1a1a1a;
+  .fig-logo {
+    width: 22px; height: 22px; object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    margin-top: 6px;
   }
 
-  /* Name pill */
-  .name-pill {
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    border-radius: 6px; padding: 2px 6px 1.5px;
-    min-width: 44px;
-    border: 1px solid rgba(255,255,255,0.08);
+  /* Team colors */
+  .fig-head.mi, .fig-body.mi { background: linear-gradient(180deg, #0066CC, #004BA0); }
+  .fig-head.csk, .fig-body.csk { background: linear-gradient(180deg, #FFDA2B, #E8B800); }
+  .fig-head.csk { color: #1a1a1a; text-shadow: none; border-color: rgba(0,0,0,0.1); }
+  .fig-head.rcb, .fig-body.rcb { background: linear-gradient(180deg, #E8222B, #B81820); }
+  .fig-head.kkr, .fig-body.kkr { background: linear-gradient(180deg, #6B4F9E, #3A225D); }
+  .fig-head.dc, .fig-body.dc { background: linear-gradient(180deg, #1A7FE0, #004C93); }
+  .fig-head.rr, .fig-body.rr { background: linear-gradient(180deg, #F03C96, #C4166E); }
+  .fig-head.srh, .fig-body.srh { background: linear-gradient(180deg, #FF9A44, #E06A18); }
+  .fig-head.gt, .fig-body.gt { background: linear-gradient(180deg, #1AD4BF, #0EB1A2); }
+
+  /* C / VC badge */
+  .fig-badge {
+    position: absolute; top: -2px; right: 2px; z-index: 5;
+    width: 16px; height: 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 900;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
   }
-  .name-pill .n {
+  .fig-badge.cap { background: #F9CD05; color: #1a1a1a; }
+  .fig-badge.vc { background: #C0C7D0; color: #1a1a1a; }
+
+  /* ═══ Name plate — team-colored solid bar ═══ */
+  .name-plate {
+    min-width: 68px; max-width: 80px;
+    padding: 3px 8px 2px; border-radius: 4px;
+    text-align: center;
+  }
+  .name-plate .pname {
     font-size: 10px; font-weight: 700; color: #fff;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 64px; display: block; text-align: center;
-    letter-spacing: -0.1px; line-height: 1.35;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
   }
-  .name-pill .t {
-    font-size: 8px; font-weight: 500; color: rgba(255,255,255,0.5);
-    text-align: center; display: block; letter-spacing: 0.3px; line-height: 1.2;
+  .name-plate .pvalue {
+    font-size: 8px; font-weight: 500; color: rgba(255,255,255,0.65);
+    margin-top: 0;
   }
 
-  /* Inline tags in name pill */
-  .name-tag {
-    display: inline-block; font-size: 6.5px; font-weight: 800;
-    padding: 0.5px 3px; border-radius: 2.5px;
-    vertical-align: middle; margin-left: 2px; letter-spacing: 0.2px;
-  }
-  .name-tag.cap { background: #F9CD05; color: #1a1a1a; }
-  .name-tag.vc { background: #C0C7D0; color: #1a1a1a; }
-  .name-tag.wk-tag { background: var(--green-cta); color: #1a1a1a; }
+  /* Team plate colors */
+  .plate-mi { background: linear-gradient(90deg, #004BA0, #0066CC); }
+  .plate-csk { background: linear-gradient(90deg, #D4A800, #F9CD05); }
+  .plate-csk .pname { color: #1a1a1a; text-shadow: none; }
+  .plate-csk .pvalue { color: rgba(0,0,0,0.45); }
+  .plate-rcb { background: linear-gradient(90deg, #B81820, #EC1C24); }
+  .plate-kkr { background: linear-gradient(90deg, #3A225D, #5A3A8A); }
+  .plate-dc { background: linear-gradient(90deg, #004C93, #1A7FE0); }
+  .plate-rr { background: linear-gradient(90deg, #C4166E, #EA1A85); }
+  .plate-srh { background: linear-gradient(90deg, #D96A1E, #FF822A); }
+  .plate-gt { background: linear-gradient(90deg, #0A9688, #0EB1A2); }
 
-  /* ---- BENCH ---- */
-  .bench-area {
-    background: #f2f3f8;
-    padding: 8px 12px 6px;
-    flex-shrink: 0;
-    border-top: 2px solid rgba(255,255,255,0.08);
+  /* ═══ Bench ═══ */
+  .bench {
+    flex-shrink: 0; padding: 6px 6px 4px;
+    background: linear-gradient(180deg, #1a5c32, #16502c);
+    border-top: 1px solid rgba(255,255,255,0.08);
   }
   .bench-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px; justify-content: center;
   }
-  .bench-title {
-    font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
-    text-transform: uppercase; color: #999;
+  .bench-title { font-size: 8px; font-weight: 800; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 2px; }
+  .bench-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); max-width: 80px; }
+  .bench-row { display: flex; justify-content: space-around; }
+  .bench .player { width: 76px; }
+  .bench .player-figure { width: 42px; height: 44px; }
+  .bench .fig-head { width: 24px; height: 24px; font-size: 9px; }
+  .bench .fig-body { width: 40px; height: 28px; top: 16px; border-radius: 10px 10px 3px 3px; }
+  .bench .fig-logo { width: 16px; height: 16px; margin-top: 4px; }
+  .bench .name-plate { min-width: 60px; max-width: 72px; padding: 2px 5px 1px; }
+  .bench .name-plate .pname { font-size: 8.5px; }
+  .bench .name-plate .pvalue { font-size: 7px; }
+  .bench-role {
+    font-size: 7px; font-weight: 700; text-align: center; margin-bottom: 2px;
+    text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .bench-hint {
-    font-size: 9px; font-weight: 500; color: #bbb;
-  }
-  .bench-row {
-    display: flex; justify-content: center; gap: 6px;
-  }
-  .bench-player {
-    display: flex; flex-direction: column; align-items: center;
-    width: 80px; text-align: center; cursor: pointer;
-    padding: 6px 4px; border-radius: 10px;
-    background: #fff; border: 1px solid rgba(0,0,0,0.06);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    transition: transform 0.15s;
-    animation: playerIn 0.35s ease-out 0.25s both;
-  }
-  .bench-player:hover { transform: scale(1.03); }
-  .bench-player .bench-role-icon {
-    width: 28px; height: 28px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 800; color: #fff;
-    margin-bottom: 3px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  }
-  .bench-role-icon.bat { background: linear-gradient(135deg, #F9CD05, #e0b800); color: #1a1a1a; }
-  .bench-role-icon.bowl { background: linear-gradient(135deg, #004BA0, #0060cc); }
-  .bench-role-icon.all { background: linear-gradient(135deg, #0EB1A2, #089e90); }
-  .bench-role-icon.wk { background: linear-gradient(135deg, #EA1A85, #c4166e); }
-
-  .bench-name {
-    font-size: 10px; font-weight: 700; color: #333;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 72px; line-height: 1.3; letter-spacing: -0.1px;
-  }
-  .bench-team {
-    font-size: 8px; font-weight: 500; color: #aaa; letter-spacing: 0.3px;
-  }
-  .bench-tag {
-    display: inline-block; font-size: 7px; font-weight: 700;
-    padding: 1px 4px; border-radius: 3px; margin-top: 2px;
-    letter-spacing: 0.3px;
-  }
-  .bench-tag.imp {
-    background: rgba(13,158,95,0.1); color: #0d9e5f;
-    border: 1px solid rgba(13,158,95,0.15);
+  .bench-role.bat { color: rgba(249,205,5,0.4); }
+  .bench-role.bowl { color: rgba(160,196,255,0.4); }
+  .bench-role.wk { color: rgba(0,255,135,0.3); }
+  .bench-role.all { color: rgba(14,177,162,0.3); }
+  .imp-tag {
+    font-size: 5.5px; font-weight: 900; padding: 1px 3px; border-radius: 2px;
+    background: rgba(0,255,135,0.15); color: #00ff87; margin-left: 2px;
   }
 
-  /* Swap button on bench players */
-  .swap-icon {
-    position: absolute; top: -3px; right: -3px;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: #fff; border: 1px solid #ddd;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 8px; color: #999;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  /* ═══ Save ═══ */
+  .save-area {
+    flex-shrink: 0; padding: 6px 16px 34px; background: #f2f3f8;
+    display: none;
   }
-
-  /* Save button */
-  .save-wrap {
-    background: #f2f3f8; padding: 6px 16px 4px; flex-shrink: 0;
+  .save-area.visible {
+    display: block;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
   .btn-save {
-    width: 100%; padding: 10px; border: none; border-radius: 14px; cursor: pointer;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 14px; font-weight: 700; letter-spacing: -0.2px; color: #fff;
+    display: block; width: 100%; padding: 13px; border: none; border-radius: 14px;
     background: linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 4px 16px rgba(45,27,105,0.2);
-    transition: transform 0.15s, box-shadow 0.15s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    position: relative; overflow: hidden;
+    color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
+    font-family: inherit; text-decoration: none; text-align: center;
+    letter-spacing: -0.3px; position: relative; overflow: hidden;
   }
   .btn-save::after {
     content: ''; position: absolute; inset: 0;
-    background: rgba(255,255,255,0.15); pointer-events: none;
+    background: rgba(255,255,255,0.12); pointer-events: none;
   }
-  .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,27,105,0.3); }
-  .btn-save:active { transform: scale(0.98); }
 
-  /* Bottom Nav */
-  .bottom-nav {
-    display: flex; justify-content: space-around;
-    padding: 6px 8px 30px; background: #fff;
-    border-top: 1px solid rgba(0,0,0,0.06);
-    flex-shrink: 0;
-  }
-  .bottom-nav a { text-decoration: none; }
-  .nav-item {
-    text-align: center; font-size: 10px; color: #8e8e93;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 3px; font-weight: 500;
-  }
-  .nav-item.active { color: var(--mi); font-weight: 600; }
-  .nav-icon {
-    width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  }
-  .nav-item.active .nav-icon { background: rgba(0,75,160,0.08); border-radius: 7px; }
-
-  /* Swap overlay */
-  .swap-overlay {
+  /* ═══ Player Detail Modal ═══ */
+  .pm-overlay {
     position: absolute; inset: 0; background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(3px); z-index: 50;
-    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    backdrop-filter: blur(4px); z-index: 50;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .pm-overlay.open { opacity: 1; pointer-events: all; }
+  .pm-modal {
+    position: absolute; top: 50px; left: 0; right: 0; bottom: 0;
+    background: #fff; border-radius: 22px 22px 0 0; z-index: 51;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .pm-modal.open { transform: translateY(0); }
+  .pm-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 10px auto 0; }
+  .pm-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px; }
+  .pm-role-icon {
+    width: 34px; height: 34px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
   }
-  .swap-overlay.open { opacity: 1; pointer-events: all; }
-  .swap-modal {
-    background: #fff; border-radius: 20px; padding: 20px;
-    width: 320px; max-width: 90%;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-    transform: scale(0.95); transition: transform 0.25s;
+  .pm-role-icon.bowl { background: linear-gradient(135deg, #004BA0, #0066cc); color: #fff; }
+  .pm-info { flex: 1; }
+  .pm-name { font-size: 15px; font-weight: 800; color: #1a1a2e; }
+  .pm-team { font-size: 10px; color: #888; font-weight: 500; }
+  .pm-pts { font-size: 24px; font-weight: 800; color: var(--mi); font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+  .pm-close {
+    position: absolute; top: 62px; right: 14px;
+    width: 28px; height: 28px; border-radius: 50%; background: #f2f3f8;
+    border: none; cursor: pointer; font-size: 14px; color: #999;
+    display: flex; align-items: center; justify-content: center; z-index: 52;
   }
-  .swap-overlay.open .swap-modal { transform: scale(1); }
-  .swap-modal-title {
-    font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px;
-  }
-  .swap-modal-sub {
-    font-size: 11px; color: #999; margin-bottom: 14px;
-  }
-  .swap-option {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px; border-radius: 12px; cursor: pointer;
-    border: 1.5px solid rgba(0,0,0,0.06); margin-bottom: 6px;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .swap-option:hover {
-    border-color: var(--mi); background: rgba(0,75,160,0.03);
-  }
-  .swap-opt-role {
-    width: 32px; height: 32px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0;
-  }
-  .swap-opt-info { flex: 1; }
-  .swap-opt-name { font-size: 12px; font-weight: 700; color: #333; }
-  .swap-opt-team { font-size: 9px; color: #999; }
-  .swap-cancel {
-    width: 100%; padding: 10px; border: none; border-radius: 10px;
-    background: #f2f3f8; color: #666; font-size: 13px; font-weight: 600;
-    cursor: pointer; margin-top: 6px; font-family: inherit;
-  }
-  .swap-cancel:hover { background: #e8e9ee; }
+  .pm-tabs { display: flex; padding: 0 16px; border-bottom: 1px solid #f0f0f4; flex-shrink: 0; }
+  .pm-tab { padding: 7px 12px; font-size: 10px; font-weight: 600; color: #aaa; cursor: pointer; border-bottom: 2px solid transparent; }
+  .pm-tab.active { color: var(--mi); border-bottom-color: var(--mi); }
+  .pm-scroll { flex: 1; overflow-y: auto; padding: 4px 0 24px; scrollbar-width: none; }
+  .pm-scroll::-webkit-scrollbar { display: none; }
+  .pm-section { padding: 8px 16px; }
+  .pm-section + .pm-section { border-top: 1px solid #f5f5f8; }
+  .pm-section-title { font-size: 9px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .pm-stat-grid { display: flex; gap: 4px; }
+  .pm-stat-cell { flex: 1; text-align: center; padding: 6px 3px; background: #f7f8fb; border-radius: 8px; }
+  .pm-stat-val { font-size: 14px; font-weight: 800; color: #222; font-variant-numeric: tabular-nums; }
+  .pm-stat-label { font-size: 8px; color: #aaa; font-weight: 500; margin-top: 1px; }
+  .pm-pt-list { display: flex; flex-direction: column; }
+  .pm-pt-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; }
+  .pm-pt-event { color: #666; font-weight: 500; }
+  .pm-pt-val { color: #333; font-weight: 700; }
+  .pm-pt-val.accent { color: var(--mint); }
+  .pm-pt-total { border-top: 2px solid #1a1a2e; margin-top: 4px; padding-top: 6px; }
+  .pm-pt-total .pm-pt-event { font-weight: 800; color: #1a1a2e; }
+  .pm-pt-total .pm-pt-val { font-size: 14px; font-weight: 800; color: #1a1a2e; }
+  .pm-trend-bar { display: flex; align-items: flex-end; gap: 6px; height: 60px; padding: 0 8px; }
+  .pm-bar { flex: 1; background: #e8eaf0; border-radius: 5px 5px 0 0; position: relative; min-height: 6px; }
+  .pm-bar span { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 700; color: #999; }
+  .pm-bar.hot { background: rgba(0,75,160,0.2); }
+  .pm-bar.current { background: var(--mi); }
+  .pm-bar.current span { color: var(--mi); font-size: 9px; }
+  .pm-trend-labels { display: flex; justify-content: space-around; padding: 3px 8px 0; font-size: 8px; color: #bbb; font-weight: 500; }
+  .pm-trend-tag { text-align: center; margin-top: 6px; font-size: 10px; font-weight: 700; color: var(--mint); background: rgba(13,158,95,0.08); padding: 3px 10px; border-radius: 6px; display: inline-block; }
+  .pm-trend { text-align: center; }
+  .gw-panel { display: none; }
+  .gw-panel.active { display: block; }
 </style>
 </head>
 <body>
 
-<div class="phone-frame">
-  <div class="status-bar">
-    <span>9:41</span>
-    <span style="font-size: 11px;">●●● WiFi 🔋</span>
-  </div>
-  <div class="dynamic-island"></div>
-
-  <!-- Thin header bar -->
-  <div class="header-bar">
-    <div class="header-left">
-      <div class="header-logo">FAL</div>
-      <div class="header-title">Edit Lineup</div>
+<div class="phone">
+  <div class="top-bar">
+    <div class="status-bar"><span>9:41</span><span>●●● WiFi 🔋</span></div>
+    <div class="notch"></div>
+    <div class="header-top">
+      <a href="/" class="btn-back">‹</a>
+      <div class="header-title">Pick Team</div>
     </div>
-    <div class="header-deadline">GW8 <strong>Tue 19:30</strong></div>
-  </div>
+    <div class="meta-line">Gameweek 8 · <strong>Deadline: Tue 17 Mar, 19:30</strong></div>
 
-  <!-- Cricket Pitch -->
-  <div class="pitch-area">
-    <div class="pitch-marks">
-      <div class="mark-circle"></div>
-      <div class="mark-strip"></div>
-      <div class="mark-crease top"></div>
-      <div class="mark-crease bot"></div>
-      <div class="mark-boundary"></div>
-      <div class="mark-boundary-bot"></div>
-    </div>
-
-    <div class="xi-container">
-      <!-- Row 1: Openers (2) -->
-      <div class="row-label">Openers</div>
-      <div class="row">
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bat">
-            B
-            <div class="cap-badge c">C</div>
-          </div>
-          <div class="name-pill">
-            <span class="n">V Kohli <span class="name-tag cap">C</span></span>
-            <span class="t">RCB</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bat">B</div>
-          <div class="name-pill">
-            <span class="n">R Gaikwad</span>
-            <span class="t">CSK</span>
-          </div>
-        </a>
-      </div>
-
-      <!-- Row 2: Middle Order (4) -->
-      <div class="row-label">Middle Order</div>
-      <div class="row">
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bat">B</div>
-          <div class="name-pill">
-            <span class="n">S Gill</span>
-            <span class="t">GT</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon wk">W</div>
-          <div class="name-pill">
-            <span class="n">R Pant <span class="name-tag wk-tag">WK</span></span>
-            <span class="t">DC</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon all">
-            A
-            <div class="cap-badge vc">V</div>
-          </div>
-          <div class="name-pill">
-            <span class="n">H Pandya <span class="name-tag vc">VC</span></span>
-            <span class="t">MI</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon all">A</div>
-          <div class="name-pill">
-            <span class="n">A Russell</span>
-            <span class="t">KKR</span>
-          </div>
-        </a>
-      </div>
-
-      <!-- Row 3: Lower Order / Bowlers (5) -->
-      <div class="row-label">Lower Order</div>
-      <div class="row">
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon all">A</div>
-          <div class="name-pill">
-            <span class="n">R Jadeja</span>
-            <span class="t">CSK</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bowl">B</div>
-          <div class="name-pill">
-            <span class="n">K Yadav</span>
-            <span class="t">CSK</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bowl">B</div>
-          <div class="name-pill">
-            <span class="n">J Bumrah</span>
-            <span class="t">MI</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bowl">B</div>
-          <div class="name-pill">
-            <span class="n">T Boult</span>
-            <span class="t">RR</span>
-          </div>
-        </a>
-        <a href="/players" class="player" style="text-decoration:none;">
-          <div class="role-icon bowl">B</div>
-          <div class="name-pill">
-            <span class="n">M Shami</span>
-            <span class="t">GT</span>
-          </div>
-        </a>
-      </div>
+    <div class="chips-bar">
+      <div class="chip-item"><div class="chip-circle on">⚡</div><div class="chip-label">Triple Captain</div><div class="chip-tag on">Play</div></div>
+      <div class="chip-item"><div class="chip-circle on">↑</div><div class="chip-label">Bench Boost</div><div class="chip-tag on">Play</div></div>
+      <div class="chip-item"><div class="chip-circle off">💰</div><div class="chip-label">Power Pay</div><div class="chip-tag off">Played GW3</div></div>
+      <div class="chip-item"><div class="chip-circle on">🏏</div><div class="chip-label">Bat Boost</div><div class="chip-tag on">Play</div></div>
     </div>
   </div>
 
-  <!-- Bench -->
-  <div class="bench-area">
-    <div class="bench-header">
-      <span class="bench-title">Bench</span>
-      <span class="bench-hint">Tap to swap</span>
+  <!-- PITCH -->
+  <div class="pitch">
+    <div class="players-layout">
+
+      <!-- Row 1 (4 players) -->
+      <div class="player-row">
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure" style="position:relative;">
+            <div class="fig-badge cap">C</div>
+            <div class="fig-head rcb"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c1413/i.jpg" alt="VK"></div>
+            <div class="fig-body rcb"><img class="fig-logo" src="https://documents.iplt20.com/ipl/RCB/Logos/Logooutline/RCBoutline.png" alt="RCB"></div>
+          </div>
+          <div class="name-plate plate-rcb"><div class="pname">V Kohli</div><div class="pvalue">vs MI · Tue</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head csk"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c11803/i.jpg" alt="RG"></div>
+            <div class="fig-body csk"><img class="fig-logo" src="https://documents.iplt20.com/ipl/CSK/logos/Logooutline/CSKoutline.png" alt="CSK"></div>
+          </div>
+          <div class="name-plate plate-csk"><div class="pname">R Gaikwad</div><div class="pvalue">vs KKR · Thu</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head dc"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c10744/i.jpg" alt="RP"></div>
+            <div class="fig-body dc"><img class="fig-logo" src="https://documents.iplt20.com/ipl/DC/Logos/LogoOutline/DCoutline.png" alt="DC"></div>
+          </div>
+          <div class="name-plate plate-dc"><div class="pname">R Pant</div><div class="pvalue">vs RR · Fri</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head gt"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c9235/i.jpg" alt="SG"></div>
+            <div class="fig-body gt"><img class="fig-logo" src="https://documents.iplt20.com/ipl/GT/Logos/Logooutline/GToutline.png" alt="GT"></div>
+          </div>
+          <div class="name-plate plate-gt"><div class="pname">S Gill</div><div class="pvalue">vs SRH · Sat</div></div>
+        </div>
+      </div>
+
+      <!-- Row 2 (4 players) -->
+      <div class="player-row">
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head csk"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c2395/i.jpg" alt="RJ"></div>
+            <div class="fig-body csk"><img class="fig-logo" src="https://documents.iplt20.com/ipl/CSK/logos/Logooutline/CSKoutline.png" alt="CSK"></div>
+          </div>
+          <div class="name-plate plate-csk"><div class="pname">R Jadeja</div><div class="pvalue">vs KKR · Thu</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure" style="position:relative;">
+            <div class="fig-badge vc">V</div>
+            <div class="fig-head mi"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c8094/i.jpg" alt="HP"></div>
+            <div class="fig-body mi"><img class="fig-logo" src="https://documents.iplt20.com/ipl/MI/Logos/Logooutline/MIoutline.png" alt="MI"></div>
+          </div>
+          <div class="name-plate plate-mi"><div class="pname">H Pandya</div><div class="pvalue">vs RCB · Tue</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head kkr"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c1902/i.jpg" alt="AR"></div>
+            <div class="fig-body kkr"><img class="fig-logo" src="https://documents.iplt20.com/ipl/KKR/Logos/Logooutline/KKRoutline.png" alt="KKR"></div>
+          </div>
+          <div class="name-plate plate-kkr"><div class="pname">A Russell</div><div class="pvalue">vs CSK · Thu</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head csk"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c8733/i.jpg" alt="KY"></div>
+            <div class="fig-body csk"><img class="fig-logo" src="https://documents.iplt20.com/ipl/CSK/logos/Logooutline/CSKoutline.png" alt="CSK"></div>
+          </div>
+          <div class="name-plate plate-csk"><div class="pname">Kuldeep</div><div class="pvalue">vs KKR · Thu</div></div>
+        </div>
+      </div>
+
+      <!-- Row 3 (3 players) -->
+      <div class="player-row">
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head mi"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c6906/i.jpg" alt="JB"></div>
+            <div class="fig-body mi"><img class="fig-logo" src="https://documents.iplt20.com/ipl/MI/Logos/Logooutline/MIoutline.png" alt="MI"></div>
+          </div>
+          <div class="name-plate plate-mi"><div class="pname">J Bumrah</div><div class="pvalue">vs RCB · Tue</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head rr"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c2285/i.jpg" alt="TB"></div>
+            <div class="fig-body rr"><img class="fig-logo" src="https://documents.iplt20.com/ipl/RR/Logos/Logooutline/RRoutline.png" alt="RR"></div>
+          </div>
+          <div class="name-plate plate-rr"><div class="pname">T Boult</div><div class="pvalue">vs DC · Fri</div></div>
+        </div>
+        <div class="player" onclick="openPlayer()">
+          <div class="player-figure">
+            <div class="fig-head gt"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c7736/i.jpg" alt="MS"></div>
+            <div class="fig-body gt"><img class="fig-logo" src="https://documents.iplt20.com/ipl/GT/Logos/Logooutline/GToutline.png" alt="GT"></div>
+          </div>
+          <div class="name-plate plate-gt"><div class="pname">M Shami</div><div class="pvalue">vs SRH · Sat</div></div>
+        </div>
+      </div>
+
     </div>
+  </div>
+
+  <!-- BENCH -->
+  <div class="bench">
+    <div class="bench-header"><div class="bench-line"></div><div class="bench-title">Bench</div><div class="bench-line"></div></div>
     <div class="bench-row">
-      <div class="bench-player" onclick="openSwap('K Williamson', 'BAT', 'GT')">
-        <div class="bench-role-icon bat" style="position:relative;">B</div>
-        <div class="bench-name">Williamson</div>
-        <div class="bench-team">GT</div>
+      <div class="player" style="width:76px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bench-role bat">BAT</div>
+        <div class="player-figure" style="width:42px;height:44px;"><div class="fig-head gt" style="width:24px;height:24px;font-size:9px;"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c2019/i.jpg" alt="KW"></div><div class="fig-body gt" style="width:40px;height:28px;top:16px;border-radius:10px 10px 3px 3px;"><img class="fig-logo" src="https://documents.iplt20.com/ipl/GT/Logos/Logooutline/GToutline.png" alt="GT" style="width:16px;height:16px;margin-top:4px;"></div></div>
+        <div class="name-plate plate-gt" style="min-width:60px;max-width:72px;padding:2px 5px 1px;"><div class="pname" style="font-size:8.5px;">Williamson</div><div class="pvalue" style="font-size:7px;">vs SRH · Sat</div></div>
       </div>
-      <div class="bench-player" onclick="openSwap('A Patel', 'BOWL', 'MI')">
-        <div class="bench-role-icon bowl" style="position:relative;">B</div>
-        <div class="bench-name">A Patel</div>
-        <div class="bench-team">MI</div>
-        <div class="bench-tag imp">IMP</div>
+      <div class="player" style="width:76px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bench-role bowl">BOWL</div>
+        <div class="player-figure" style="width:42px;height:44px;"><div class="fig-head mi" style="width:24px;height:24px;font-size:9px;"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c8271/i.jpg" alt="AP"></div><div class="fig-body mi" style="width:40px;height:28px;top:16px;border-radius:10px 10px 3px 3px;"><img class="fig-logo" src="https://documents.iplt20.com/ipl/MI/Logos/Logooutline/MIoutline.png" alt="MI" style="width:16px;height:16px;margin-top:4px;"></div></div>
+        <div class="name-plate plate-mi" style="min-width:60px;max-width:72px;padding:2px 5px 1px;"><div class="pname" style="font-size:8.5px;">A Patel<span class="imp-tag">IMP</span></div><div class="pvalue" style="font-size:7px;">vs RCB · Tue</div></div>
       </div>
-      <div class="bench-player" onclick="openSwap('S Samson', 'WK', 'RR')">
-        <div class="bench-role-icon wk" style="position:relative;">W</div>
-        <div class="bench-name">Samson</div>
-        <div class="bench-team">RR</div>
+      <div class="player" style="width:76px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bench-role wk">WK</div>
+        <div class="player-figure" style="width:42px;height:44px;"><div class="fig-head rr" style="width:24px;height:24px;font-size:9px;"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c7696/i.jpg" alt="SS"></div><div class="fig-body rr" style="width:40px;height:28px;top:16px;border-radius:10px 10px 3px 3px;"><img class="fig-logo" src="https://documents.iplt20.com/ipl/RR/Logos/Logooutline/RRoutline.png" alt="RR" style="width:16px;height:16px;margin-top:4px;"></div></div>
+        <div class="name-plate plate-rr" style="min-width:60px;max-width:72px;padding:2px 5px 1px;"><div class="pname" style="font-size:8.5px;">Samson</div><div class="pvalue" style="font-size:7px;">vs DC · Fri</div></div>
       </div>
-      <div class="bench-player" onclick="openSwap('W Sundar', 'ALL', 'SRH')">
-        <div class="bench-role-icon all" style="position:relative;">A</div>
-        <div class="bench-name">Sundar</div>
-        <div class="bench-team">SRH</div>
+      <div class="player" style="width:76px;display:flex;flex-direction:column;align-items:center;">
+        <div class="bench-role all">ALL</div>
+        <div class="player-figure" style="width:42px;height:44px;"><div class="fig-head srh" style="width:24px;height:24px;font-size:9px;"><img src="https://static.cricbuzz.com/a/img/v1/152x152/i1/c10808/i.jpg" alt="WS"></div><div class="fig-body srh" style="width:40px;height:28px;top:16px;border-radius:10px 10px 3px 3px;"><img class="fig-logo" src="https://documents.iplt20.com/ipl/SRH/Logos/Logooutline/SRHoutline.png" alt="SRH" style="width:16px;height:16px;margin-top:4px;"></div></div>
+        <div class="name-plate plate-srh" style="min-width:60px;max-width:72px;padding:2px 5px 1px;"><div class="pname" style="font-size:8.5px;">Sundar</div><div class="pvalue" style="font-size:7px;">vs GT · Sat</div></div>
       </div>
     </div>
   </div>
 
-  <!-- Save -->
-  <div class="save-wrap">
-    <button class="btn-save">Save Lineup</button>
-  </div>
+  <div class="save-area"><a href="/" class="btn-save">Save Lineup</a></div>
 
-  <!-- Bottom Nav -->
-  <div class="bottom-nav">
-    <a href="/" class="nav-item">
-      <div class="nav-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-      Home
-    </a>
-    <a href="/lineup" class="nav-item active">
-      <div class="nav-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
-      Lineup
-    </a>
-    <a href="/players" class="nav-item">
-      <div class="nav-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      Players
-    </a>
-    <a href="/admin" class="nav-item">
-      <div class="nav-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
-      League
-    </a>
-  </div>
-
-  <!-- Swap Overlay -->
-  <div class="swap-overlay" id="swapOverlay" onclick="closeSwap(event)">
-    <div class="swap-modal" onclick="event.stopPropagation()">
-      <div class="swap-modal-title" id="swapTitle">Swap K Williamson</div>
-      <div class="swap-modal-sub">Choose a playing XI member to swap with:</div>
-      <div id="swapOptions"></div>
-      <button class="swap-cancel" onclick="closeSwap()">Cancel</button>
+  <!-- Player Detail Modal -->
+  <div class="pm-overlay" id="pmOverlay" onclick="closePlayer()"></div>
+  <button class="pm-close" id="pmCloseBtn" onclick="closePlayer()" style="display:none;">✕</button>
+  <div class="pm-modal" id="pmModal">
+    <div class="pm-handle"></div>
+    <div class="pm-header">
+      <div class="pm-role-icon bowl">BO</div>
+      <div class="pm-info"><div class="pm-name">J Bumrah</div><div class="pm-team">MI · Bowler · vs RCB Tue</div></div>
+      <div class="pm-pts" id="pmPts">103</div>
+    </div>
+    <div class="pm-tabs" id="pmTabs">
+      <div class="pm-tab active" onclick="switchGW('gw7',this)">GW7</div>
+      <div class="pm-tab" onclick="switchGW('gw6',this)">GW6</div>
+      <div class="pm-tab" onclick="switchGW('gw5',this)">GW5</div>
+      <div class="pm-tab" onclick="switchGW('season',this)">Season</div>
+    </div>
+    <div class="pm-scroll">
+      <div class="gw-panel active" id="gw7">
+        <div class="pm-section"><div class="pm-section-title">Bowling · vs RCB</div><div class="pm-stat-grid"><div class="pm-stat-cell"><div class="pm-stat-val">3</div><div class="pm-stat-label">Wkts</div></div><div class="pm-stat-cell"><div class="pm-stat-val">4.0</div><div class="pm-stat-label">Overs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">24</div><div class="pm-stat-label">Runs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">1</div><div class="pm-stat-label">Maiden</div></div><div class="pm-stat-cell"><div class="pm-stat-val" style="color:var(--mint);">6.0</div><div class="pm-stat-label">Econ</div></div></div></div>
+        <div class="pm-section"><div class="pm-section-title">Fantasy Points</div><div class="pm-pt-list"><div class="pm-pt-row"><span class="pm-pt-event">Wickets (3 × 25)</span><span class="pm-pt-val">+75</span></div><div class="pm-pt-row"><span class="pm-pt-event">3-Wicket Bonus</span><span class="pm-pt-val accent">+8</span></div><div class="pm-pt-row"><span class="pm-pt-event">Maiden Over</span><span class="pm-pt-val accent">+8</span></div><div class="pm-pt-row"><span class="pm-pt-event">Catch (1 × 8)</span><span class="pm-pt-val">+8</span></div><div class="pm-pt-row pm-pt-total"><span class="pm-pt-event">Total</span><span class="pm-pt-val">103</span></div></div></div>
+      </div>
+      <div class="gw-panel" id="gw6">
+        <div class="pm-section"><div class="pm-section-title">Bowling · vs CSK</div><div class="pm-stat-grid"><div class="pm-stat-cell"><div class="pm-stat-val">2</div><div class="pm-stat-label">Wkts</div></div><div class="pm-stat-cell"><div class="pm-stat-val">4.0</div><div class="pm-stat-label">Overs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">31</div><div class="pm-stat-label">Runs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">0</div><div class="pm-stat-label">Maiden</div></div><div class="pm-stat-cell"><div class="pm-stat-val">7.8</div><div class="pm-stat-label">Econ</div></div></div></div>
+        <div class="pm-section"><div class="pm-section-title">Fantasy Points</div><div class="pm-pt-list"><div class="pm-pt-row"><span class="pm-pt-event">Wickets (2 × 25)</span><span class="pm-pt-val">+50</span></div><div class="pm-pt-row"><span class="pm-pt-event">Catches (2 × 8)</span><span class="pm-pt-val">+16</span></div><div class="pm-pt-row pm-pt-total"><span class="pm-pt-event">Total</span><span class="pm-pt-val">78</span></div></div></div>
+      </div>
+      <div class="gw-panel" id="gw5">
+        <div class="pm-section"><div class="pm-section-title">Bowling · vs DC</div><div class="pm-stat-grid"><div class="pm-stat-cell"><div class="pm-stat-val">1</div><div class="pm-stat-label">Wkts</div></div><div class="pm-stat-cell"><div class="pm-stat-val">4.0</div><div class="pm-stat-label">Overs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">38</div><div class="pm-stat-label">Runs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">0</div><div class="pm-stat-label">Maiden</div></div><div class="pm-stat-cell"><div class="pm-stat-val" style="color:#d63060;">9.5</div><div class="pm-stat-label">Econ</div></div></div></div>
+        <div class="pm-section"><div class="pm-section-title">Fantasy Points</div><div class="pm-pt-list"><div class="pm-pt-row"><span class="pm-pt-event">Wickets (1 × 25)</span><span class="pm-pt-val">+25</span></div><div class="pm-pt-row"><span class="pm-pt-event">Runout</span><span class="pm-pt-val">+6</span></div><div class="pm-pt-row pm-pt-total"><span class="pm-pt-event">Total</span><span class="pm-pt-val">35</span></div></div></div>
+      </div>
+      <div class="gw-panel" id="season">
+        <div class="pm-section"><div class="pm-section-title">Season Totals · 7 GWs</div><div class="pm-stat-grid"><div class="pm-stat-cell"><div class="pm-stat-val">18</div><div class="pm-stat-label">Wkts</div></div><div class="pm-stat-cell"><div class="pm-stat-val">28.0</div><div class="pm-stat-label">Overs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">192</div><div class="pm-stat-label">Runs</div></div><div class="pm-stat-cell"><div class="pm-stat-val">3</div><div class="pm-stat-label">Maidens</div></div><div class="pm-stat-cell"><div class="pm-stat-val" style="color:var(--mint);">6.9</div><div class="pm-stat-label">Econ</div></div></div></div>
+        <div class="pm-section"><div class="pm-section-title">Fantasy Points</div><div class="pm-pt-list"><div class="pm-pt-row"><span class="pm-pt-event">Total Season</span><span class="pm-pt-val" style="font-size:16px;font-weight:900;">504</span></div><div class="pm-pt-row"><span class="pm-pt-event">Avg / GW</span><span class="pm-pt-val">72</span></div><div class="pm-pt-row"><span class="pm-pt-event">Best GW</span><span class="pm-pt-val accent">103 (GW7)</span></div><div class="pm-pt-row"><span class="pm-pt-event">Worst GW</span><span class="pm-pt-val" style="color:#d63060;">35 (GW5)</span></div></div></div>
+      </div>
+      <div class="pm-section" style="border-top:1px solid #f5f5f8;">
+        <div class="pm-section-title">Recent Form</div>
+        <div class="pm-trend">
+          <div class="pm-trend-bar"><div class="pm-bar" style="height:55%;"><span>52</span></div><div class="pm-bar" style="height:75%;"><span>68</span></div><div class="pm-bar" style="height:40%;"><span>35</span></div><div class="pm-bar hot" style="height:85%;"><span>78</span></div><div class="pm-bar current" style="height:100%;"><span>103</span></div></div>
+          <div class="pm-trend-labels"><span>GW3</span><span>GW4</span><span>GW5</span><span>GW6</span><span>GW7</span></div>
+          <div class="pm-trend-tag">▲ Trending Up</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Swap modal logic
-  const xiPlayers = [
-    { name: 'V Kohli', role: 'BAT', team: 'RCB', roleClass: 'bat' },
-    { name: 'R Gaikwad', role: 'BAT', team: 'CSK', roleClass: 'bat' },
-    { name: 'S Gill', role: 'BAT', team: 'GT', roleClass: 'bat' },
-    { name: 'R Pant', role: 'WK', team: 'DC', roleClass: 'wk' },
-    { name: 'H Pandya', role: 'ALL', team: 'MI', roleClass: 'all' },
-    { name: 'A Russell', role: 'ALL', team: 'KKR', roleClass: 'all' },
-    { name: 'R Jadeja', role: 'ALL', team: 'CSK', roleClass: 'all' },
-    { name: 'K Yadav', role: 'BOWL', team: 'CSK', roleClass: 'bowl' },
-    { name: 'J Bumrah', role: 'BOWL', team: 'MI', roleClass: 'bowl' },
-    { name: 'T Boult', role: 'BOWL', team: 'RR', roleClass: 'bowl' },
-    { name: 'M Shami', role: 'BOWL', team: 'GT', roleClass: 'bowl' },
-  ];
-
-  const roleColorMap = {
-    bat: 'linear-gradient(135deg, #F9CD05, #e0b800)',
-    bowl: 'linear-gradient(135deg, #004BA0, #0060cc)',
-    all: 'linear-gradient(135deg, #0EB1A2, #089e90)',
-    wk: 'linear-gradient(135deg, #EA1A85, #c4166e)'
-  };
-
-  function openSwap(benchName, benchRole, benchTeam) {
-    document.getElementById('swapTitle').textContent = 'Swap ' + benchName;
-    const container = document.getElementById('swapOptions');
-    container.innerHTML = '';
-    xiPlayers.forEach(p => {
-      const opt = document.createElement('div');
-      opt.className = 'swap-option';
-      opt.onclick = function() {
-        alert('Swapped ' + benchName + ' with ' + p.name);
-        closeSwap();
-      };
-      opt.innerHTML = `
-        <div class="swap-opt-role" style="background: ${roleColorMap[p.roleClass]}; ${p.roleClass === 'bat' ? 'color:#1a1a1a' : ''}">${p.role[0]}</div>
-        <div class="swap-opt-info">
-          <div class="swap-opt-name">${p.name}</div>
-          <div class="swap-opt-team">${p.team} · ${p.role}</div>
-        </div>
-      `;
-      container.appendChild(opt);
-    });
-    document.getElementById('swapOverlay').classList.add('open');
-  }
-
-  function closeSwap(e) {
-    if (e && e.target !== document.getElementById('swapOverlay')) return;
-    document.getElementById('swapOverlay').classList.remove('open');
-  }
+function showSave() {
+  document.querySelector('.save-area').classList.add('visible');
+}
+function openPlayer() {
+  document.getElementById('pmOverlay').classList.add('open');
+  document.getElementById('pmModal').classList.add('open');
+  document.getElementById('pmCloseBtn').style.display = 'flex';
+  switchGW('gw7', document.querySelector('.pm-tab'));
+}
+// Show save button when any bench player is tapped (simulates lineup change)
+document.querySelectorAll('.bench .player').forEach(p => {
+  p.addEventListener('click', function(e) { e.stopPropagation(); showSave(); });
+});
+// Also show on chip tap
+document.querySelectorAll('.chip-circle.on').forEach(c => {
+  c.addEventListener('click', showSave);
+});
+function closePlayer() {
+  document.getElementById('pmOverlay').classList.remove('open');
+  document.getElementById('pmModal').classList.remove('open');
+  document.getElementById('pmCloseBtn').style.display = 'none';
+}
+function switchGW(id, tab) {
+  document.querySelectorAll('.gw-panel').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+  var el = document.getElementById(id);
+  el.style.display = 'block'; el.classList.add('active');
+  document.querySelectorAll('.pm-tab').forEach(t => t.classList.remove('active'));
+  if (tab) tab.classList.add('active');
+  var pts = { gw7: '103', gw6: '78', gw5: '35', season: '504' };
+  document.getElementById('pmPts').textContent = pts[id] || '103';
+}
 </script>
 
 </body>

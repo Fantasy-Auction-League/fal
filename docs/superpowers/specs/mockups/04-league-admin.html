@@ -362,7 +362,6 @@
             <div class="manager-team">Viiveek's XI</div>
           </div>
           <div class="roster-badge roster-complete">15/15 ✓</div>
-          <button class="edit-btn">Edit</button>
         </div>
 
         <!-- Rahul -->
@@ -373,8 +372,6 @@
             <div class="manager-team">Mumbai Mavericks</div>
           </div>
           <div class="roster-badge roster-complete">15/15 ✓</div>
-          <button class="edit-btn">Edit</button>
-          <button class="remove-btn"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
 
         <!-- Priya -->
@@ -385,8 +382,6 @@
             <div class="manager-team">Royal Strikers</div>
           </div>
           <div class="roster-badge roster-complete">15/15 ✓</div>
-          <button class="edit-btn">Edit</button>
-          <button class="remove-btn"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
 
         <!-- Shaheel -->
@@ -397,8 +392,6 @@
             <div class="manager-team">Knight Riders FC</div>
           </div>
           <div class="roster-badge roster-complete">15/15 ✓</div>
-          <button class="edit-btn">Edit</button>
-          <button class="remove-btn"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
 
         <!-- Arjun (incomplete) -->
@@ -409,8 +402,6 @@
             <div class="manager-team">Super Kings XI</div>
           </div>
           <div class="roster-badge roster-incomplete">12/15 !</div>
-          <button class="edit-btn">Edit</button>
-          <button class="remove-btn"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
 
         <!-- Deepak (not uploaded) -->
@@ -421,20 +412,23 @@
             <div class="manager-team">Titan Warriors</div>
           </div>
           <div class="roster-badge roster-empty">0/15 ✗</div>
-          <button class="edit-btn">Edit</button>
-          <button class="remove-btn"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
 
-        <button class="btn-add-manager">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Manager
-        </button>
       </div>
 
       <!-- Roster Management -->
       <div class="card">
         <div class="section-header">
           <div class="section-title">Roster Management</div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 10px; font-weight: 600; color: #888; display: block; margin-bottom: 4px;">Select League</label>
+          <select style="width: 100%; padding: 9px 12px; border-radius: 10px; border: 1.5px solid rgba(0,75,160,0.12); background: #fff; font-family: inherit; font-size: 12px; font-weight: 600; color: #1a1a2e; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 fill=%27%23666%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M8 11L3 6h10z%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center;">
+            <option>Weekend Warriors</option>
+            <option>Office XI</option>
+            <option>College Legends</option>
+          </select>
         </div>
 
         <div class="upload-row">
@@ -451,6 +445,18 @@
           <div class="valid-chip valid-err">1 not uploaded</div>
           <div class="valid-chip valid-ok">No duplicates</div>
         </div>
+      </div>
+
+      <!-- Create League -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 10px;">Create League</div>
+        <div style="margin-bottom: 8px;">
+          <label style="font-size: 10px; font-weight: 600; color: #888; display: block; margin-bottom: 4px;">League Name</label>
+          <input type="text" placeholder="e.g. Weekend Warriors" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.08); background: #f7f8fb; font-family: inherit; font-size: 13px; font-weight: 500; color: #1a1a2e; outline: none;" onfocus="this.style.borderColor='rgba(0,75,160,0.3)'" onblur="this.style.borderColor='rgba(0,0,0,0.08)'" />
+        </div>
+        <button style="width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; position: relative; overflow: hidden;" onclick="alert('League created!')">
+          Create League
+        </button>
       </div>
 
       <div style="height: 30px;"></div>
@@ -606,27 +612,6 @@ function copyCode() {
   setTimeout(() => btn.textContent = 'Copy', 1500);
 }
 
-function openSquad(managerName, teamName) {
-  document.getElementById('squadManagerName').textContent = managerName;
-  document.getElementById('squadTeamName').textContent = teamName;
-  document.getElementById('squadOverlay').classList.add('open');
-  document.getElementById('squadSheet').classList.add('open');
-}
-function closeSquad() {
-  document.getElementById('squadOverlay').classList.remove('open');
-  document.getElementById('squadSheet').classList.remove('open');
-}
-
-// Wire up all Edit buttons
-document.querySelectorAll('.edit-btn').forEach(btn => {
-  btn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const row = this.closest('.manager-row');
-    const name = row.querySelector('.manager-name').textContent;
-    const team = row.querySelector('.manager-team').textContent;
-    openSquad(name === 'You' ? 'Viiveek' : name, team);
-  });
-});
 </script>
 
 </body>

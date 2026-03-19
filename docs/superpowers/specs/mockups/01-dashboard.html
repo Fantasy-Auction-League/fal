@@ -52,22 +52,27 @@
 
   .hero-header {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
   }
   .hero .logo {
-    font-size: 17px; font-weight: 900; letter-spacing: -0.5px;
+    font-size: 18px; font-weight: 900; letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--csk), var(--srh));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .hero .league-name {
-    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55);
-    background: rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 8px;
-    backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.08);
+    font-size: 13px; font-weight: 700; color: #fff;
+  }
+
+  .hero-league-sub {
+    text-align: center; margin-bottom: 6px;
+  }
+  .hero-league-sub .league-full-name {
+    font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.3px;
   }
 
   .gw-label {
-    text-align: center; font-size: 10px; color: rgba(255,255,255,0.4);
-    font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px;
+    text-align: center; font-size: 10px; color: rgba(255,255,255,0.6);
+    font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px;
   }
 
   /* Score Trio — compact */
@@ -76,11 +81,11 @@
   }
   .score-side { flex: 1; text-align: center; }
   .score-side .val {
-    font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.7);
+    font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.9);
     font-variant-numeric: tabular-nums;
   }
   .score-side .label {
-    font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 500;
+    font-size: 9px; color: rgba(255,255,255,0.6); font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.8px; margin-top: 1px;
   }
   .score-center { flex: 1.3; text-align: center; position: relative; }
@@ -97,10 +102,10 @@
   }
   .score-center .val:hover { text-decoration: underline; text-decoration-color: rgba(255,255,255,0.3); }
   .score-center .label {
-    font-size: 10px; color: rgba(255,255,255,0.45); font-weight: 500; margin-top: 2px;
+    font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; margin-top: 2px;
   }
   .score-center .tap-hint {
-    font-size: 8px; color: rgba(255,255,255,0.25); margin-top: 1px;
+    font-size: 8px; color: rgba(255,255,255,0.4); margin-top: 1px; font-weight: 500;
   }
 
   .hero-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0; }
@@ -113,21 +118,23 @@
     flex: 1;
   }
   .deadline-compact .gw-next {
-    font-size: 10px; color: rgba(255,255,255,0.35); font-weight: 500;
+    font-size: 10px; color: rgba(255,255,255,0.65); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
   }
   .deadline-compact .deadline-text {
-    font-size: 12px; color: #fff; font-weight: 700;
+    font-size: 13px; color: #fff; font-weight: 800;
   }
   .btn-edit-lineup {
-    padding: 9px 16px; border: none; border-radius: 12px;
-    background: linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%);
-    color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
-    font-family: inherit; position: relative; overflow: hidden;
+    padding: 7px 14px; border: none; border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(6px);
+    color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: inherit;
     border: 1px solid rgba(255,255,255,0.15);
+    transition: background 0.2s;
   }
-  .btn-edit-lineup::after {
-    content: ''; position: absolute; inset: 0;
-    background: rgba(255,255,255,0.15); pointer-events: none; z-index: 0;
+  .btn-edit-lineup:hover {
+    background: rgba(255,255,255,0.2);
   }
 
   /* Content */
@@ -222,30 +229,6 @@
     font-size: 9px; font-weight: 600; padding: 3px 8px;
     border-radius: 6px; background: #eef0f5; color: #777;
   }
-
-  /* Chips */
-  .chips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-  .chip {
-    display: flex; align-items: center; gap: 7px;
-    padding: 9px 10px; background: #f7f8fb;
-    border: 1px solid rgba(0,0,0,0.04); border-radius: 12px;
-  }
-  .chip.available { border-color: rgba(13,158,95,0.12); }
-  .chip-icon {
-    width: 28px; height: 28px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; font-size: 13px;
-  }
-  .chip-icon.tc { background: rgba(236,28,36,0.08); }
-  .chip-icon.bb { background: rgba(13,158,95,0.08); }
-  .chip-icon.pb { background: rgba(0,75,160,0.08); }
-  .chip-icon.pba { background: rgba(249,205,5,0.1); }
-  .chip-icon.used { opacity: 0.3; }
-  .chip-info { flex: 1; }
-  .chip-name { font-weight: 600; font-size: 10.5px; color: #333; }
-  .chip-name.spent { color: #bbb; }
-  .chip-status { font-size: 8.5px; margin-top: 1px; font-weight: 600; }
-  .chip-status.avail { color: var(--mint); }
-  .chip-status.used-text { color: #ccc; }
 
   /* Bottom Nav */
   .bottom-nav {
@@ -437,8 +420,12 @@
     <!-- Compact Hero ~28% screen -->
     <div class="hero">
       <div class="hero-header">
-        <div class="logo">FAL</div>
-        <div class="league-name">Weekend Warriors</div>
+        <div class="logo">Fantasy</div>
+        <div class="league-name">Dashboard</div>
+      </div>
+
+      <div class="hero-league-sub">
+        <div class="league-full-name">Weekend Warriors</div>
       </div>
 
       <div class="gw-label">Gameweek 7</div>
@@ -471,11 +458,10 @@
     </div>
 
     <div class="content">
-      <!-- League Standings — moved to top per feedback -->
+      <!-- League Standings — full 15 managers -->
       <div class="card">
         <div class="section-header">
           <div class="section-title">League Standings</div>
-          <a href="/standings" class="section-link" style="text-decoration:none;">Full Table →</a>
         </div>
         <div class="standings-header">
           <div class="sh-rank">#</div>
@@ -526,6 +512,77 @@
           <div class="standings-gw">71</div>
           <div class="standings-pts">2,750</div>
         </a>
+        <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+          <div class="rank">7</div>
+          <div class="standings-name">Sneha</div>
+          <div class="standings-delta delta-up">▲1</div>
+          <div class="standings-gw">82</div>
+          <div class="standings-pts">2,680</div>
+        </a>
+
+        <!-- Expandable section -->
+        <div id="moreStandings" style="display:none;">
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">8</div>
+            <div class="standings-name">Vikram</div>
+            <div class="standings-delta delta-down">▼3</div>
+            <div class="standings-gw">45</div>
+            <div class="standings-pts">2,540</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">9</div>
+            <div class="standings-name">Karthik</div>
+            <div class="standings-delta delta-same">—</div>
+            <div class="standings-gw">58</div>
+            <div class="standings-pts">2,490</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">10</div>
+            <div class="standings-name">Meera</div>
+            <div class="standings-delta delta-up">▲2</div>
+            <div class="standings-gw">91</div>
+            <div class="standings-pts">2,420</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">11</div>
+            <div class="standings-name">Amit</div>
+            <div class="standings-delta delta-down">▼1</div>
+            <div class="standings-gw">52</div>
+            <div class="standings-pts">2,310</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">12</div>
+            <div class="standings-name">Neha</div>
+            <div class="standings-delta delta-same">—</div>
+            <div class="standings-gw">60</div>
+            <div class="standings-pts">2,240</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">13</div>
+            <div class="standings-name">Rohan</div>
+            <div class="standings-delta delta-up">▲1</div>
+            <div class="standings-gw">73</div>
+            <div class="standings-pts">2,150</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">14</div>
+            <div class="standings-name">Ananya</div>
+            <div class="standings-delta delta-down">▼2</div>
+            <div class="standings-gw">38</div>
+            <div class="standings-pts">2,060</div>
+          </a>
+          <a href="/view-lineup" class="standings-row" style="text-decoration:none;">
+            <div class="rank">15</div>
+            <div class="standings-name">Saurav</div>
+            <div class="standings-delta delta-same">—</div>
+            <div class="standings-gw">55</div>
+            <div class="standings-pts">1,980</div>
+          </a>
+        </div>
+
+        <button id="expandBtn" onclick="toggleStandings()" style="width:100%; padding:8px; margin-top:6px; border:none; border-radius:8px; background:#f2f3f8; color:var(--mi); font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;">
+          Show all 15 ▼
+        </button>
         <div class="view-lineup-hint">Tap a manager to view their lineup</div>
       </div>
 
@@ -573,41 +630,6 @@
             <div class="match-time">Sat, Mar 21 · 3:30 PM</div>
           </div>
           <div class="match-day">SAT</div>
-        </div>
-      </div>
-
-      <!-- Chips -->
-      <div class="card">
-        <div class="section-title">Chips</div>
-        <div class="chips-grid">
-          <div class="chip available">
-            <div class="chip-icon tc">⚡</div>
-            <div class="chip-info">
-              <div class="chip-name">Triple Captain</div>
-              <div class="chip-status avail">Available</div>
-            </div>
-          </div>
-          <div class="chip available">
-            <div class="chip-icon bb">↑</div>
-            <div class="chip-info">
-              <div class="chip-name">Bench Boost</div>
-              <div class="chip-status avail">Available</div>
-            </div>
-          </div>
-          <div class="chip">
-            <div class="chip-icon pb used">🎯</div>
-            <div class="chip-info">
-              <div class="chip-name spent">Bowling Boost</div>
-              <div class="chip-status used-text">Used GW3</div>
-            </div>
-          </div>
-          <div class="chip available">
-            <div class="chip-icon pba">🏏</div>
-            <div class="chip-info">
-              <div class="chip-name">Powerplay</div>
-              <div class="chip-status avail">Available</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -854,6 +876,19 @@ function closeSheet() {
 }
 // Wire up points tap → GW sheet
 document.querySelector('.score-center .val').addEventListener('click', openSheet);
+
+// Toggle full standings
+function toggleStandings() {
+  var more = document.getElementById('moreStandings');
+  var btn = document.getElementById('expandBtn');
+  if (more.style.display === 'none') {
+    more.style.display = 'block';
+    btn.textContent = 'Show less ▲';
+  } else {
+    more.style.display = 'none';
+    btn.textContent = 'Show all 15 ▼';
+  }
+}
 </script>
 
 </body>
