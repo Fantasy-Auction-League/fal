@@ -119,11 +119,15 @@ Each gameweek, managers submit:
 | 5 Wickets | +16 |
 
 **Fielding:**
-| Event | Points |
-|---|---|
-| Catch | +8 |
-| Runout | +6 |
-| Stumping | +12 |
+| Event | Points | Notes |
+|---|---|---|
+| Catch | +8 | Awarded to the catching fielder |
+| 3 Catch Bonus | +4 | 3+ catches in a single match |
+| Stumping | +12 | Awarded to the wicketkeeper |
+| Run Out (direct hit) | +12 | Only 1 fielder touched the ball after delivery |
+| Run Out (assisted — each) | +6 | 2 fielders involved: 6 pts to each of the last 2 fielders who touched the ball |
+
+**Run Out Attribution Rule:** Points are awarded to the **last two fielders** who touched the ball before the stumps were broken. If only one fielder touched the ball (direct hit), that fielder gets 12 pts. If two fielders were involved (e.g., fielder throws → keeper collects and breaks stumps), each gets 6 pts.
 
 ### Multipliers:
 - Captain: 2x
@@ -204,10 +208,13 @@ Cricket Data API → Match Import Service → Raw Match Data Storage → Stat Pa
 ### Required Stats from API:
 - Runs scored, Fours hit, Sixes hit, Balls faced
 - Wickets taken, Maiden overs
-- Catches taken, Runouts effected, Stumpings
+- Catches taken per fielder (for catch count + 3-catch bonus)
+- Stumpings per wicketkeeper
+- Run out attribution: number of fielders involved (1 = direct hit, 2 = assisted) and fielder IDs
 - Did player bat? (for duck rule)
 - Did player play? (for bench substitution)
 - **Dot balls:** Not available in either API's bowling summary — requires ball-by-ball data computation (SportMonks) or dropping dot ball scoring (see Issue #2)
+- **Fielding attribution:** Requires ball-by-ball parsing or `batting.runoutby` nested include from SportMonks. Must validate during 14-day trial whether runout data distinguishes direct hit (1 fielder) vs assisted (2 fielders). See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 4 for fielding data gaps.
 
 ### Ingestion Trigger:
 Phase 1: Hybrid approach — admin triggers scoring on-demand after each match via an "Import Scores" button, with a daily midnight cron as safety net. Runs on Vercel Hobby (free). See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 5 for pipeline details.
@@ -332,7 +339,9 @@ Central marketplace view with My Team / All Players / Available filter toggle. S
 | **ER bonus/penalty** | **—** | **+6 to -6** (tiered, min 2 overs) | **+2 to +4 bonus** (ER < 8, min 2 overs) |
 | Duck | -2 (all players) | -2 (excludes bowlers) | -10 (excludes bowlers) |
 | Catch | +8 | +8 | +10 |
-| Runout | +6 (flat) | +12 direct / +8 thrower / +4 catcher | +12 |
+| 3 Catch Bonus | +4 | — | — |
+| Runout (direct hit) | +12 | +12 | +12 |
+| Runout (assisted, each) | +6 | +8 thrower / +4 catcher | — |
 | Stumping | +12 | +12 | +20 |
 | Starting XI bonus | — | +4 | unconfirmed |
 

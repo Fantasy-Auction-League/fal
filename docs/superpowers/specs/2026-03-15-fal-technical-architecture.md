@@ -115,7 +115,7 @@ See System Architecture and Scoring Pipeline Flow diagrams in Section 1.
 - **Match** — An IPL match within a gameweek. Stores teams, date, status (scheduled/in_progress/completed), API match ID.
 - **Lineup** — Weekly lineup submission per team per gameweek
 - **LineupSlot** — Individual slot within a lineup. Stores: `playerId`, `slotType` (XI/BENCH), `benchPriority` (1-4, null for XI), `role` (CAPTAIN/VC/null).
-- **PlayerPerformance** — Raw match statistics per player per match
+- **PlayerPerformance** — Raw match statistics per player per match. Includes batting (runs, balls, fours, sixes, dismissal), bowling (overs, maidens, runs conceded, wickets, dot balls), and fielding (catches, stumpings, runouts direct, runouts assisted).
 - **PlayerScore** — Calculated fantasy points per player per gameweek (aggregated across matches)
 - **ChipUsage** — Which chip a team used in which gameweek
 
@@ -182,9 +182,59 @@ No cricket API provides scorecard-level data (batting, bowling, fielding stats) 
 
 | FAL Stat Needed | CricketData Field | SportMonks Field |
 |---|---|---|
-| Catches | `catch` (in catching array) | — (not in standard includes) |
+| Catches (per fielder) | `catch` (in catching array) | — (not in standard batting/bowling includes) |
 | Stumpings | `stumped` | — |
 | Runouts | `runout` | — |
+| **Runout attribution (direct vs assisted)** | **Not documented** | **Not documented** |
+
+### Fielding Data Extraction Strategy (SportMonks)
+
+Fielding stats are **not in the standard batting/bowling scoreboard includes**. SportMonks provides three paths to extract them:
+
+**Path 1 — `batting.runoutby` nested include (preferred for runouts)**
+SportMonks docs confirm `batting.runoutby` as a valid nested include on batting scoreboards. This returns the fielder(s) responsible for a run out dismissal. **Must validate during 14-day trial:** does it return 1 fielder (direct hit) or 2 fielders (thrower + collector)?
+
+**Path 2 — Ball-by-ball `wicket` object (primary source for all fielding)**
+Each ball in the `?include=balls` response has a `wicket` field. When a wicket falls, this object should contain:
+- Dismissal type (`caught`, `run out`, `stumped`, `bowled`, `lbw`)
+- Fielder ID(s) involved in the dismissal
+- **Must validate:** exact field names and whether multiple fielders are returned for assisted runouts
+
+**Path 3 — Ball-by-ball commentary text (fallback/cross-reference)**
+The `commentary` field on each ball uses standard cricket notation:
+- `"c Jadeja b Bumrah"` → catch by Jadeja (player ID from batting lineup mapping)
+- `"run out (Jadeja)"` → direct hit by Jadeja → 12 pts
+- `"run out (Jadeja/Dhoni†)"` → assisted: Jadeja threw, Dhoni collected → 6 pts each
+- `"st †Dhoni b Jadeja"` → stumping by Dhoni → 12 pts
+
+Parsing approach: regex extract fielder names from commentary → map to player IDs via the `lineup` include.
+
+**Fielding computation from ball-by-ball (per match):**
+```typescript
+// Aggregate from all balls where wicket/fielding event occurred
+interface FieldingStats {
+  playerId: number;
+  catches: number;       // from "c PlayerName b Bowler" or wicket.type === 'caught'
+  stumpings: number;     // from "st †PlayerName b Bowler" or wicket.type === 'stumped'
+  runoutsDirect: number; // 1 fielder in runout attribution → 12 pts
+  runoutsAssisted: number; // 2 fielders in runout → 6 pts each
+}
+
+// Fantasy points calculation:
+// catches * 8 + (catches >= 3 ? 4 : 0) + stumpings * 12
+// + runoutsDirect * 12 + runoutsAssisted * 6
+```
+
+**Pre-season validation checklist (during SportMonks 14-day trial):**
+- [ ] Fetch a completed IPL match with `?include=batting,bowling,balls,batting.runoutby`
+- [ ] Check if `batting.runoutby` returns fielder object(s) — how many for assisted runouts?
+- [ ] Check ball-by-ball `wicket` object structure on a dismissal ball
+- [ ] Check `commentary` text format for catches, stumpings, runouts
+- [ ] Confirm player ID mapping between `lineup` include and fielder IDs in wicket/runout data
+- [ ] If runout attribution is unavailable: fall back to flat 8 pts per runout (see fallback below)
+
+**Fallback if direct/assisted distinction unavailable:**
+Award a flat +8 pts per run out to the attributed fielder (compromise between 12 and 6). Update design spec accordingly.
 
 ### Critical Finding: Dot Ball Gap
 
