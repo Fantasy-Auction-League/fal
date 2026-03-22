@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { SessionProvider } from 'next-auth/react'
 import './globals.css'
 
 const inter = Inter({
@@ -19,8 +20,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="font-sans antialiased bg-gray-950 text-white min-h-screen">
-        {children}
+      <body className="font-sans antialiased bg-[#0c0c10] text-white min-h-screen">
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   )
