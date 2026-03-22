@@ -23,7 +23,7 @@ Your squad will have **12–15 players**. You can't trade or sign new players (t
 Each gameweek (Monday to Sunday), you pick:
 - **11 players** from your squad to play
 - **1 Captain** — earns double points
-- **1 Vice Captain** — earns 1.5× points
+- **1 Vice Captain** — earns double points only if your Captain doesn't play at all that GW
 - **Bench order** (1–4) — your backup if someone doesn't play
 - **A strategy chip** (optional — see below)
 
@@ -98,10 +98,12 @@ Points are earned from real IPL performance. Here's what scores:
 | Coming on as Impact Player sub | +4 |
 
 ### Captain & Vice Captain
-Your Captain earns **2×** all their points for the week.
-Your Vice Captain earns **1.5×** all their points.
+Your Captain earns **2×** all their points for the week — always.
 
-> **Example:** Your Captain scores 80 base points → you get 160.
+Your Vice Captain earns **2× only if your Captain does not play** at all that gameweek — not in the starting XI and not as an Impact Sub in any match. If your Captain plays even one match, your VC earns normal points with no multiplier.
+
+> **Example (Captain plays):** Captain scores 80 pts → you get 160. VC scores 60 pts → you get 60.
+> **Example (Captain absent):** Captain scores 0 (didn't play) → VC steps up to 2×. VC scores 60 pts → you get 120.
 
 ---
 
@@ -140,7 +142,7 @@ The mirror of Bowling Boost — if your squad is stacked with top-order batters 
 ### 👑 Triple Captain
 **Pick a third player (different from Captain and VC) to earn 3× points.**
 
-In a Triple Captain week, three of your players have multipliers: Captain 2×, VC 1.5×, and your Triple Captain at 3×. Choose someone with a great fixture and double fixtures if possible.
+In a Triple Captain week, you have two guaranteed multipliers: Captain 2× and Triple Captain 3×. Your VC only gets 2× if the Captain doesn't play. Choose your Triple Captain wisely — someone with a great fixture and ideally a double gameweek.
 
 *Best used when:* An elite player has two matches this week on a batter/bowler-friendly pitch. A Bumrah with two games under Triple Captain is a season-defining play.
 
@@ -179,7 +181,7 @@ Scores update live as each IPL match finishes — you can watch your gameweek to
 
 2. **Check fixture lists before picking your XI.** A player with two games this week is almost always worth picking over someone with one game, even if the single-game player is slightly better on paper.
 
-3. **Set your bench order deliberately.** It's not just a formality — if your Captain doesn't play, your VC gets promoted to 2×. Your bench order determines who covers the gaps.
+3. **Set your bench order deliberately.** It's not just a formality — your bench order determines who covers XI gaps. And remember: your VC only earns a multiplier if your Captain is absent, so Captain selection carries all the weight.
 
 4. **Don't save chips too long.** There's a temptation to hoard chips for the perfect week that never comes. Double-gameweek weeks are your trigger.
 
@@ -196,7 +198,7 @@ Scores update live as each IPL match finishes — you can watch your gameweek to
 | **Squad size** | 12–15 players |
 | **Playing XI** | 11 from your squad |
 | **Captain** | 2× points |
-| **Vice Captain** | 1.5× points |
+| **Vice Captain** | 2× only if Captain doesn't play, else 1× |
 | **Chips** | 4 total, 1 per gameweek, once each |
 | **Bench subs** | Automatic if a player doesn't feature |
 | **Scoring** | Dream11 T20-aligned |
