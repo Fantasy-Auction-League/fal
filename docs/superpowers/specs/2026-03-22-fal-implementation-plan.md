@@ -483,16 +483,25 @@ All routes require Auth.js session unless noted. **Platform admin** = `User.role
      e. Parse bowling → wickets, overs, maidens, ER, wides, noballs
         (+ compute dot balls in-memory from balls include if enabled)
      f. Compute fantasyPoints per player (see "Base Points Calculation" below)
-     g. Determine inStartingXI (lineup.substitution === false)
-        and isImpactPlayer (sub who appears in batting or bowling)
-     h. Batch upsert PlayerPerformance:
+     g. Build lbwBowledCount per bowler: scan batting entries,
+        count where wicket_id IN (79, 83) grouped by bowling_player_id.
+        Pass this into each bowler's BowlingStats.lbwBowledCount.
+     h. Build fielding stats per fielder: scan batting entries for
+        catch_stump_player_id and runout_by_id. Any player referenced
+        gets fielding stats — including Starting XI players who only fielded.
+     i. Determine inStartingXI (lineup.substitution === false)
+        and isImpactPlayer (sub who appears in batting or bowling).
+        IMPORTANT: create PlayerPerformance rows for ALL Starting XI
+        players, even those who didn't bat or bowl. They get +4 Starting XI
+        bonus and may have fielding stats (catches, runouts).
+     j. Batch upsert PlayerPerformance:
         $executeRaw`INSERT INTO "PlayerPerformance" (...)
           VALUES (...), (...), ...
           ON CONFLICT ("playerId", "matchId") DO UPDATE SET ...`
-     i. Set Match.scoringStatus = 'scored'
+     k. Set Match.scoringStatus = 'scored'
    } catch {
-     j. Reset Match.scoringStatus = 'completed'
-     k. Increment scoringAttempts; if >= 3 → set 'error'
+     l. Reset Match.scoringStatus = 'completed'
+     m. Increment scoringAttempts; if >= 3 → set 'error'
    }
 ```
 
@@ -541,10 +550,15 @@ All routes require Auth.js session unless noted. **Platform admin** = `User.role
         e.g., Captain (2x) who is BAT with Power Play Bat = basePoints × 2 × 2 = 4x
 
    f. SUM team GW total, write PlayerScore rows per player,
+      UPSERT GameweekScore(teamId, gameweekId, totalPoints=gwTotal, chipUsed=chip),
       update Team.totalPoints += gwTotal,
       update Team.bestGwScore = MAX(Team.bestGwScore, gwTotal)
 
    g. Set Gameweek.aggregationStatus = 'done'
+
+   IMPORTANT: Wrap all of steps 5a-5g in a single Prisma $transaction.
+   If any team fails, the entire GW rolls back cleanly. The aggregationStatus
+   claim (step 4) is outside the transaction, so a retry can re-claim.
 ```
 
 ### Base Points Calculation (`lib/scoring/batting.ts`, `bowling.ts`, `fielding.ts`)
@@ -552,10 +566,42 @@ All routes require Auth.js session unless noted. **Platform admin** = `User.role
 Per player per match — returns `fantasyPoints` (Int):
 
 ```typescript
-function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImpactPlayer): number {
+// CRITICAL: SportMonks returns overs in cricket notation (4.2 = 4 overs 2 balls = 26 balls)
+// NOT decimal. Must convert before any division.
+function oversToDecimal(overs: number): number {
+  const full = Math.floor(overs);
+  const balls = Math.round((overs - full) * 10);
+  return full + balls / 6;
+}
+
+// Duck-exempt dismissal types
+const DUCK_EXEMPT_WICKET_IDS = [84, 138]; // 84 = Not Out, 138 = Retired Out (tactical, not a dismissal)
+
+interface BattingStats {
+  runs: number; balls: number; fours: number; sixes: number;
+  strikeRate: number; wicketId: number | null;
+}
+interface BowlingStats {
+  wickets: number; overs: number; maidens: number;
+  runsConceded: number; economyRate: number; dotBalls: number;
+  lbwBowledCount: number; // DERIVED: count of batting entries where wicket_id IN (79,83) AND bowling_player_id = this bowler
+}
+interface FieldingStats {
+  catches: number; stumpings: number;
+  runoutsDirect: number; runoutsAssisted: number;
+}
+
+function computeBasePoints(
+  batting: BattingStats | null,
+  bowling: BowlingStats | null,
+  fielding: FieldingStats | null,
+  role: 'BAT' | 'BOWL' | 'ALL' | 'WK',
+  inStartingXI: boolean,
+  isImpactPlayer: boolean
+): number {
   let pts = 0;
 
-  // Starting XI / Impact Player bonus
+  // Starting XI / Impact Player bonus (concussion subs use same isImpactPlayer logic)
   if (inStartingXI) pts += 4;
   if (isImpactPlayer) pts += 4;
 
@@ -566,6 +612,7 @@ function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImp
     pts += batting.sixes * 6;                      // +6 per six
 
     // Milestone bonuses (century REPLACES all lower, below century they STACK)
+    // Milestones are PER-MATCH, not per-GW aggregate
     if (batting.runs >= 100) {
       pts += 16;                                   // century only — no 25/50/75
     } else {
@@ -574,9 +621,10 @@ function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImp
       if (batting.runs >= 25) pts += 4;
     }
 
-    // Duck: -2 if scored 0, faced >= 1 ball, got out, and role is NOT Bowler
+    // Duck: -2 if scored 0, faced >= 1 ball, dismissed (not Not Out or Retired Out), role != BOWL
     if (batting.runs === 0 && batting.balls >= 1 &&
-        batting.wicketId !== 84 /* Not Out */ &&
+        batting.wicketId !== null &&
+        !DUCK_EXEMPT_WICKET_IDS.includes(batting.wicketId) &&
         role !== 'BOWL') {
       pts -= 2;
     }
@@ -595,22 +643,25 @@ function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImp
 
   // --- BOWLING ---
   if (bowling) {
-    pts += bowling.wickets * 30;                   // +30 per wicket (excl. runout)
+    pts += bowling.wickets * 30;                   // +30 per wicket (excl. runout, incl. stumpings)
     pts += bowling.maidens * 12;                   // +12 per maiden
     pts += bowling.dotBalls * 1;                   // +1 per dot ball
 
     // LBW/Bowled bonus: +8 per wicket where dismissal was LBW (83) or Bowled (79)
-    // Requires checking batting data for wickets attributed to this bowler
+    // DERIVED during Phase A parsing: count batting entries where
+    //   wicket_id IN (79, 83) AND bowling_player_id = this bowler's ID
+    // Hit Wicket (87) deliberately excluded from this bonus per PRD
     pts += bowling.lbwBowledCount * 8;
 
-    // Wicket bonuses
+    // Wicket bonuses (do NOT stack — 5w gets +12 only, aligned with Dream11)
     if (bowling.wickets >= 5) pts += 12;
     else if (bowling.wickets >= 4) pts += 8;
     else if (bowling.wickets >= 3) pts += 4;
 
-    // Economy Rate bonus/penalty (min 2 overs)
-    if (bowling.overs >= 2) {
-      const er = bowling.runsConceded / bowling.overs;
+    // Economy Rate bonus/penalty (min 2 overs — use converted decimal overs)
+    const decimalOvers = oversToDecimal(bowling.overs);
+    if (decimalOvers >= 2) {
+      const er = bowling.runsConceded / decimalOvers;
       if (er < 5) pts += 6;
       else if (er < 6) pts += 4;
       else if (er <= 7) pts += 2;
@@ -621,6 +672,7 @@ function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImp
   }
 
   // --- FIELDING ---
+  // All players can earn fielding points (not just WK)
   if (fielding) {
     pts += fielding.catches * 8;                   // +8 per catch
     if (fielding.catches >= 3) pts += 4;           // one-time 3-catch bonus
@@ -638,26 +690,19 @@ function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImp
 Runs at GW end for each team:
 
 ```typescript
-// Build the "played" set from ALL matches in this GW BEFORE calling bench subs or multipliers.
-// This is the single source of truth for "did this player participate?"
-function buildPlayedSet(gwMatches: Match[], allPerformances: PlayerPerformance[]): Set<number> {
-  const played = new Set<number>();
-  for (const match of gwMatches) {
-    // Players in Starting XI (substitution === false in match lineup)
-    for (const p of match.lineup) {
-      if (!p.substitution) played.add(p.playerId);
-    }
-    // Impact Subs (substitution === true BUT appeared in batting or bowling)
-    const battedOrBowled = new Set(
-      allPerformances.filter(p => p.matchId === match.id).map(p => p.playerId)
-    );
-    for (const p of match.lineup) {
-      if (p.substitution && battedOrBowled.has(p.playerId)) {
-        played.add(p.playerId);
-      }
-    }
-  }
-  return played;
+// Build the "played" set from PlayerPerformance rows already persisted in Phase A.
+// Uses inStartingXI and isImpactPlayer flags — NO re-fetching from SportMonks.
+// Single DB query, no API calls during Phase B aggregation.
+async function buildPlayedSet(gwMatchIds: string[]): Promise<Set<number>> {
+  const rows = await prisma.playerPerformance.findMany({
+    where: {
+      matchId: { in: gwMatchIds },
+      OR: [{ inStartingXI: true }, { isImpactPlayer: true }],
+    },
+    select: { playerId: true },
+    distinct: ['playerId'],
+  });
+  return new Set(rows.map(r => r.playerId));
 }
 
 function applyBenchSubs(lineup: LineupSlot[], playedPlayerIds: Set<number>) {
@@ -688,43 +733,43 @@ function applyBenchSubs(lineup: LineupSlot[], playedPlayerIds: Set<number>) {
 }
 ```
 
-### Captain/VC/TC Promotion Logic (`lib/scoring/multipliers.ts`)
+### Captain/VC Promotion Logic (`lib/scoring/multipliers.ts`)
 
 ```typescript
-// "played" = appeared in the Starting XI (substitution === false) OR appeared
-// as an Impact Sub (substitution === true AND present in batting/bowling data)
-// in ANY match across the entire gameweek. Must check ALL GW matches, not just one.
-//
-// This set is built BEFORE resolveMultipliers is called:
-//   for each match in this GW:
-//     fetch lineup include → for each player where substitution === false → add to set
-//     fetch batting/bowling → for each sub player who batted/bowled → add to set
+// playedPlayerIds is built from PlayerPerformance DB records (see buildPlayedSet above)
+// — NOT re-fetched from SportMonks. "played" = inStartingXI OR isImpactPlayer in any GW match.
 
 function resolveMultipliers(
   lineup: LineupSlot[],
-  playedPlayerIds: Set<number>  // built from ALL matches in the GW (see above)
-) {
+  playedPlayerIds: Set<number>
+): Map<number, number> {
   const captain = lineup.find(s => s.role === 'CAPTAIN');
   const vc = lineup.find(s => s.role === 'VC');
 
-  const multipliers: Map<number, number> = new Map(); // playerId → multiplier
+  // Guard: if captain/VC not designated (data corruption or first-GW carry-forward bug)
+  if (!captain || !vc) {
+    console.warn(`Lineup missing captain/VC: lineupId=${lineup[0]?.lineupId}`);
+    // Proceed with no multipliers — admin should investigate
+    return new Map();
+  }
 
-  const captainPlayed = captain && playedPlayerIds.has(captain.playerId);
-  const vcPlayed = vc && playedPlayerIds.has(vc.playerId);
+  const multipliers: Map<number, number> = new Map();
+
+  const captainPlayed = playedPlayerIds.has(captain.playerId);
+  const vcPlayed = playedPlayerIds.has(vc.playerId);
 
   if (captainPlayed) {
-    // Captain played at least one match this GW → Captain gets 2x, VC gets 1x (no bonus)
-    // Example: Captain scores 80 → you get 160. VC scores 60 → you get 60.
+    // Captain played ≥1 match this GW → Captain 2x, VC 1x (no bonus)
+    // Example: Captain scores 80 → 160. VC scores 60 → 60.
     multipliers.set(captain.playerId, 2);
-    // VC deliberately NOT added to multipliers map → defaults to 1x
   } else if (vcPlayed) {
-    // Captain did NOT play in ANY match this GW (not in Starting XI, not as Impact Sub)
+    // Captain absent (not in Starting XI, not as Impact Sub in ANY match this GW)
     // → VC promoted to 2x
-    // Example: Captain scores 0 (absent) → VC scores 60 → you get 120.
+    // Example: Captain absent → VC scores 60 → 120.
     multipliers.set(vc.playerId, 2);
-    // Bench sub who filled Captain's XI slot does NOT inherit 2x
+    // Bench sub who filled Captain's slot does NOT inherit 2x
   }
-  // Both Captain and VC absent → no multipliers for anyone
+  // Both absent → no multipliers
 
   return multipliers;
 }
@@ -816,6 +861,8 @@ scheduled → completed → scoring → scored
 - **Player IPL transfer mid-season** — `Player.iplTeamId` may change if SportMonks updates a traded player. Fantasy ownership (`TeamPlayer`) is independent and unaffected. The "vs MI · Tue" opponent display uses the current `Player.iplTeamId`, which is correct behavior.
 - **Duck rule precision** — Duck penalty (-2) requires ALL of: `runs === 0`, `balls >= 1` (faced at least 1 delivery), player is dismissed (`wicketId !== 84`), and `role !== 'BOWL'`. A player who is not-out on 0*(0) (never faced a ball) does NOT get duck penalty.
 - **Live GW scores** — During an active GW, leaderboard shows approximate mid-week scores computed from `SUM(PlayerPerformance.fantasyPoints)` for scored matches. These are pre-multiplier/pre-bench-sub estimates. Final scores are only accurate after GW aggregation (step 5).
+- **Abandoned match policy** — If a match is abandoned with no result (rain), admin MUST cancel via `/api/scoring/cancel/[matchId]`. Partial stats from abandoned matches are NOT scored. If SportMonks marks a rain-shortened match as `Finished` (DLS result), it is scored normally — fantasy points are per-player stats, not affected by DLS.
+- **Overs format** — SportMonks returns overs in cricket notation (4.2 = 4 overs 2 balls, NOT 4.2 decimal). Always use `oversToDecimal()` before dividing. `4.2 overs / 6 = 4.333 actual overs`. Without conversion, ER calculations are wrong.
 
 ### Authoritative Sources
 The **PRD** and **Player Guide** are the source of truth, not the design spec. Key differences from Dream11:
