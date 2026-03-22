@@ -106,27 +106,41 @@ See System Architecture and Scoring Pipeline Flow diagrams in Section 1.
 
 ## 3. Database Entities
 
-- **User** — Platform user (auth)
-- **League** — Fantasy competition container. Stores `adminUserId` (creator/admin), `inviteCode`, settings.
-- **Team** — Manager's team within a league
-- **TeamPlayer** — Join table: which Player belongs to which Team (enforces uniqueness within a league)
-- **Player** — Real IPL player (from API). Stores name, IPL team, role (BAT/BOWL/ALL/WK).
-- **Gameweek** — Global weekly scoring period (Mon–Sun). Shared across all leagues, not league-specific.
-- **Match** — An IPL match within a gameweek. Stores teams, date, status (scheduled/in_progress/completed), API match ID.
-- **Lineup** — Weekly lineup submission per team per gameweek
-- **LineupSlot** — Individual slot within a lineup. Stores: `playerId`, `slotType` (XI/BENCH), `benchPriority` (1-4, null for XI), `role` (CAPTAIN/VC/null).
-- **PlayerPerformance** — Raw match statistics per player per match. Includes batting (runs, balls, fours, sixes, dismissal), bowling (overs, maidens, runs conceded, wickets, dot balls), and fielding (catches, stumpings, runouts direct, runouts assisted).
-- **PlayerScore** — Calculated fantasy points per player per gameweek (aggregated across matches)
-- **ChipUsage** — Which chip a team used in which gameweek
+- **User** — Platform user (auth). Stores `email`, `name`, `image`, `role` (enum: `USER`/`ADMIN` — platform admin for scoring/season ops vs regular manager).
+- **League** — Fantasy competition container. Stores `adminUserId` (creator/league admin), `inviteCode`, `name`, settings.
+- **Team** — Manager's team within a league. Stores `name`, `totalPoints` (incremental — updated at GW end, avoids full re-aggregation for leaderboard).
+- **TeamPlayer** — Join table: which Player belongs to which Team. Stores `purchasePrice` (from admin CSV upload). Enforces uniqueness within a league.
+- **Player** — Real IPL player (from API). Stores `apiPlayerId` (SportMonks ID), `fullname`, `iplTeamId`, `role` (BAT/BOWL/ALL/WK), `battingStyle`, `bowlingStyle`, `imageUrl`.
+- **Gameweek** — Global weekly scoring period (Mon–Sun). Stores `number` (1-10), `lockTime` (DateTime — earliest `starting_at` of matches in this GW), `status` (enum: `upcoming`/`active`/`completed`), `aggregationStatus` (enum: `pending`/`aggregating`/`done` — atomic lock for GW-end processing).
+- **Match** — An IPL match within a gameweek. Stores `apiMatchId` (SportMonks fixture ID), `localTeamId`, `visitorTeamId`, `startingAt`, `apiStatus` (raw from SportMonks: `NS`/`Finished`/`Cancelled`), `scoringStatus` (enum: `scheduled`/`completed`/`scoring`/`scored`/`error` — internal pipeline state), `note` (result text), `winnerTeamId`, `scoringAttempts` (Int, default 0 — for retry tracking).
+- **Lineup** — Weekly lineup submission per team per gameweek.
+- **LineupSlot** — Individual slot within a lineup. Stores: `playerId`, `slotType` (XI/BENCH), `benchPriority` (1-4, null for XI), `role` (CAPTAIN/VC/TRIPLE_CAPTAIN/null).
+- **PlayerPerformance** — Per-player per-match stats AND computed fantasy points. Stores:
+  - Batting: `runs`, `balls`, `fours`, `sixes`, `strikeRate`, `wicketId` (dismissal type)
+  - Bowling: `overs`, `maidens`, `runsConceded`, `wickets`, `economyRate`, `dotBalls` (computed from ball-by-ball if enabled)
+  - Fielding: `catches`, `stumpings`, `runoutsDirect`, `runoutsAssisted`
+  - Computed: `fantasyPoints` (Int — base points for this match, before C/VC/chip multipliers)
+  - Meta: `inStartingXI` (boolean), `isImpactPlayer` (boolean)
+- **PlayerScore** — Aggregated fantasy points per player per gameweek (sum of `PlayerPerformance.fantasyPoints` across matches in the GW, after C/VC multipliers and chip effects).
+- **ChipUsage** — Which chip a team used in which gameweek. Stores `teamId`, `chipType` (enum: `TRIPLE_CAPTAIN`/`BENCH_BOOST`/`BAT_BOOST`/`BOWL_BOOST`), `gameweekId`, `status` (enum: `pending`/`used` — `pending` before lock, `used` after GW scoring; delete row on deactivation before lock).
 
 ### Entity Relationships:
-See entity descriptions above for fields. Key relationships: User 1→N Team, League 1→N Team, Team 1→N TeamPlayer, Player 1→N TeamPlayer, Team 1→N Lineup, Lineup 1→N LineupSlot, Gameweek 1→N Match, Match 1→N PlayerPerformance.
+User 1→N Team, League 1→N Team, Team 1→N TeamPlayer, Player 1→N TeamPlayer, Team 1→N Lineup, Lineup 1→N LineupSlot, Gameweek 1→N Match, Match 1→N PlayerPerformance, PlayerPerformance N→1 Player.
 
 ### Uniqueness Constraints:
 - `TeamPlayer`: unique(`leagueId`, `playerId`) — a player can only be on one team per league
 - `Lineup`: unique(`teamId`, `gameweekId`) — one lineup per team per gameweek
-- `ChipUsage`: unique(`teamId`, `chipType`) — each chip used once per season
+- `ChipUsage`: unique(`teamId`, `chipType`) — each chip used once per season (delete + recreate for multi-season)
 - `LineupSlot`: unique(`lineupId`, `playerId`) — a player appears once per lineup
+
+### Required Indexes:
+- `Match(scoringStatus)` — optimistic lock claim query
+- `Match(gameweekId, scoringStatus)` — GW-end "all matches scored?" check
+- `PlayerPerformance(playerId, matchId)` — upsert key + per-match lookups
+- `PlayerPerformance(matchId)` — fetch all performances for a match
+- `Player(role, iplTeamId)` — player search/filter API
+- `Team(leagueId)` — leaderboard queries
+- `Gameweek(status)` — current GW lookup
 
 ## 4. Cricket Data API Evaluation
 
@@ -426,63 +440,115 @@ This pre-populates the Match table so cron jobs can check locally whether matche
 
 ### Hybrid Scoring Strategy (Hobby-compatible)
 
-Vercel Hobby limits cron to once per day. Instead of paying for Pro ($20/mo), we use a hybrid approach:
+Vercel Hobby limits cron to once per day (1 cron job total). Instead of paying for Pro ($20/mo), we use a hybrid approach:
 
 **Primary: Admin-triggered import (on-demand)**
 After each IPL match ends, admin taps "Import Scores" in the admin panel → `POST /api/scoring/import`. This runs the full pipeline (import + score + leaderboard) as a single API route handler within Hobby's 60s function limit.
 
 **Safety net: Daily cron (midnight)**
+Vercel cron sends a **GET** request, so we need a GET handler that calls the same pipeline logic:
+```json
+// vercel.json
+{
+  "crons": [{
+    "path": "/api/scoring/cron",
+    "schedule": "0 0 * * *"
+  }]
+}
 ```
-# Runs once daily at midnight UTC — catches any matches admin missed
-0 0 * * *
-```
-Same pipeline code, just triggered by cron instead of admin button.
+`GET /api/scoring/cron` (protected by `CRON_SECRET` env var) calls the same shared pipeline function as `POST /api/scoring/import`. Note: Vercel Hobby allows exactly 1 cron job.
 
 ### Scoring Pipeline (single unified flow)
 
-Both triggers invoke the same pipeline:
+Both triggers invoke the same `runScoringPipeline()` function in `lib/scoring/pipeline.ts`:
 ```
-1. Claim unscored matches using optimistic lock:
-   UPDATE Match SET scoringStatus = 'scoring'
-   WHERE scoringStatus = 'completed' RETURNING id
-   → No rows returned → exit (another process claimed them, or nothing to score)
-2. For each claimed match:
-   a. GET /fixtures/{id}?include=batting,bowling,lineup[,balls]
-      (balls include only needed if dot ball scoring is enabled)
-   b. Parse batting include → extract batting stats + fielding attribution
-      (catches from catch_stump_player_id, runouts from runout_by_id)
-   c. Parse bowling include → extract bowling stats (+ dot balls from balls if enabled)
-   d. Upsert PlayerPerformance rows (keyed on playerId + matchId)
-   e. Set Match.scoringStatus = 'scored'
-3. If gameweek has ended (all matches in GW are 'scored'):
-   a. Aggregate player points across matches in the gameweek
-   b. Apply bench auto-substitutions
+1. Early exit check: if any match currently has scoringStatus = 'scoring', return 409
+   (debounce against admin double-tap)
+
+2. Claim unscored matches using raw SQL (Prisma $executeRaw — NOT Prisma update()):
+   $queryRaw`UPDATE "Match" SET "scoringStatus" = 'scoring'
+     WHERE "scoringStatus" = 'completed'
+     ORDER BY "startingAt" ASC LIMIT 4
+     RETURNING id`
+   → No rows returned → exit (nothing to score or already claimed)
+
+3. For each claimed match (wrapped in try/catch):
+   try {
+     a. GET /fixtures/{id}?include=batting,bowling,lineup[,balls] (10s timeout)
+     b. Validate response shape (batting/bowling arrays exist)
+     c. Parse batting include → extract batting stats + fielding attribution
+     d. Parse bowling include → extract bowling stats (+ dot balls in-memory if enabled)
+     e. Compute fantasyPoints per player (base points, no multipliers)
+     f. Batch upsert PlayerPerformance using raw SQL:
+        $executeRaw`INSERT INTO "PlayerPerformance" (...) VALUES (...), (...), ...
+          ON CONFLICT ("playerId", "matchId") DO UPDATE SET ...`
+        (single SQL statement for ~30 players, NOT individual Prisma upserts)
+     g. Set Match.scoringStatus = 'scored', increment scoringAttempts
+   } catch (error) {
+     h. Reset Match.scoringStatus = 'completed', increment scoringAttempts
+     i. If scoringAttempts >= 3, set scoringStatus = 'error'
+     j. Log error, continue to next match
+   }
+
+4. Check GW end — claim with atomic lock (prevents double-header race):
+   $queryRaw`UPDATE "Gameweek" SET "aggregationStatus" = 'aggregating'
+     WHERE id = ? AND "aggregationStatus" = 'pending'
+     AND NOT EXISTS (SELECT 1 FROM "Match" WHERE "gameweekId" = ? AND "scoringStatus" NOT IN ('scored', 'error', 'cancelled'))
+     RETURNING id`
+   → No rows returned → GW not yet complete, exit
+
+5. If GW claimed:
+   a. Aggregate player fantasy points across matches in the GW
+   b. Apply bench auto-substitutions (check lineup include across ALL matches in GW)
    c. Apply captain/VC multipliers
    d. Apply chip effects (multiplicative with captain)
-   e. Update leaderboard
+   e. Incremental leaderboard: UPDATE "Team" SET "totalPoints" = "totalPoints" + {gwPoints}
+   f. Set Gameweek.aggregationStatus = 'done'
 ```
-Steps 2a-2d run in a database transaction per match. Step 3 only runs at gameweek end.
 
-**Concurrency guard:** The `SET scoringStatus = 'scoring' WHERE scoringStatus = 'completed'` is an atomic claim — if admin and cron fire simultaneously, only one gets rows back. The other exits cleanly.
+**Concurrency guard:** Both the match claim (step 2) and GW claim (step 4) use raw SQL `UPDATE...RETURNING` which is atomic at the PostgreSQL row level. Prisma's ORM methods do NOT support `RETURNING` — use `$queryRaw` exclusively for these operations.
 
-**Idempotency:** All writes use upserts keyed on `(playerId, matchId)`. Re-running the pipeline for the same match overwrites, not duplicates.
+**Idempotency:** Batch upserts use `ON CONFLICT DO UPDATE` — re-running is safe.
 
-**Batch limit:** Pipeline processes at most 2 matches per invocation. If the midnight cron catches 3+ missed matches, it scores 2 and leaves the rest for the next daily run or manual trigger.
+**Batch limit:** Pipeline processes up to **4 matches** per invocation (dynamic — continues if >15s remains in the 60s budget). Double-headers (2 matches) complete in a single trigger.
 
-Estimated time: ~5-10s per match (well within 60s Hobby limit with 2-match batch cap).
+**Error recovery:**
+- Failed API call → match reset to `completed` for retry
+- After 3 failures → match set to `error`, admin notified
+- Stuck in `scoring` for >5 min → cron resets to `completed` on next run
+- Match cancelled/abandoned → admin sets `scoringStatus = 'cancelled'` (excluded from GW-end check)
+
+**Timing budget (realistic, validated):**
+| Step | Time | Notes |
+|---|---|---|
+| Vercel function cold start | ~1-2s | First invocation only |
+| Neon cold start (if suspended) | ~1-2s | Mitigated by serverless driver |
+| SportMonks API call | ~1-2s per match | 10s timeout |
+| JSON parse + computation | <100ms | In-memory |
+| Batch SQL upsert (~30 rows) | ~100ms | Single statement vs 30 roundtrips |
+| Match status update | ~50ms | |
+| GW aggregation (if triggered) | ~2-3s | 15 teams × multiple queries |
+| **Total per match** | **~4-7s** | |
+| **4 matches + GW end** | **~25-35s** | Well within 60s |
 
 ### Match.scoringStatus State Machine
 ```
 scheduled → completed → scoring → scored
-                ↑                    |
-                └── (re-score) ──────┘
+                ↑           |         |
+                |    (fail) ↓         |
+                ←── (retry) ←─────────┘ (re-score)
+                         ↓
+                    error (after 3 attempts)
+                         ↓
+                    cancelled (admin action, for abandoned matches)
 ```
-`scheduled` = fixture pre-loaded, `completed` = match finished, `scoring` = claimed by pipeline (concurrency lock), `scored` = fantasy points written. Re-score resets to `completed` for reprocessing.
 
 ### Admin Controls
-- **Import & Score:** `POST /api/scoring/import` — admin taps after each match to import stats and calculate scores (primary trigger)
-- **Re-import:** `POST /api/scoring/recalculate/[matchId]` — re-fetch stats and recalculate a specific match (if API data was corrected)
-- Both run as API route handlers within Hobby's 60s function limit
+- **Import & Score:** `POST /api/scoring/import` — admin taps after each match (primary trigger). Requires `User.role === 'ADMIN'`.
+- **Re-import:** `POST /api/scoring/recalculate/[matchId]` — resets match to `completed` and re-scores
+- **Cancel match:** `POST /api/scoring/cancel/[matchId]` — sets `scoringStatus = 'cancelled'` for abandoned/postponed matches
+- **Force end GW:** `POST /api/scoring/force-end-gw/[gameweekId]` — triggers GW-end aggregation regardless of match statuses
+- All run as API route handlers within Hobby's 60s function limit
 
 ## 6. API Routes (Phase 1)
 
@@ -522,9 +588,12 @@ All routes require authentication via Auth.js session unless noted. Routes marke
 ### Scoring:
 - `GET /api/leagues/[leagueId]/scores/[gameweekId]` — Gameweek scores for all teams in a league **(member)**
 - `GET /api/teams/[teamId]/scores/[gameweekId]` — Detailed score breakdown for a single team (per-player points, subs, multipliers) **(owner or league member)**
-- `POST /api/scoring/import` — Trigger match import + scoring pipeline **(admin)**
-- `POST /api/scoring/recalculate/[matchId]` — Reset match to `completed` and re-score **(admin)**
-- `GET /api/scoring/status` — List matches with their `scoringStatus` (scheduled/completed/scoring/scored) **(admin)**
+- `POST /api/scoring/import` — Trigger match import + scoring pipeline **(platform admin, `User.role === 'ADMIN'`)**
+- `GET /api/scoring/cron` — Vercel cron trigger (same pipeline, protected by `CRON_SECRET` header) **(cron only)**
+- `POST /api/scoring/recalculate/[matchId]` — Reset match to `completed` and re-score **(platform admin)**
+- `POST /api/scoring/cancel/[matchId]` — Set match to `cancelled` for abandoned/postponed matches **(platform admin)**
+- `POST /api/scoring/force-end-gw/[gameweekId]` — Force GW aggregation regardless of match statuses **(platform admin)**
+- `GET /api/scoring/status` — List matches with their `scoringStatus` **(platform admin)**
 
 ### Season Admin:
 - `POST /api/admin/season/init` — Import IPL fixture list from SportMonks (`GET /seasons/1795?include=fixtures`), create Match + Gameweek rows **(admin, one-time per season)**
@@ -569,12 +638,16 @@ cp .env.example .env.local
 Edit `.env.local` with your values:
 
 ```env
-# Database (Neon free tier or local PostgreSQL)
-DATABASE_URL="postgresql://user:password@host/fal?sslmode=require"
+# Database — Neon (pooled connection for runtime queries)
+DATABASE_URL="postgresql://user:pass@ep-xxx.region.neon.tech/fal?sslmode=require&pgbouncer=true&connection_limit=1"
+# Database — Neon (direct connection for migrations — bypasses pgBouncer)
+DIRECT_URL="postgresql://user:pass@ep-xxx.region.neon.tech/fal?sslmode=require"
 
-# Auth.js
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+# Auth.js v5
+AUTH_URL="http://localhost:3000"
+AUTH_SECRET="generate-with-openssl-rand-base64-32"
+# AUTH_GOOGLE_ID="your-google-client-id"       # optional — OAuth
+# AUTH_GOOGLE_SECRET="your-google-secret"       # optional — OAuth
 
 # SportMonks Cricket API (€29/mo Major plan)
 SPORTMONKS_API_TOKEN="your-api-token"
@@ -582,7 +655,20 @@ SPORTMONKS_API_TOKEN="your-api-token"
 # IPL 2026 Season (validated)
 SPORTMONKS_SEASON_ID="1795"
 SPORTMONKS_LEAGUE_ID="1"
+
+# Vercel Cron (auto-set by Vercel in production)
+CRON_SECRET="generate-a-random-secret-for-cron-auth"
 ```
+
+> **Important:** In `prisma/schema.prisma`, configure both URLs:
+> ```prisma
+> datasource db {
+>   provider  = "postgresql"
+>   url       = env("DATABASE_URL")
+>   directUrl = env("DIRECT_URL")
+> }
+> ```
+> `DATABASE_URL` (pooled, via pgBouncer) is used by Prisma Client at runtime. `DIRECT_URL` (direct) is used by `prisma migrate` and `prisma db push` for DDL operations. Without this, migrations will fail on Neon.
 
 ```bash
 # 4. Initialize the database
@@ -613,8 +699,13 @@ Opens at [http://localhost:64472](http://localhost:64472). Routes: `/`, `/lineup
 
 **Neon (recommended for dev):**
 - Create a free project at [neon.tech](https://neon.tech)
-- Copy the connection string from the dashboard into `DATABASE_URL`
-- Neon auto-suspends after 5 min idle (~1s cold start on first request)
+- Copy the **pooled** connection string into `DATABASE_URL` (add `?pgbouncer=true&connection_limit=1`)
+- Copy the **direct** connection string into `DIRECT_URL` (for migrations)
+- Use `@prisma/adapter-neon` + `@neondatabase/serverless` for the serverless driver (WebSocket-based, avoids bundling 40MB Prisma engine, reduces cold starts):
+  ```bash
+  npm install @neondatabase/serverless @prisma/adapter-neon
+  ```
+- Neon auto-suspends after 5 min idle (~1-3s cold start including connection establishment)
 
 **Local PostgreSQL (alternative):**
 ```bash
@@ -624,10 +715,17 @@ createdb fal
 # DATABASE_URL="postgresql://localhost/fal"
 ```
 
-**Auth.js:**
-- Generate a secret: `openssl rand -base64 32`
-- For OAuth providers (Google, GitHub), create OAuth apps and add client ID/secret to `.env.local`
+**Auth.js v5 (NextAuth v5):**
+- Generate a secret: `openssl rand -base64 32` → set as `AUTH_SECRET`
+- Auth.js v5 uses `AUTH_SECRET` and `AUTH_URL` (not the old `NEXTAUTH_*` env vars)
+- For OAuth providers (Google, GitHub), create OAuth apps and set `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` etc.
 - Credentials-based auth works without OAuth setup
+- The v5 pattern for Next.js App Router:
+  ```
+  lib/auth.ts                            → NextAuth() config, exports { auth, handlers, signIn, signOut }
+  app/api/auth/[...nextauth]/route.ts    → export { GET, POST } from "@/lib/auth"
+  middleware.ts                           → export { auth as middleware } from "@/lib/auth"
+  ```
 
 **SportMonks API:**
 - Sign up at [sportmonks.com](https://www.sportmonks.com) (14-day free trial, then €29/mo)
@@ -639,42 +737,83 @@ createdb fal
 ```
 fal/
 ├── app/                    # Next.js App Router
-│   ├── api/                # API routes
-│   │   ├── auth/           # Auth.js handlers
+│   ├── api/                # API routes (serverless functions)
+│   │   ├── auth/[...nextauth]/route.ts  # Auth.js v5 handler
 │   │   ├── leagues/        # League CRUD + join
 │   │   ├── teams/          # Team + lineup management
-│   │   ├── scoring/        # Import + recalculate
+│   │   ├── scoring/
+│   │   │   ├── import/route.ts   # POST — admin trigger
+│   │   │   ├── cron/route.ts     # GET — Vercel cron trigger (same pipeline)
+│   │   │   ├── recalculate/[matchId]/route.ts
+│   │   │   ├── cancel/[matchId]/route.ts
+│   │   │   ├── force-end-gw/[gameweekId]/route.ts
+│   │   │   └── status/route.ts
 │   │   ├── admin/          # Season init
 │   │   ├── leaderboard/    # Rankings
 │   │   ├── players/        # Player search
 │   │   └── gameweeks/      # GW info
-│   ├── (auth)/             # Auth pages (login, register)
-│   ├── dashboard/          # Dashboard page
-│   ├── lineup/             # Lineup management page
-│   ├── players/            # Player market page
-│   ├── league/             # League admin page
-│   └── layout.tsx          # Root layout
+│   ├── (auth)/             # Route group — login, register (no layout nesting)
+│   ├── dashboard/
+│   │   ├── page.tsx        # Dashboard page
+│   │   └── loading.tsx     # Skeleton UI while loading
+│   ├── lineup/
+│   │   ├── page.tsx
+│   │   └── loading.tsx
+│   ├── players/
+│   │   ├── page.tsx
+│   │   └── loading.tsx
+│   ├── league/
+│   │   ├── page.tsx
+│   │   └── loading.tsx
+│   ├── layout.tsx          # Root layout (nav, providers)
+│   ├── error.tsx           # Global error boundary
+│   ├── loading.tsx         # Global loading skeleton
+│   └── not-found.tsx       # 404 page
+├── middleware.ts            # Auth.js v5 edge middleware (protects routes)
 ├── lib/
 │   ├── scoring/            # Fantasy points engine
 │   │   ├── batting.ts      # Batting points + SR bonus
 │   │   ├── bowling.ts      # Bowling points + ER bonus
 │   │   ├── fielding.ts     # Catches, stumpings, runouts
 │   │   ├── multipliers.ts  # C/VC/chip effects
-│   │   └── pipeline.ts     # Orchestrates full scoring flow
+│   │   └── pipeline.ts     # Orchestrates full scoring flow (shared by POST + GET cron)
+│   ├── lineup/             # Lineup validation service
+│   │   ├── validation.ts   # Squad/XI rules, role constraints
+│   │   └── lock.ts         # Lineup lock timing checks
 │   ├── sportmonks/         # SportMonks API client
-│   │   ├── client.ts       # HTTP client with auth
+│   │   ├── client.ts       # HTTP client with auth + timeout
 │   │   ├── fixtures.ts     # Fixture + scorecard fetching
 │   │   ├── players.ts      # Player/squad fetching
 │   │   └── types.ts        # API response types
-│   ├── auth.ts             # Auth.js config
-│   └── db.ts               # Prisma client singleton
+│   ├── auth.ts             # Auth.js v5 config (exports auth, handlers, signIn, signOut)
+│   └── db.ts               # Prisma client singleton (with Neon serverless adapter)
 ├── prisma/
-│   └── schema.prisma       # Database schema
+│   └── schema.prisma       # Database schema (url + directUrl for Neon)
+├── vercel.json             # Cron config + deployment settings
 ├── docs/                   # Design specs + mockups
 ├── server.js               # Mockup preview server
 ├── .env.local              # Local environment (git-ignored)
 └── package.json
 ```
+
+### Data Freshness Strategy (Vercel Hobby — no WebSockets)
+
+| Page | Strategy | Rationale |
+|---|---|---|
+| Dashboard | Server components with `revalidate: 300` (5 min) + client-side SWR `refreshInterval: 60000` (1 min) for scores section during match days | Scores only change on admin trigger, not real-time |
+| Lineup | Fetch on demand, no polling | User's own data, edits are immediate |
+| Leaderboard | Server component with `revalidate: 300` | Updates at GW end only |
+| Admin scoring status | SWR `refreshInterval: 10000` (10s) | Admin needs to see when pipeline completes |
+| Player market | Server component with `revalidate: 3600` (1 hr) | Stats change after GW end only |
+
+Key insight: Since scoring only runs when admin triggers it, there is no "live" data to poll for. `revalidateOnFocus: true` with SWR is sufficient for most pages.
+
+### Deployment (Vercel)
+
+All `.env.local` variables must be set in **Vercel Dashboard → Settings → Environment Variables** for production/preview. Key differences:
+- `AUTH_URL` → set to production domain (e.g., `https://fal.vercel.app`)
+- `DATABASE_URL` / `DIRECT_URL` → same Neon values
+- `CRON_SECRET` → Vercel auto-generates this for cron auth
 
 ### Common Dev Commands
 
