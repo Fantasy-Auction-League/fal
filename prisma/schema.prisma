@@ -1,0 +1,292 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+// Enums
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PlayerRole {
+  BAT
+  BOWL
+  ALL
+  WK
+}
+
+enum GameweekStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum AggregationStatus {
+  PENDING
+  AGGREGATING
+  DONE
+}
+
+enum ScoringStatus {
+  SCHEDULED
+  COMPLETED
+  SCORING
+  SCORED
+  ERROR
+  CANCELLED
+}
+
+enum SlotType {
+  XI
+  BENCH
+}
+
+enum LineupRole {
+  CAPTAIN
+  VC
+}
+
+enum ChipType {
+  POWER_PLAY_BAT
+  BOWLING_BOOST
+}
+
+enum ChipStatus {
+  PENDING
+  USED
+}
+
+// Models
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  teams     Team[]
+  leagues   League[] @relation("LeagueAdmin")
+}
+
+model League {
+  id            String       @id @default(cuid())
+  name          String
+  inviteCode    String       @unique
+  adminUserId   String
+  admin         User         @relation("LeagueAdmin", fields: [adminUserId], references: [id])
+  maxManagers   Int          @default(15)
+  minSquadSize  Int          @default(12)
+  maxSquadSize  Int          @default(15)
+  seasonStarted Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  teams         Team[]
+  teamPlayers   TeamPlayer[]
+}
+
+model Team {
+  id             String          @id @default(cuid())
+  name           String
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  leagueId       String
+  league         League          @relation(fields: [leagueId], references: [id])
+  totalPoints    Int             @default(0)
+  bestGwScore    Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  teamPlayers    TeamPlayer[]
+  lineups        Lineup[]
+  chipUsages     ChipUsage[]
+  gameweekScores GameweekScore[]
+
+  @@index([leagueId])
+}
+
+model TeamPlayer {
+  id            String   @id @default(cuid())
+  teamId        String
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId      String
+  player        Player   @relation(fields: [playerId], references: [id])
+  leagueId      String
+  league        League   @relation(fields: [leagueId], references: [id])
+  purchasePrice Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  @@unique([leagueId, playerId])
+}
+
+model Player {
+  id           String              @id @default(cuid())
+  apiPlayerId  Int                 @unique
+  fullname     String
+  firstname    String?
+  lastname     String?
+  iplTeamId    Int
+  iplTeamName  String?
+  iplTeamCode  String?
+  role         PlayerRole
+  battingStyle String?
+  bowlingStyle String?
+  imageUrl     String?
+  dateOfBirth  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  teamPlayers  TeamPlayer[]
+  lineupSlots  LineupSlot[]
+  performances PlayerPerformance[]
+  scores       PlayerScore[]
+
+  @@index([role, iplTeamId])
+}
+
+model Gameweek {
+  id                String            @id @default(cuid())
+  number            Int               @unique
+  lockTime          DateTime?
+  status            GameweekStatus    @default(UPCOMING)
+  aggregationStatus AggregationStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  matches           Match[]
+  lineups           Lineup[]
+  gameweekScores    GameweekScore[]
+  playerScores      PlayerScore[]
+
+  @@index([status])
+}
+
+model Match {
+  id              String              @id @default(cuid())
+  apiMatchId      Int                 @unique
+  gameweekId      String
+  gameweek        Gameweek            @relation(fields: [gameweekId], references: [id])
+  localTeamId     Int
+  visitorTeamId   Int
+  localTeamName   String?
+  visitorTeamName String?
+  startingAt      DateTime
+  apiStatus       String              @default("NS")
+  scoringStatus   ScoringStatus       @default(SCHEDULED)
+  note            String?
+  winnerTeamId    Int?
+  superOver       Boolean             @default(false)
+  scoringAttempts Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  performances    PlayerPerformance[]
+
+  @@index([scoringStatus])
+  @@index([gameweekId, scoringStatus])
+}
+
+model Lineup {
+  id         String       @id @default(cuid())
+  teamId     String
+  team       Team         @relation(fields: [teamId], references: [id])
+  gameweekId String
+  gameweek   Gameweek     @relation(fields: [gameweekId], references: [id])
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  slots      LineupSlot[]
+
+  @@unique([teamId, gameweekId])
+}
+
+model LineupSlot {
+  id            String      @id @default(cuid())
+  lineupId      String
+  lineup        Lineup      @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  playerId      String
+  player        Player      @relation(fields: [playerId], references: [id])
+  slotType      SlotType
+  benchPriority Int?
+  role          LineupRole?
+
+  @@unique([lineupId, playerId])
+}
+
+model PlayerPerformance {
+  id              String   @id @default(cuid())
+  playerId        String
+  player          Player   @relation(fields: [playerId], references: [id])
+  matchId         String
+  match           Match    @relation(fields: [matchId], references: [id])
+  // Batting
+  runs            Int?
+  balls           Int?
+  fours           Int?
+  sixes           Int?
+  strikeRate      Float?
+  wicketId        Int?
+  // Bowling
+  overs           Float?
+  maidens         Int?
+  runsConceded    Int?
+  wickets         Int?
+  economyRate     Float?
+  dotBalls        Int?
+  // Fielding
+  catches         Int      @default(0)
+  stumpings       Int      @default(0)
+  runoutsDirect   Int      @default(0)
+  runoutsAssisted Int      @default(0)
+  // Computed
+  fantasyPoints   Int      @default(0)
+  // Meta
+  inStartingXI    Boolean  @default(false)
+  isImpactPlayer  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([playerId, matchId])
+  @@index([matchId])
+}
+
+model PlayerScore {
+  id          String   @id @default(cuid())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id])
+  gameweekId  String
+  gameweek    Gameweek @relation(fields: [gameweekId], references: [id])
+  totalPoints Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([playerId, gameweekId])
+}
+
+model ChipUsage {
+  id         String     @id @default(cuid())
+  teamId     String
+  team       Team       @relation(fields: [teamId], references: [id])
+  chipType   ChipType
+  gameweekId String
+  status     ChipStatus @default(PENDING)
+  createdAt  DateTime   @default(now())
+
+  @@unique([teamId, chipType])
+}
+
+model GameweekScore {
+  id          String    @id @default(cuid())
+  teamId      String
+  team        Team      @relation(fields: [teamId], references: [id])
+  gameweekId  String
+  gameweek    Gameweek  @relation(fields: [gameweekId], references: [id])
+  totalPoints Int       @default(0)
+  chipUsed    ChipType?
+  createdAt   DateTime  @default(now())
+
+  @@unique([teamId, gameweekId])
+}

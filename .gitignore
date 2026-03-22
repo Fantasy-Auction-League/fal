@@ -6,3 +6,7 @@ node_modules/
 .DS_Store
 docs/.DS_Store
 docs/superpowers/.DS_Store
+node_modules/
+.next/
+tsconfig.tsbuildinfo
+next-env.d.ts
