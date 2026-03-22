@@ -250,20 +250,47 @@ Cricket Data API → Match Import Service → Raw Match Data Storage → Stat Pa
 - **Fallback:** Admin can manually input match stats via CSV upload if API is unavailable
 - See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 4 for full API evaluation (4 providers compared) and field mapping
 
-### Required Stats from API:
-- Runs scored, Fours hit, Sixes hit, Balls faced
-- Wickets taken, Maiden overs, Dismissal type (for LBW/Bowled +8 bonus)
-- Overs bowled, Runs conceded (for economy rate calculation, min 2 overs)
-- Balls faced, Runs scored (for strike rate calculation, min 10 balls)
-- Player role (BAT/BOWL/ALL/WK) — bowlers exempt from SR penalties and duck
-- Catches taken per fielder (for catch count + 3-catch bonus)
-- Stumpings per wicketkeeper
-- Run out attribution: number of fielders involved (1 = direct hit, 2 = assisted) and fielder IDs
-- Did player bat? (for duck rule — BAT, WK, ALL only)
-- Did player play? (for bench substitution and Starting XI +4 bonus)
-- Whether player entered as Impact Player / concussion sub (+4 bonus)
-- **Dot balls:** Not available in either API's bowling summary — requires ball-by-ball data computation (SportMonks). Dream11 confirms +1 per dot ball.
-- **Fielding attribution:** Requires ball-by-ball parsing or `batting.runoutby` nested include from SportMonks. Must validate during 14-day trial whether runout data distinguishes direct hit (1 fielder) vs assisted (2 fielders). See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 4 for fielding data gaps.
+### Required Stats from API (validated against SportMonks, Mar 2026):
+
+**From `?include=batting` (batting scorecard):**
+- `score` — Runs scored (for run points, milestone bonuses, SR calc, duck detection)
+- `ball` — Balls faced (for SR calc, min 10 balls check)
+- `four_x` — Fours hit (for boundary bonus)
+- `six_x` — Sixes hit (for six bonus)
+- `rate` — Strike rate (pre-computed, or derive from score/ball)
+- `wicket_id` — Dismissal type: 79 = Bowled, 83 = LBW (for +8 bonus), 84 = Not Out
+- `catch_stump_player_id` — Fielder who caught (wicket_id=54/55), stumped (56), or collected at stumps on runout (63/64)
+- `runout_by_id` — Fielder who threw for runout (wicket_id=63/64). When both IDs differ = assisted (6 pts each); same = direct hit (12 pts)
+
+**From `?include=bowling` (bowling scorecard):**
+- `wickets` — Wickets taken (for wicket points + 3/4/5 wicket bonuses)
+- `overs` — Overs bowled (for ER calc, min 2 overs check, maiden detection)
+- `medians` — Maiden overs
+- `runs` — Runs conceded (for ER calc)
+- `rate` — Economy rate (pre-computed, or derive from runs/overs)
+- `wide`, `noball` — Extras bowled (available but not scored in FAL)
+
+**From `?include=lineup` (match squad):**
+- `position.name` — Player role (Batsman/Bowler/Allrounder/Wicketkeeper) for bowler SR exemption + duck exemption
+- `lineup.substitution` — `false` = Starting XI (+4 pts), `true` = substitute
+- Impact Player detection: sub who appears in batting or bowling data = Impact Player (+4 pts)
+- "Did player play?" = player_id appears in match lineup include → played (for bench sub trigger)
+
+**From `?include=balls` (ball-by-ball — only needed if dot ball scoring is kept):**
+- `score.runs`, `score.ball`, `score.noball`, `score.bye`, `score.leg_bye` — for dot ball computation
+
+**From fixture (no include needed):**
+- `note` — Match result text (e.g., "RCB won by 7 wickets")
+- `winner_team_id`, `starting_at`, `status`, `super_over`
+
+**Not available from API (app-internal):**
+- Player auction price — stored in FAL database from admin CSV upload
+- Season/GW aggregated stats — computed from PlayerPerformance table
+- Player form trends — computed from historical PlayerScore data
+
+**Accepted limitations:**
+- Overthrow boundary vs regular boundary cannot be distinguished from API (rare, ~2-3 per season)
+- Super Over ball-by-ball scoreboard values need runtime validation (check for scoreboard beyond `S2`)
 
 ### Ingestion Trigger:
 Phase 1: Hybrid approach — admin triggers scoring on-demand after each match via an "Import Scores" button, with a daily midnight cron as safety net. Runs on Vercel Hobby (free). See [Technical Architecture](2026-03-15-fal-technical-architecture.md) Section 5 for pipeline details.
