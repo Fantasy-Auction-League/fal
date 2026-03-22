@@ -629,11 +629,29 @@ function computeBasePoints(batting, bowling, fielding, role, inStartingXI, isImp
 Runs at GW end for each team:
 
 ```typescript
-function applyBenchSubs(lineup: LineupSlot[], performances: Map<number, PlayerPerformance[]>) {
-  // 1. Determine which players "played" in ANY match this GW
-  //    "played" = player's ID appears in ANY match lineup with substitution=false,
-  //    OR player's ID appears in batting/bowling data (impact player)
-  const playedPlayerIds: Set<number> = /* from PlayerPerformance records */;
+// Build the "played" set from ALL matches in this GW BEFORE calling bench subs or multipliers.
+// This is the single source of truth for "did this player participate?"
+function buildPlayedSet(gwMatches: Match[], allPerformances: PlayerPerformance[]): Set<number> {
+  const played = new Set<number>();
+  for (const match of gwMatches) {
+    // Players in Starting XI (substitution === false in match lineup)
+    for (const p of match.lineup) {
+      if (!p.substitution) played.add(p.playerId);
+    }
+    // Impact Subs (substitution === true BUT appeared in batting or bowling)
+    const battedOrBowled = new Set(
+      allPerformances.filter(p => p.matchId === match.id).map(p => p.playerId)
+    );
+    for (const p of match.lineup) {
+      if (p.substitution && battedOrBowled.has(p.playerId)) {
+        played.add(p.playerId);
+      }
+    }
+  }
+  return played;
+}
+
+function applyBenchSubs(lineup: LineupSlot[], playedPlayerIds: Set<number>) {
 
   // 2. Find XI players who did NOT play
   const xiSlots = lineup.filter(s => s.slotType === 'XI')
@@ -664,24 +682,40 @@ function applyBenchSubs(lineup: LineupSlot[], performances: Map<number, PlayerPe
 ### Captain/VC/TC Promotion Logic (`lib/scoring/multipliers.ts`)
 
 ```typescript
-function resolveMultipliers(lineup: LineupSlot[], playedPlayerIds: Set<number>) {
+// "played" = appeared in the Starting XI (substitution === false) OR appeared
+// as an Impact Sub (substitution === true AND present in batting/bowling data)
+// in ANY match across the entire gameweek. Must check ALL GW matches, not just one.
+//
+// This set is built BEFORE resolveMultipliers is called:
+//   for each match in this GW:
+//     fetch lineup include → for each player where substitution === false → add to set
+//     fetch batting/bowling → for each sub player who batted/bowled → add to set
+
+function resolveMultipliers(
+  lineup: LineupSlot[],
+  playedPlayerIds: Set<number>  // built from ALL matches in the GW (see above)
+) {
   const captain = lineup.find(s => s.role === 'CAPTAIN');
   const vc = lineup.find(s => s.role === 'VC');
 
   const multipliers: Map<number, number> = new Map(); // playerId → multiplier
 
-  // Captain: always 2x if played
-  if (captain && playedPlayerIds.has(captain.playerId)) {
-    multipliers.set(captain.playerId, 2);
-  } else if (vc && playedPlayerIds.has(vc.playerId)) {
-    // Captain absent → VC promoted to 2x
-    // Bench sub who replaced Captain does NOT inherit multiplier
-    multipliers.set(vc.playerId, 2);
-  }
-  // Both absent → no multipliers for anyone
+  const captainPlayed = captain && playedPlayerIds.has(captain.playerId);
+  const vcPlayed = vc && playedPlayerIds.has(vc.playerId);
 
-  // VC gets NO multiplier when Captain plays (1x = standard).
-  // This is the FAL/PRD model, NOT Dream11 (which gives VC 1.5x always).
+  if (captainPlayed) {
+    // Captain played at least one match this GW → Captain gets 2x, VC gets 1x (no bonus)
+    // Example: Captain scores 80 → you get 160. VC scores 60 → you get 60.
+    multipliers.set(captain.playerId, 2);
+    // VC deliberately NOT added to multipliers map → defaults to 1x
+  } else if (vcPlayed) {
+    // Captain did NOT play in ANY match this GW (not in Starting XI, not as Impact Sub)
+    // → VC promoted to 2x
+    // Example: Captain scores 0 (absent) → VC scores 60 → you get 120.
+    multipliers.set(vc.playerId, 2);
+    // Bench sub who filled Captain's XI slot does NOT inherit 2x
+  }
+  // Both Captain and VC absent → no multipliers for anyone
 
   return multipliers;
 }
