@@ -541,7 +541,157 @@ All routes require authentication via Auth.js session unless noted. Routes marke
 - `GET /api/gameweeks/current` — Current gameweek info (number, lock time, matches, status) **(authenticated)**
 - `GET /api/gameweeks` — List all gameweeks with status and match counts **(authenticated)**
 
-## 7. Hosting & Cost Breakdown
+## 7. Local Development Setup
+
+### Prerequisites
+
+| Tool | Version | Install |
+|---|---|---|
+| Node.js | 20+ | `brew install node` or [nodejs.org](https://nodejs.org) |
+| npm | 10+ | Bundled with Node.js |
+| PostgreSQL | 16+ (or use Neon) | `brew install postgresql@16` or use Neon free tier |
+| Git | 2.40+ | `brew install git` |
+
+### Installation
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/Fantasy-Auction-League/fal.git
+cd fal
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment variables
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your values:
+
+```env
+# Database (Neon free tier or local PostgreSQL)
+DATABASE_URL="postgresql://user:password@host/fal?sslmode=require"
+
+# Auth.js
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+
+# SportMonks Cricket API (€29/mo Major plan)
+SPORTMONKS_API_TOKEN="your-api-token"
+
+# IPL 2026 Season (validated)
+SPORTMONKS_SEASON_ID="1795"
+SPORTMONKS_LEAGUE_ID="1"
+```
+
+```bash
+# 4. Initialize the database
+npx prisma generate
+npx prisma db push
+
+# 5. Seed IPL players (from SportMonks)
+# This pulls all 250 players and creates Player rows
+npm run seed:players
+
+# 6. Start the dev server
+npm run dev
+```
+
+App runs at [http://localhost:3000](http://localhost:3000).
+
+### Design Mockup Server
+
+To preview UI mockups without the full app:
+
+```bash
+node server.js
+```
+
+Opens at [http://localhost:64472](http://localhost:64472). Routes: `/`, `/lineup`, `/leaderboard`, `/admin`, `/players`, `/scores`, `/standings`, `/view-lineup`.
+
+### Environment Setup Notes
+
+**Neon (recommended for dev):**
+- Create a free project at [neon.tech](https://neon.tech)
+- Copy the connection string from the dashboard into `DATABASE_URL`
+- Neon auto-suspends after 5 min idle (~1s cold start on first request)
+
+**Local PostgreSQL (alternative):**
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+createdb fal
+# DATABASE_URL="postgresql://localhost/fal"
+```
+
+**Auth.js:**
+- Generate a secret: `openssl rand -base64 32`
+- For OAuth providers (Google, GitHub), create OAuth apps and add client ID/secret to `.env.local`
+- Credentials-based auth works without OAuth setup
+
+**SportMonks API:**
+- Sign up at [sportmonks.com](https://www.sportmonks.com) (14-day free trial, then €29/mo)
+- API token from dashboard → Settings → API Tokens
+- Rate limit: 3,000 calls/hr (FAL needs ~5 per match day)
+
+### Project Structure (Phase 1)
+
+```
+fal/
+├── app/                    # Next.js App Router
+│   ├── api/                # API routes
+│   │   ├── auth/           # Auth.js handlers
+│   │   ├── leagues/        # League CRUD + join
+│   │   ├── teams/          # Team + lineup management
+│   │   ├── scoring/        # Import + recalculate
+│   │   ├── admin/          # Season init
+│   │   ├── leaderboard/    # Rankings
+│   │   ├── players/        # Player search
+│   │   └── gameweeks/      # GW info
+│   ├── (auth)/             # Auth pages (login, register)
+│   ├── dashboard/          # Dashboard page
+│   ├── lineup/             # Lineup management page
+│   ├── players/            # Player market page
+│   ├── league/             # League admin page
+│   └── layout.tsx          # Root layout
+├── lib/
+│   ├── scoring/            # Fantasy points engine
+│   │   ├── batting.ts      # Batting points + SR bonus
+│   │   ├── bowling.ts      # Bowling points + ER bonus
+│   │   ├── fielding.ts     # Catches, stumpings, runouts
+│   │   ├── multipliers.ts  # C/VC/chip effects
+│   │   └── pipeline.ts     # Orchestrates full scoring flow
+│   ├── sportmonks/         # SportMonks API client
+│   │   ├── client.ts       # HTTP client with auth
+│   │   ├── fixtures.ts     # Fixture + scorecard fetching
+│   │   ├── players.ts      # Player/squad fetching
+│   │   └── types.ts        # API response types
+│   ├── auth.ts             # Auth.js config
+│   └── db.ts               # Prisma client singleton
+├── prisma/
+│   └── schema.prisma       # Database schema
+├── docs/                   # Design specs + mockups
+├── server.js               # Mockup preview server
+├── .env.local              # Local environment (git-ignored)
+└── package.json
+```
+
+### Common Dev Commands
+
+```bash
+npm run dev              # Start Next.js dev server (localhost:3000)
+npm run build            # Production build
+npm run lint             # ESLint
+npx prisma studio        # Visual database browser (localhost:5555)
+npx prisma db push       # Push schema changes to database
+npx prisma generate      # Regenerate Prisma client after schema changes
+npx prisma migrate dev   # Create + apply migration
+npm run seed:players     # Import IPL 2026 players from SportMonks
+npm run seed:fixtures    # Import IPL 2026 fixtures from SportMonks
+node server.js           # Mockup preview server (localhost:64472)
+```
+
+## 8. Hosting & Cost Breakdown
 
 ### Vercel Hobby Plan Fit
 
@@ -596,7 +746,7 @@ All routes require authentication via Auth.js session unless noted. Routes marke
 | WebSocket auction engine | Vercel or external WS hosting | TBD |
 | Heavy traffic (public leagues) | Vercel Pro + bandwidth | $20/mo + $0.06/GB over 1TB |
 
-## 8. Future Architecture (Phase 2+)
+## 9. Future Architecture (Phase 2+)
 
 ### Auction Engine:
 - Real-time bidding with WebSockets
