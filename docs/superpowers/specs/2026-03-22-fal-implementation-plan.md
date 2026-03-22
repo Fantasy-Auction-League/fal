@@ -27,10 +27,8 @@ cp .env.example .env.local
 ### Environment Variables (`.env.local`)
 
 ```env
-# Database — Neon (pooled connection for runtime queries)
-DATABASE_URL="postgresql://user:pass@ep-xxx.region.neon.tech/fal?sslmode=require&pgbouncer=true&connection_limit=1"
-# Database — Neon (direct connection for migrations — bypasses pgBouncer)
-DIRECT_URL="postgresql://user:pass@ep-xxx.region.neon.tech/fal?sslmode=require"
+# Database — Local PostgreSQL (recommended for dev)
+DATABASE_URL="postgresql://localhost/fal"
 
 # Auth.js v5
 AUTH_URL="http://localhost:3000"
@@ -56,7 +54,7 @@ In `prisma/schema.prisma`:
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  directUrl = env("DIRECT_URL") // only needed in production (Neon)
 }
 
 generator client {
@@ -65,20 +63,24 @@ generator client {
 }
 ```
 
-`DATABASE_URL` (pooled, via pgBouncer) → Prisma Client at runtime.
-`DIRECT_URL` (direct) → `prisma migrate` and `prisma db push`. **Without this, migrations fail on Neon.**
+For local dev, only `DATABASE_URL` is needed. `DIRECT_URL` is only required in production where Neon uses pgBouncer pooling (see Deployment section).
 
 ### Database Init
 
 ```bash
-# 4. Initialize the database
+# 4. Set up local PostgreSQL
+brew install postgresql@16
+brew services start postgresql@16
+createdb fal
+
+# 5. Initialize the database
 npx prisma generate
 npx prisma db push
 
-# 5. Seed IPL players (from SportMonks)
+# 6. Seed IPL players (from SportMonks)
 npm run seed:players
 
-# 6. Start the dev server
+# 7. Start the dev server
 npm run dev
 ```
 
@@ -86,24 +88,41 @@ App runs at [http://localhost:3000](http://localhost:3000).
 
 ## 3. Environment Setup Notes
 
-### Neon (recommended for dev)
-- Create a free project at [neon.tech](https://neon.tech)
-- Copy the **pooled** connection string into `DATABASE_URL` (add `?pgbouncer=true&connection_limit=1`)
-- Copy the **direct** connection string into `DIRECT_URL` (for migrations)
-- Install the serverless driver (WebSocket-based, avoids 40MB Prisma engine, reduces cold starts):
-  ```bash
-  npm install @neondatabase/serverless @prisma/adapter-neon
-  ```
-- Auto-suspends after 5 min idle (~1-3s cold start)
-
-### Local PostgreSQL (alternative)
+### Local PostgreSQL (recommended for dev)
 ```bash
 brew install postgresql@16
 brew services start postgresql@16
 createdb fal
-# DATABASE_URL="postgresql://localhost/fal"
-# No DIRECT_URL needed for local PG
 ```
+- `DATABASE_URL="postgresql://localhost/fal"` — that's it
+- No `DIRECT_URL` needed (no pgBouncer locally)
+- No Neon adapter needed (standard Prisma client)
+- Zero latency, no cold starts, fastest iteration
+
+### Neon (production only)
+Neon is used **only in production** (deployed on Vercel). Setup:
+- Create a free project at [neon.tech](https://neon.tech)
+- Get two connection strings from the Neon dashboard:
+  - **Pooled** → `DATABASE_URL` (add `?pgbouncer=true&connection_limit=1`)
+  - **Direct** → `DIRECT_URL` (for migrations, bypasses pgBouncer)
+- Install the serverless driver (only used in production):
+  ```bash
+  npm install @neondatabase/serverless @prisma/adapter-neon
+  ```
+- Set both URLs in Vercel dashboard environment variables (see Deployment section)
+
+### Dev vs Production — What's Different
+
+| | Local Dev | Production (Vercel + Neon) |
+|---|---|---|
+| Database | Local PostgreSQL | Neon PostgreSQL |
+| Connection | Direct TCP, <1ms | pgBouncer pooled, 20-50ms |
+| Prisma client | Standard `new PrismaClient()` | Neon adapter (`PrismaNeon`) |
+| Cold starts | None | 1-3s (Neon auto-suspend) |
+| `DIRECT_URL` | Not needed | Required for migrations |
+| SQL behavior | Identical | Identical (PostgreSQL is PostgreSQL) |
+
+**Why this is safe:** All scoring logic, raw SQL queries (`INSERT...ON CONFLICT`, `UPDATE...RETURNING`), and business rules run on PostgreSQL either way. The only difference is how Prisma connects — handled by the environment-aware `lib/db.ts` below.
 
 ### Auth.js v5 (NextAuth v5)
 - Generate a secret: `openssl rand -base64 32` → set as `AUTH_SECRET`
@@ -126,24 +145,29 @@ createdb fal
 
 ```typescript
 import { PrismaClient } from '@prisma/client'
-import { Pool, neonConfig } from '@neondatabase/serverless'
-import { PrismaNeon } from '@prisma/adapter-neon'
-import ws from 'ws'
-
-// Required for serverless environments
-neonConfig.webSocketConstructor = ws
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-function createPrismaClient() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-  const adapter = new PrismaNeon(pool)
-  return new PrismaClient({ adapter })
+function createPrismaClient(): PrismaClient {
+  // Production (Neon): use serverless adapter for WebSocket connections
+  if (process.env.NEON_DATABASE_URL || process.env.VERCEL) {
+    const { Pool, neonConfig } = require('@neondatabase/serverless')
+    const { PrismaNeon } = require('@prisma/adapter-neon')
+    const ws = require('ws')
+    neonConfig.webSocketConstructor = ws
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+    return new PrismaClient({ adapter: new PrismaNeon(pool) })
+  }
+
+  // Local dev: standard Prisma client (direct PostgreSQL connection)
+  return new PrismaClient()
 }
 
 export const prisma = globalForPrisma.prisma || createPrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 ```
+
+This auto-detects the environment: local dev gets standard Prisma (fast, no adapter overhead), production on Vercel gets the Neon serverless adapter (WebSocket-based, pgBouncer-compatible).
 
 ## 4. Project Structure
 
@@ -243,9 +267,14 @@ vercel login
 vercel link
 # Select your team/account → create new project → link to Git repo
 
-# 3. Set environment variables
+# 3. Set up Neon for production
+#    Create project at neon.tech → get pooled + direct connection strings
+
+# 4. Set environment variables (Neon + app config)
 vercel env add DATABASE_URL production
+# Value: postgresql://user:pass@ep-xxx.neon.tech/fal?sslmode=require&pgbouncer=true&connection_limit=1
 vercel env add DIRECT_URL production
+# Value: postgresql://user:pass@ep-xxx.neon.tech/fal?sslmode=require  (direct, no pgbouncer)
 vercel env add AUTH_SECRET production
 vercel env add AUTH_URL production        # e.g., https://fal.vercel.app
 vercel env add SPORTMONKS_API_TOKEN production
