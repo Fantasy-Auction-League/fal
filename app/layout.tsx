@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Providers } from './providers'
 import './globals.css'
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-jakarta',
 })
 
 export const metadata: Metadata = {
@@ -19,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="font-sans antialiased bg-[#0c0c10] text-white min-h-screen">
+    <html lang="en" className={jakarta.variable}>
+      <body className="font-sans antialiased bg-[#f2f3f8] text-[#1a1a2e] min-h-screen" style={{ fontFamily: 'var(--font-jakarta), sans-serif' }}>
         <Providers>{children}</Providers>
       </body>
     </html>
