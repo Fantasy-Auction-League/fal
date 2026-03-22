@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 /* ─── IPL team colors ─── */
 const teamColors: Record<string, string> = {
@@ -108,18 +108,10 @@ export default function AdminPage() {
     }
   }, [])
 
-  // Run once on mount
-  useState(() => {
+  // Fetch leagues when session becomes authenticated
+  useEffect(() => {
     if (sessionStatus === 'authenticated') fetchLeagues()
-  })
-
-  // Also fetch when session transitions to authenticated
-  const prevStatus = useRef(sessionStatus)
-  if (sessionStatus === 'authenticated' && prevStatus.current !== 'authenticated') {
-    prevStatus.current = sessionStatus
-    fetchLeagues()
-  }
-  prevStatus.current = sessionStatus
+  }, [sessionStatus, fetchLeagues])
 
   /* ─── Auth guard ─── */
   if (sessionStatus === 'loading') {
