@@ -462,9 +462,7 @@ FAL now uses Dream11's T20 scoring system as the baseline.
 
 ## 15. Technical Architecture
 
-See [Technical Architecture Document](2026-03-15-fal-technical-architecture.md) for full details including:
-- Phase 1 monolithic Next.js architecture
-- Core services and database entities
-- Data ingestion pipeline
-- API route design
-- Phase 2+ roadmap (auction engine, market system)
+See the following documents for full technical details:
+- [Architecture](2026-03-15-fal-architecture.md) — System design, database entities, API routes, scoring pipeline, hosting
+- [SportMonks API Exploration](2026-03-22-sportmonks-api-exploration.md) — Field validation, dismissal mapping, gap analysis
+- [Implementation Plan](2026-03-22-fal-implementation-plan.md) — Local setup, project structure, Vercel deployment, dev commands
