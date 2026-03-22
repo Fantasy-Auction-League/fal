@@ -55,30 +55,92 @@
   }
   .meta-line strong { font-weight: 800; color: #1a1a2e; font-size: 15px; }
 
-  /* ═══ Chips — clean white row ═══ */
+  /* ═══ Chips — single split row ═══ */
   .chips-bar {
-    background: #fff; padding: 0 16px 10px;
-    display: flex; justify-content: center; gap: 10px;
+    background: #fff; padding: 0; flex-shrink: 0;
+    display: flex; flex-direction: row;
+    border-bottom: 1px solid #efefF3;
+  }
+  .chip-row {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    padding: 14px 10px 12px; gap: 8px;
+  }
+  .chip-row:first-child { border-right: 1px solid #efefF3; }
+  .chip-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chip-icon.ci-green { background: linear-gradient(135deg, #0d9e5f, #07c472); }
+  .chip-icon.ci-grey { background: #e8e8ee; }
+  .chip-name { font-size: 14px; font-weight: 700; color: #1a1a2e; line-height: 1.2; }
+  .chip-desc { font-size: 11px; font-weight: 500; color: #888; line-height: 1.35; }
+  /* Toggle switch */
+  .chip-toggle {
+    width: 48px; height: 28px; border-radius: 14px;
+    position: relative; cursor: pointer; transition: background 0.25s ease;
     flex-shrink: 0;
   }
-  .chip-item {
-    display: flex; flex-direction: column; align-items: center; gap: 2px; width: 76px;
+  .chip-toggle.t-off { background: #dde0e8; }
+  .chip-toggle.t-on  { background: var(--mint); }
+  .toggle-thumb {
+    position: absolute; top: 3px; width: 22px; height: 22px;
+    border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+    transition: left 0.22s ease;
   }
-  .chip-circle {
-    width: 28px; height: 28px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  .t-off .toggle-thumb { left: 3px; }
+  .t-on  .toggle-thumb { left: 23px; }
+  /* Used badge */
+  .chip-used-badge {
+    font-size: 11px; font-weight: 700;
+    background: #f0f0f5; color: #999; padding: 4px 10px;
+    border-radius: 8px; white-space: nowrap;
   }
-  .chip-circle.on {
-    background: linear-gradient(135deg, #edf9f0, #d9f2e3);
-    border: 1.5px solid var(--mint);
+  .chip-row.cr-used .chip-name { color: #bbb; }
+  .chip-row.cr-used .chip-desc { color: #ccc; }
+
+  /* ═══ Chip confirmation modal ═══ */
+  .chip-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px); z-index: 60;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
   }
-  .chip-circle.off {
-    background: #f5f4f6; border: 1.5px solid #e0dde2; opacity: 0.4;
+  .chip-overlay.open { opacity: 1; pointer-events: all; }
+  .chip-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: #fff; border-radius: 24px 24px 0 0;
+    padding: 0 0 40px; z-index: 61;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  .chip-label { font-size: 11px; font-weight: 600; color: #333; text-align: center; line-height: 1.2; }
-  .chip-tag { font-size: 10px; font-weight: 600; }
-  .chip-tag.on { color: var(--mint); border: 1px solid rgba(13,158,95,0.3); padding: 1px 6px; border-radius: 6px; background: rgba(13,158,95,0.06); }
-  .chip-tag.off { color: #999; }
+  .chip-overlay.open .chip-sheet { transform: translateY(0); }
+  .chip-sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 12px auto 20px; }
+  .chip-sheet-icon {
+    width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 14px;
+    background: linear-gradient(135deg, #0d9e5f, #07c472);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chip-sheet-title { font-size: 20px; font-weight: 800; color: #1a1a2e; text-align: center; padding: 0 24px; }
+  .chip-sheet-sub { font-size: 14px; color: #666; text-align: center; margin-top: 6px; padding: 0 28px; line-height: 1.5; }
+  .chip-warning {
+    margin: 16px 20px 0; padding: 12px 14px; border-radius: 12px;
+    background: #fff8ec; border: 1px solid rgba(255,160,0,0.3);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .chip-warning-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .chip-warning-text { font-size: 13px; color: #7a5500; font-weight: 500; line-height: 1.45; }
+  .chip-sheet-btns { display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 0; }
+  .btn-chip-confirm {
+    display: block; width: 100%; padding: 15px; border: none; border-radius: 14px;
+    background: linear-gradient(135deg, #0d9e5f, #07c472);
+    color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit;
+  }
+  .btn-chip-cancel {
+    display: block; width: 100%; padding: 14px; border: none; border-radius: 14px;
+    background: #f2f3f8; color: #555; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
 
   /* ═══ PITCH — rich green, Dream11 style ═══ */
   .pitch {
@@ -348,8 +410,36 @@
     <div class="meta-line">Gameweek 8 · <strong>Deadline: Tue 17 Mar, 19:30</strong></div>
 
     <div class="chips-bar">
-      <div class="chip-item"><div class="chip-circle off">💰</div><div class="chip-label">Power Pay</div><div class="chip-tag off">Played GW3</div></div>
-      <div class="chip-item"><div class="chip-circle on">🏏</div><div class="chip-label">Bat Boost</div><div class="chip-tag on">Play</div></div>
+      <!-- Bowling Boost — available to play -->
+      <div class="chip-row" id="chipBowling">
+        <div class="chip-icon ci-green">
+          <svg viewBox="0 0 36 36" width="26" height="26" fill="none">
+            <circle cx="9" cy="9" r="6" fill="#DC2020"/>
+            <path d="M6 7.5 Q9 9.5 12 7.5" stroke="white" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+            <path d="M6 10.5 Q9 8.5 12 10.5" stroke="white" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+            <rect x="17" y="16" width="3" height="16" rx="1.5" fill="white"/>
+            <rect x="23" y="16" width="3" height="16" rx="1.5" fill="white"/>
+            <rect x="29" y="16" width="3" height="16" rx="1.5" fill="white"/>
+            <rect x="17" y="13.5" width="9" height="2.2" rx="1.1" fill="rgba(255,255,255,0.9)"/>
+            <rect x="25" y="11" width="8" height="2" rx="1" fill="rgba(255,255,255,0.55)" transform="rotate(-22 25 11)"/>
+          </svg>
+        </div>
+        <div class="chip-name">Bowling Boost</div>
+        <div class="chip-desc">Doubles all bowling points this GW</div>
+        <div class="chip-toggle t-off" id="toggleBowling" onclick="activateChip()"><div class="toggle-thumb"></div></div>
+      </div>
+      <!-- Power Play Bat — already used -->
+      <div class="chip-row cr-used">
+        <div class="chip-icon ci-grey">
+          <svg viewBox="0 0 36 36" width="26" height="26" fill="none">
+            <rect x="16" y="4" width="5" height="22" rx="2.5" fill="#bbb" transform="rotate(20 16 4)"/>
+            <ellipse cx="10" cy="28" rx="5" ry="3.5" fill="#bbb" transform="rotate(20 10 28)"/>
+          </svg>
+        </div>
+        <div class="chip-name">Power Play Bat</div>
+        <div class="chip-desc">Doubles all batting points this GW</div>
+        <div class="chip-used-badge">Used GW 3</div>
+      </div>
     </div>
   </div>
 
@@ -480,6 +570,35 @@
 
   <div class="save-area"><a href="/" class="btn-save">Save Lineup</a></div>
 
+  <!-- Chip Confirmation Modal -->
+  <div class="chip-overlay" id="chipOverlay">
+    <div class="chip-sheet">
+      <div class="chip-sheet-handle"></div>
+      <div class="chip-sheet-icon">
+        <svg viewBox="0 0 36 36" width="34" height="34" fill="none">
+          <circle cx="9" cy="9" r="6" fill="#DC2020"/>
+          <path d="M6 7.5 Q9 9.5 12 7.5" stroke="white" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+          <path d="M6 10.5 Q9 8.5 12 10.5" stroke="white" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+          <rect x="17" y="16" width="3" height="16" rx="1.5" fill="white"/>
+          <rect x="23" y="16" width="3" height="16" rx="1.5" fill="white"/>
+          <rect x="29" y="16" width="3" height="16" rx="1.5" fill="white"/>
+          <rect x="17" y="13.5" width="9" height="2.2" rx="1.1" fill="rgba(255,255,255,0.9)"/>
+          <rect x="25" y="11" width="8" height="2" rx="1" fill="rgba(255,255,255,0.55)" transform="rotate(-22 25 11)"/>
+        </svg>
+      </div>
+      <div class="chip-sheet-title">Play Bowling Boost?</div>
+      <div class="chip-sheet-sub">All bowling points for your squad will be doubled for Gameweek 8.</div>
+      <div class="chip-warning">
+        <div class="chip-warning-icon">⚠️</div>
+        <div class="chip-warning-text">This chip <strong>cannot be changed</strong> once Gameweek 8 has started. You only get one Bowling Boost per season — use it wisely.</div>
+      </div>
+      <div class="chip-sheet-btns">
+        <button class="btn-chip-confirm" onclick="confirmChip()">Yes, Play Bowling Boost</button>
+        <button class="btn-chip-cancel" onclick="cancelChipModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Player Detail Modal -->
   <div class="pm-overlay" id="pmOverlay" onclick="closePlayer()"></div>
   <button class="pm-close" id="pmCloseBtn" onclick="closePlayer()" style="display:none;">✕</button>
@@ -526,6 +645,31 @@
 </div>
 
 <script>
+// ── Chip toggle logic ──
+var bowlingActive = false;
+function activateChip() {
+  // If already on, deactivate immediately (no GW started yet)
+  if (bowlingActive) {
+    bowlingActive = false;
+    var t = document.getElementById('toggleBowling');
+    t.classList.replace('t-on','t-off');
+    t.innerHTML = '<div class="toggle-thumb"></div>';
+    return;
+  }
+  // Show confirmation modal
+  document.getElementById('chipOverlay').classList.add('open');
+}
+function confirmChip() {
+  bowlingActive = true;
+  var t = document.getElementById('toggleBowling');
+  t.classList.replace('t-off','t-on');
+  t.innerHTML = '<div class="toggle-thumb"></div>';
+  document.getElementById('chipOverlay').classList.remove('open');
+}
+function cancelChipModal() {
+  document.getElementById('chipOverlay').classList.remove('open');
+}
+
 function showSave() {
   document.querySelector('.save-area').classList.add('visible');
 }
