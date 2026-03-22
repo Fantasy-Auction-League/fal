@@ -122,7 +122,7 @@ You have **2 chips** for the entire season — one of each. Each can only be use
 
 ---
 
-### 🎳 Bowling Boost
+### 🔴 Bowling Boost *(cricket ball & stumps)*
 **All your bowlers earn 2× points this gameweek.**
 
 Best used in a week where your bowling-heavy players face batting-friendly pitches and you expect big performances. Stack with a bowling Captain for up to 4× on your Captain's points.
