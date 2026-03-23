@@ -149,18 +149,23 @@ export default function LineupPage() {
   /* ─── Fetch squad ─── */
   const fetchSquad = useCallback(async () => {
     try {
-      // First get user's league and team
+      // First get user's leagues
       const leaguesRes = await fetch('/api/leagues')
       if (!leaguesRes.ok) return
       const leagues: League[] = await leaguesRes.json()
       if (leagues.length === 0) return
 
+      // Fetch full league detail to get teams with userId
+      const detailRes = await fetch(`/api/leagues/${leagues[0].id}`)
+      if (!detailRes.ok) return
+      const leagueDetail = await detailRes.json()
+
       // Find user's team
       const userId = session?.user?.id
       let teamId: string | null = null
-      for (const league of leagues) {
-        const team = league.teams?.find(t => t.userId === userId)
-        if (team) { teamId = team.id; break }
+      const teams = leagueDetail.teams || []
+      for (const team of teams) {
+        if (team.userId === userId) { teamId = team.id; break }
       }
       if (!teamId) return
 
