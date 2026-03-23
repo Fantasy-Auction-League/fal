@@ -2,6 +2,7 @@
 
 import { signIn } from 'next-auth/react'
 import { useState } from 'react'
+import { AppFrame } from '@/app/components/AppFrame'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -16,7 +17,6 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // Ensure user exists in DB
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,7 +28,6 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to create user')
       }
 
-      // Sign in via Auth.js credentials provider
       const result = await signIn('credentials', {
         email,
         redirect: false,
@@ -48,62 +47,158 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white" style={{ backgroundColor: '#0c0c10' }}>
-      <div className="w-full max-w-sm">
-        <div className="border border-white/10 rounded-2xl p-8 bg-white/[0.02] backdrop-blur">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white tracking-tight">FAL</h1>
-            <p className="text-sm text-white/40 mt-1">Fantasy Cricket League</p>
+    <AppFrame>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        {/* Hero gradient — same as other screens */}
+        <div style={{
+          background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+          padding: '60px 24px 40px',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Decorative glow */}
+          <div style={{
+            position: 'absolute', top: '-30%', right: '-20%',
+            width: 300, height: 300,
+            background: 'radial-gradient(circle, rgba(249,205,5,0.08) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            fontSize: 42,
+            fontWeight: 900,
+            background: 'linear-gradient(135deg, #F9CD05, #FF822A)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: -2,
+          }}>
+            FAL
+          </div>
+          <p style={{
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: 13,
+            fontWeight: 500,
+            marginTop: 4,
+          }}>
+            Fantasy Auction League
+          </p>
+          <p style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: 11,
+            fontWeight: 500,
+            marginTop: 2,
+          }}>
+            IPL 2026
+          </p>
+        </div>
+
+        {/* Form area — light theme matching rest of app */}
+        <div style={{
+          flex: 1,
+          padding: '24px 20px',
+          background: '#f2f3f8',
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '1px solid rgba(0,0,0,0.06)',
+            borderRadius: 16,
+            padding: '24px 20px',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
+              Sign In
+            </h2>
+            <p style={{ fontSize: 12, color: '#888', marginBottom: 20 }}>
+              Enter your email to join your league
+            </p>
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: 14 }}>
+                <label htmlFor="email" style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  style={{
+                    width: '100%',
+                    padding: '11px 14px',
+                    borderRadius: 10,
+                    border: '1.5px solid rgba(0,0,0,0.08)',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#1a1a2e',
+                    background: '#f8f9fc',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label htmlFor="name" style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>
+                  Name <span style={{ color: '#bbb' }}>(optional)</span>
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  style={{
+                    width: '100%',
+                    padding: '11px 14px',
+                    borderRadius: 10,
+                    border: '1.5px solid rgba(0,0,0,0.08)',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#1a1a2e',
+                    background: '#f8f9fc',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              {error && (
+                <p style={{ color: '#d63060', fontSize: 12, textAlign: 'center', marginBottom: 12 }}>{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !email}
+                style={{
+                  width: '100%',
+                  padding: '13px 0',
+                  borderRadius: 12,
+                  border: 'none',
+                  background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: loading || !email ? 'not-allowed' : 'pointer',
+                  opacity: loading || !email ? 0.4 : 1,
+                  transition: 'opacity 0.2s',
+                }}
+              >
+                {loading ? 'Signing in...' : 'Enter League'}
+              </button>
+            </form>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-xs font-medium text-white/50 mb-1.5">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-white/30 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="name" className="block text-xs font-medium text-white/50 mb-1.5">
-                Name <span className="text-white/20">(optional)</span>
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="w-full px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-white/30 transition-colors"
-              />
-            </div>
-
-            {error && (
-              <p className="text-red-400 text-xs text-center">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !email}
-              className="w-full py-2.5 rounded-lg bg-white text-black text-sm font-semibold hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all mt-2"
-            >
-              {loading ? 'Signing in...' : 'Enter League'}
-            </button>
-          </form>
-
-          <p className="text-[10px] text-white/20 text-center mt-6">
+          <p style={{ fontSize: 10, color: '#bbb', textAlign: 'center', marginTop: 16 }}>
             Dev mode — no password required
           </p>
         </div>
       </div>
-    </div>
+    </AppFrame>
   )
 }
