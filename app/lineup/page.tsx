@@ -738,7 +738,7 @@ export default function LineupPage() {
               Play Bowling Boost?
             </div>
             <div style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 6, padding: '0 28px', lineHeight: 1.5 }}>
-              All bowling points for your squad will be doubled for Gameweek 8.
+              All bowling points for your squad will be doubled for {currentGW ? `Gameweek ${currentGW.number}` : 'this Gameweek'}.
             </div>
             <div style={{
               margin: '16px 20px 0', padding: '12px 14px', borderRadius: 12,
@@ -747,7 +747,7 @@ export default function LineupPage() {
             }}>
               <div style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>&#9888;&#65039;</div>
               <div style={{ fontSize: 13, color: '#7a5500', fontWeight: 500, lineHeight: 1.45 }}>
-                This chip <strong>cannot be changed</strong> once Gameweek 8 has started. You only get one Bowling Boost per season — use it wisely.
+                This chip <strong>cannot be changed</strong> once {currentGW ? `Gameweek ${currentGW.number}` : 'the Gameweek'} has started. You only get one Bowling Boost per season — use it wisely.
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 20px 0' }}>

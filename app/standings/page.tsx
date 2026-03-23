@@ -1,25 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { AppFrame } from '@/app/components/AppFrame'
 
-/* ─── Mock standings data ─── */
-const mockStandings = [
-  { manager: 'Rahul', gwScores: [98, 105, 120, 112, 98, 102, 102], total: 3240, delta: 2 },
-  { manager: 'Viiveek', gwScores: [95, 112, 145, 87, 134, 102, 88], total: 3195, delta: -1 },
-  { manager: 'Priya', gwScores: [92, 135, 78, 145, 112, 88, 76], total: 3110, delta: 0 },
-  { manager: 'Shaheel', gwScores: [88, 102, 110, 92, 128, 135, 95], total: 2980, delta: 1 },
-  { manager: 'Arjun', gwScores: [84, 98, 105, 110, 95, 100, 64], total: 2870, delta: -2 },
-  { manager: 'Deepak', gwScores: [78, 92, 88, 95, 105, 92, 71], total: 2750, delta: 0 },
-  { manager: 'Sneha', gwScores: [75, 88, 95, 82, 90, 85, 82], total: 2680, delta: 1 },
-  { manager: 'Vikram', gwScores: [72, 85, 80, 88, 82, 78, 58], total: 2610, delta: -1 },
-  { manager: 'Karthik', gwScores: [70, 78, 85, 90, 75, 82, 91], total: 2540, delta: 2 },
-  { manager: 'Meera', gwScores: [68, 72, 78, 75, 80, 70, 47], total: 2490, delta: -3 },
-]
+/* ─── Types ─── */
+interface Standing {
+  rank: number
+  teamId: string
+  teamName: string
+  manager: string | null
+  managerId: string
+  totalPoints: number
+  bestGwScore: number
+  lastGwPoints: number
+  lastGwNumber: number | null
+}
 
-const totalGWs = 7
-const yourManager = 'Viiveek'
+interface HistoryGW {
+  gameweekId: string
+  gameweekNumber: number
+  scores: {
+    teamId: string
+    teamName: string
+    manager: string | null
+    totalPoints: number
+    chipUsed: string | null
+  }[]
+}
+
+interface GameweekInfo {
+  id: string
+  number: number
+  status: string
+}
 
 /* ─── Icons ─── */
 const IconHome = () => (
@@ -36,10 +51,82 @@ const IconLeague = () => (
 )
 
 export default function StandingsPage() {
-  const [activeGW, setActiveGW] = useState(totalGWs)
+  const { data: session } = useSession()
+  const [standings, setStandings] = useState<Standing[]>([])
+  const [history, setHistory] = useState<HistoryGW[]>([])
+  const [gameweeks, setGameweeks] = useState<GameweekInfo[]>([])
+  const [activeGW, setActiveGW] = useState<number | null>(null)
+  const [leagueName, setLeagueName] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  // Sort by total descending
-  const standings = [...mockStandings].sort((a, b) => b.total - a.total)
+  const userId = session?.user?.id
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [leaguesRes, gwRes] = await Promise.all([
+          fetch('/api/leagues'),
+          fetch('/api/gameweeks'),
+        ])
+
+        if (gwRes.ok) {
+          const gwData: GameweekInfo[] = await gwRes.json()
+          setGameweeks(gwData)
+          if (gwData.length > 0) {
+            setActiveGW(gwData[gwData.length - 1].number)
+          }
+        }
+
+        if (!leaguesRes.ok) return
+        const leagues = await leaguesRes.json()
+        if (leagues.length === 0) return
+
+        const leagueId = leagues[0].id
+        setLeagueName(leagues[0].name || '')
+
+        const [standingsRes, historyRes] = await Promise.all([
+          fetch(`/api/leaderboard/${leagueId}`),
+          fetch(`/api/leaderboard/${leagueId}/history`),
+        ])
+
+        if (standingsRes.ok) {
+          const data = await standingsRes.json()
+          setStandings(data.standings || [])
+        }
+        if (historyRes.ok) {
+          const data = await historyRes.json()
+          setHistory(data.history || [])
+        }
+      } catch {
+        // silent
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  // Build standings for active GW from history
+  const gwHistory = activeGW ? history.find(h => h.gameweekNumber === activeGW) : null
+
+  // Merge: use GW-specific scores if available, otherwise fall back to season standings
+  const displayStandings = standings.map(s => {
+    const gwScore = gwHistory?.scores.find(sc => sc.teamId === s.teamId)
+    return {
+      ...s,
+      gwPoints: gwScore?.totalPoints ?? 0,
+    }
+  })
+
+  if (loading) {
+    return (
+      <AppFrame>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: '#888', fontSize: 14 }}>Loading...</p>
+        </div>
+      </AppFrame>
+    )
+  }
 
   return (
     <AppFrame>
@@ -73,7 +160,7 @@ export default function StandingsPage() {
           fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)',
           background: 'rgba(0,0,0,0.04)', padding: '4px 10px', borderRadius: 8,
         }}>
-          Weekend Warriors
+          {leagueName}
         </div>
       </div>
 
@@ -86,26 +173,30 @@ export default function StandingsPage() {
         WebkitOverflowScrolling: 'touch',
       }}>
         <div style={{ display: 'flex', gap: 6, width: 'max-content' }}>
-          {Array.from({ length: totalGWs }, (_, i) => totalGWs - i).map((gw) => (
-            <button
-              key={gw}
-              onClick={() => setActiveGW(gw)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 10,
-                fontSize: 12,
-                fontWeight: 600,
-                color: activeGW === gw ? '#fff' : '#888',
-                background: activeGW === gw ? '#004BA0' : '#fff',
-                border: activeGW === gw ? '1px solid #004BA0' : '1px solid rgba(0,0,0,0.06)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                boxShadow: activeGW === gw ? '0 2px 8px rgba(0,75,160,0.2)' : '0 1px 3px rgba(0,0,0,0.03)',
-              }}
-            >
-              GW{gw}
-            </button>
-          ))}
+          {gameweeks.length === 0 ? (
+            <div style={{ fontSize: 12, color: '#999', padding: '6px 14px' }}>No gameweeks yet</div>
+          ) : (
+            [...gameweeks].reverse().map((gw) => (
+              <button
+                key={gw.number}
+                onClick={() => setActiveGW(gw.number)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 10,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: activeGW === gw.number ? '#fff' : '#888',
+                  background: activeGW === gw.number ? '#004BA0' : '#fff',
+                  border: activeGW === gw.number ? '1px solid #004BA0' : '1px solid rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: activeGW === gw.number ? '0 2px 8px rgba(0,75,160,0.2)' : '0 1px 3px rgba(0,0,0,0.03)',
+                }}
+              >
+                GW{gw.number}
+              </button>
+            ))
+          )}
         </div>
       </div>
 
@@ -139,10 +230,11 @@ export default function StandingsPage() {
           </div>
 
           {/* Rows */}
-          {standings.map((team, i) => {
-            const rank = i + 1
-            const isYou = team.manager === yourManager
-            const gwScore = team.gwScores[activeGW - 1]
+          {displayStandings.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 20, color: '#999', fontSize: 13 }}>No standings data yet</div>
+          ) : displayStandings.map((team, i) => {
+            const rank = team.rank
+            const isYou = team.managerId === userId
 
             // Rank badge
             let rankBg = '#f2f3f8'
@@ -152,15 +244,8 @@ export default function StandingsPage() {
             else if (rank === 3) { rankBg = 'rgba(192,199,208,0.15)'; rankColor = '#777' }
             else if (rank === 4) { rankBg = 'rgba(205,127,50,0.1)'; rankColor = '#a0724a' }
 
-            // Delta
-            let deltaColor = '#ccc'
-            let deltaText = '\u2014'
-            if (team.delta > 0) { deltaColor = '#0d9e5f'; deltaText = `\u25B2${team.delta}` }
-            else if (team.delta < 0) { deltaColor = '#d63060'; deltaText = `\u25BC${Math.abs(team.delta)}` }
-
             // Points color
             let ptsColor = '#333'
-            let ptsFontWeight = 700
             if (isYou) { ptsColor = '#004BA0' }
             else if (rank === 1) { ptsColor = '#b58800' }
 
@@ -189,35 +274,35 @@ export default function StandingsPage() {
                   flex: 1,
                   fontWeight: isYou ? 700 : 500,
                   color: isYou ? '#111' : rank === 1 ? '#222' : '#555',
-                }}>{isYou ? 'You' : team.manager}</div>
-                {/* Delta */}
+                }}>{isYou ? 'You' : (team.manager ?? 'Manager')}</div>
+                {/* Delta placeholder */}
                 <div style={{
                   fontSize: 10, fontWeight: 700, width: 24, textAlign: 'center',
-                  color: deltaColor,
-                }}>{deltaText}</div>
+                  color: '#ccc',
+                }}>{'\u2014'}</div>
                 {/* GW score */}
                 <div style={{
                   fontSize: 11, color: '#999', fontWeight: 500,
                   fontVariantNumeric: 'tabular-nums',
                   width: 36, textAlign: 'right',
-                }}>{gwScore}</div>
+                }}>{team.gwPoints}</div>
                 {/* Total */}
                 <div style={{
-                  fontWeight: ptsFontWeight, fontVariantNumeric: 'tabular-nums',
+                  fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                   color: ptsColor,
                   width: 46, textAlign: 'right',
-                }}>{team.total.toLocaleString()}</div>
+                }}>{team.totalPoints.toLocaleString()}</div>
               </div>
             )
 
             if (isYou) {
-              return <div key={team.manager}>{rowContent}</div>
+              return <div key={team.teamId}>{rowContent}</div>
             }
 
             return (
               <Link
-                key={team.manager}
-                href="/lineup"
+                key={team.teamId}
+                href={`/view-lineup/${team.teamId}`}
                 style={{ textDecoration: 'none', display: 'block' }}
               >
                 {rowContent}
