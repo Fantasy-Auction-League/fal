@@ -2,6 +2,9 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { prisma } from './db'
 
+// Re-verify user ID against DB every 30 minutes to handle DB resets
+const RESYNC_INTERVAL_MS = 30 * 60 * 1000
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
@@ -32,11 +35,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token?.role) (session.user as any).role = token.role
       return session
     },
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.sub = user.id
+        token.email = user.email
         token.role = (user as any).role
+        token.lastVerified = Date.now()
       }
+
+      // Periodically re-verify user ID against DB to handle DB resets/re-seeds.
+      // If the DB was wiped and re-seeded, the user may exist with a new ID
+      // while the JWT still holds the old one — causing empty query results.
+      const lastVerified = (token.lastVerified as number) || 0
+      if (token.email && Date.now() - lastVerified > RESYNC_INTERVAL_MS) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email as string },
+          })
+          if (dbUser) {
+            if (dbUser.id !== token.sub) {
+              token.sub = dbUser.id
+              token.role = dbUser.role
+            }
+            token.lastVerified = Date.now()
+          } else {
+            // User no longer exists in DB — invalidate token
+            token.sub = undefined
+            token.role = undefined
+          }
+        } catch {
+          // DB unreachable — keep existing token, try again next cycle
+        }
+      }
+
       return token
     },
   },
