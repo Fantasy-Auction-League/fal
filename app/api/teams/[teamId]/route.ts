@@ -37,13 +37,14 @@ export async function GET(
       return Response.json({ error: 'Team not found' }, { status: 404 })
     }
 
-    // Check membership: user must be the owner or a member of the same league
+    // Check membership OR admin
+    const isAdmin = team.league.adminUserId === session.user.id
     const isMember = await prisma.team.findFirst({
       where: { leagueId: team.leagueId, userId: session.user.id },
       select: { id: true },
     })
 
-    if (!isMember) {
+    if (!isMember && !isAdmin) {
       return Response.json({ error: 'Not a member of this league' }, { status: 403 })
     }
 

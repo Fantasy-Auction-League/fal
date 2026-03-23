@@ -23,13 +23,18 @@ export async function GET(
       return Response.json({ error: 'Team not found' }, { status: 404 })
     }
 
-    // Check membership
+    // Check membership OR admin
+    const league = await prisma.league.findUnique({
+      where: { id: team.leagueId },
+      select: { adminUserId: true },
+    })
+    const isAdmin = league?.adminUserId === session.user.id
     const isMember = await prisma.team.findFirst({
       where: { leagueId: team.leagueId, userId: session.user.id },
       select: { id: true },
     })
 
-    if (!isMember) {
+    if (!isMember && !isAdmin) {
       return Response.json({ error: 'Not a member of this league' }, { status: 403 })
     }
 
