@@ -188,16 +188,8 @@ export async function POST(
         })
       }
 
-      // 4. Update the league's admin to be the first manager in the CSV
-      //    (or keep existing admin if they're in the CSV)
-      const adminInCsv = teamsToInsert.find(t => t.userId === league.adminUserId)
-      if (!adminInCsv && teamsToInsert.length > 0) {
-        // Admin not in CSV — update admin to first manager
-        await tx.league.update({
-          where: { id: leagueId },
-          data: { adminUserId: teamsToInsert[0].userId },
-        })
-      }
+      // 4. Admin stays as the original creator — do NOT change adminUserId
+      //    The admin may or may not be in the CSV (they manage but may not play)
     })
 
     return Response.json({

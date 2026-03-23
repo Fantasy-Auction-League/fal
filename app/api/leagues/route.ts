@@ -64,7 +64,10 @@ export async function GET() {
 
     const leagues = await prisma.league.findMany({
       where: {
-        teams: { some: { userId: session.user.id } },
+        OR: [
+          { teams: { some: { userId: session.user.id } } },
+          { adminUserId: session.user.id },
+        ],
       },
       include: {
         _count: { select: { teams: true } },

@@ -30,9 +30,10 @@ export async function GET(
       return Response.json({ error: 'League not found' }, { status: 404 })
     }
 
-    // Must be a member
+    // Must be a member OR the league admin
     const isMember = league.teams.some((t) => t.userId === session.user!.id)
-    if (!isMember) {
+    const isAdmin = league.adminUserId === session.user!.id
+    if (!isMember && !isAdmin) {
       return Response.json({ error: 'Not a member of this league' }, { status: 403 })
     }
 

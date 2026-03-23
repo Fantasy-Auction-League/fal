@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "seed:players": "tsx scripts/seed-players.ts"
+    "seed:players": "tsx scripts/seed-players.ts",
+    "seed:fixtures": "tsx scripts/seed-fixtures.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
