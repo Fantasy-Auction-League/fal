@@ -12,6 +12,25 @@ const teamColors: Record<string, string> = {
   LSG: '#00AEEF', PBKS: '#ED1B24',
 }
 
+/* ─── IPL team name → code mapping ─── */
+const teamNameToCode: Record<string, string> = {
+  'Mumbai Indians': 'MI',
+  'Chennai Super Kings': 'CSK',
+  'Royal Challengers Bengaluru': 'RCB',
+  'Royal Challengers Bangalore': 'RCB',
+  'Kolkata Knight Riders': 'KKR',
+  'Delhi Capitals': 'DC',
+  'Rajasthan Royals': 'RR',
+  'Sunrisers Hyderabad': 'SRH',
+  'Gujarat Titans': 'GT',
+  'Lucknow Super Giants': 'LSG',
+  'Punjab Kings': 'PBKS',
+}
+
+function getTeamCode(name: string): string {
+  return teamNameToCode[name] || name.split(' ').map(w => w[0]).join('').toUpperCase()
+}
+
 /* ─── Types ─── */
 interface Team {
   id: string
@@ -32,30 +51,35 @@ interface League {
   _count: { teams: number }
 }
 
-/* ─── Mock data ─── */
-const mockStandings = [
-  { rank: 1, name: 'Rahul', gw: 102, total: 3240, delta: 'up' as const, deltaVal: 2, isYou: false },
-  { rank: 2, name: 'You', gw: 88, total: 3195, delta: 'down' as const, deltaVal: 1, isYou: true },
-  { rank: 3, name: 'Priya', gw: 76, total: 3110, delta: 'same' as const, deltaVal: 0, isYou: false },
-  { rank: 4, name: 'Shaheel', gw: 95, total: 2980, delta: 'up' as const, deltaVal: 1, isYou: false },
-  { rank: 5, name: 'Arjun', gw: 64, total: 2870, delta: 'down' as const, deltaVal: 2, isYou: false },
-  { rank: 6, name: 'Deepak', gw: 71, total: 2750, delta: 'same' as const, deltaVal: 0, isYou: false },
-  { rank: 7, name: 'Sneha', gw: 82, total: 2680, delta: 'up' as const, deltaVal: 1, isYou: false },
-  { rank: 8, name: 'Vikram', gw: 45, total: 2540, delta: 'down' as const, deltaVal: 3, isYou: false },
-  { rank: 9, name: 'Karthik', gw: 58, total: 2490, delta: 'same' as const, deltaVal: 0, isYou: false },
-  { rank: 10, name: 'Meera', gw: 91, total: 2420, delta: 'up' as const, deltaVal: 2, isYou: false },
-  { rank: 11, name: 'Amit', gw: 52, total: 2310, delta: 'down' as const, deltaVal: 1, isYou: false },
-  { rank: 12, name: 'Neha', gw: 60, total: 2240, delta: 'same' as const, deltaVal: 0, isYou: false },
-  { rank: 13, name: 'Rohan', gw: 73, total: 2150, delta: 'up' as const, deltaVal: 1, isYou: false },
-  { rank: 14, name: 'Ananya', gw: 38, total: 2060, delta: 'down' as const, deltaVal: 2, isYou: false },
-  { rank: 15, name: 'Saurav', gw: 55, total: 1980, delta: 'same' as const, deltaVal: 0, isYou: false },
-]
+interface GameweekMatch {
+  id: string
+  localTeamName: string
+  visitorTeamName: string
+  startingAt: string
+  apiStatus: string
+  scoringStatus: string
+}
 
-const mockMatches = [
-  { team1: 'MI', team2: 'RCB', time: 'Tue, Mar 17 \u00B7 7:30 PM', day: 'TUE' },
-  { team1: 'CSK', team2: 'KKR', time: 'Thu, Mar 19 \u00B7 7:30 PM', day: 'THU' },
-  { team1: 'RR', team2: 'DC', time: 'Sat, Mar 21 \u00B7 3:30 PM', day: 'SAT' },
-]
+interface CurrentGameweek {
+  id: string
+  number: number
+  lockTime: string | null
+  status: string
+  matches: GameweekMatch[]
+}
+
+interface Standing {
+  rank: number
+  teamId: string
+  teamName: string
+  manager: string
+  managerId: string
+  totalPoints: number
+  bestGwScore: number
+  lastGwPoints: number
+  lastGwNumber: number | null
+  chipUsed: string | null
+}
 
 /* ─── Icons ─── */
 const IconHome = () => (
@@ -91,10 +115,40 @@ function formatNumber(n: number): string {
 function getRankStyle(rank: number, isYou: boolean): React.CSSProperties {
   if (isYou) return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: 'rgba(0,75,160,0.1)', color: '#004BA0' }
   if (rank === 1) return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: 'rgba(249,205,5,0.12)', color: '#b58800' }
-  if (rank === 2) return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: 'rgba(192,199,208,0.15)', color: '#777' }  // silver shown for rank 3 in mockup
+  if (rank === 2) return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: 'rgba(192,199,208,0.15)', color: '#777' }
   if (rank === 3) return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: 'rgba(192,199,208,0.15)', color: '#777' }
   if (rank === 4) return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: 'rgba(205,127,50,0.1)', color: '#a0724a' }
   return { width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, fontSize: 10, fontWeight: 700, background: '#f2f3f8', color: '#999' }
+}
+
+function formatDeadline(lockTime: string | null): { label: string; time: string } {
+  if (!lockTime) return { label: 'Deadline', time: 'TBD' }
+  const d = new Date(lockTime)
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const h = d.getHours()
+  const m = d.getMinutes().toString().padStart(2, '0')
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return {
+    label: 'Deadline',
+    time: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}, ${h12}:${m} ${ampm}`,
+  }
+}
+
+function formatMatchTime(startingAt: string): { display: string; day: string } {
+  const d = new Date(startingAt)
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const dayName = days[d.getDay()]
+  const h = d.getHours()
+  const m = d.getMinutes().toString().padStart(2, '0')
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return {
+    display: `${dayName}, ${months[d.getMonth()]} ${d.getDate()} \u00B7 ${h12}:${m} ${ampm}`,
+    day: dayName.toUpperCase(),
+  }
 }
 
 export default function DashboardPage() {
@@ -103,6 +157,9 @@ export default function DashboardPage() {
   const [league, setLeague] = useState<League | null>(null)
   const [initialLoad, setInitialLoad] = useState(true)
   const [showAllStandings, setShowAllStandings] = useState(false)
+  const [currentGw, setCurrentGw] = useState<CurrentGameweek | null>(null)
+  const [gwNotFound, setGwNotFound] = useState(false)
+  const [standings, setStandings] = useState<Standing[]>([])
 
   /* ─── Fetch league on mount ─── */
   const fetchLeague = useCallback(async () => {
@@ -115,18 +172,53 @@ export default function DashboardPage() {
         if (detail.ok) {
           const full = await detail.json()
           setLeague(full)
+          return full as League
         }
       }
+      return null
+    } catch {
+      return null
+    }
+  }, [])
+
+  const fetchCurrentGw = useCallback(async () => {
+    try {
+      const res = await fetch('/api/gameweeks/current')
+      if (res.status === 404) {
+        setGwNotFound(true)
+        return
+      }
+      if (!res.ok) return
+      const data = await res.json()
+      setCurrentGw(data)
     } catch {
       // silent
-    } finally {
-      setInitialLoad(false)
+    }
+  }, [])
+
+  const fetchStandings = useCallback(async (leagueId: string) => {
+    try {
+      const res = await fetch(`/api/leaderboard/${leagueId}`)
+      if (!res.ok) return
+      const data = await res.json()
+      setStandings(data.standings || [])
+    } catch {
+      // silent
     }
   }, [])
 
   useEffect(() => {
-    if (sessionStatus === 'authenticated') fetchLeague()
-  }, [sessionStatus, fetchLeague])
+    if (sessionStatus === 'authenticated') {
+      Promise.all([
+        fetchLeague(),
+        fetchCurrentGw(),
+      ]).then(([leagueData]) => {
+        if (leagueData) {
+          fetchStandings(leagueData.id)
+        }
+      }).finally(() => setInitialLoad(false))
+    }
+  }, [sessionStatus, fetchLeague, fetchCurrentGw, fetchStandings])
 
   /* ─── Auth guard ─── */
   if (sessionStatus === 'loading' || initialLoad) {
@@ -153,8 +245,35 @@ export default function DashboardPage() {
     )
   }
 
+  /* ─── Computed values ─── */
   const leagueName = league?.name || 'Weekend Warriors'
-  const visibleStandings = showAllStandings ? mockStandings : mockStandings.slice(0, 7)
+  const seasonStarted = !gwNotFound && currentGw !== null
+
+  // Gameweek label
+  const gwLabel = seasonStarted ? `Gameweek ${currentGw!.number}` : 'Season not started'
+
+  // Score trio
+  const userId = session.user?.id
+  const myStanding = standings.find(s => s.managerId === userId)
+  const yourPoints = myStanding?.totalPoints ?? 0
+  const avgPoints = standings.length > 0
+    ? Math.round(standings.reduce((sum, s) => sum + s.totalPoints, 0) / standings.length)
+    : 0
+  const highestPoints = standings.length > 0 ? standings[0]?.totalPoints ?? 0 : 0
+  const hasScores = standings.some(s => s.totalPoints > 0)
+
+  // Deadline
+  const nextGwNumber = currentGw ? currentGw.number + 1 : null
+  const deadline = currentGw
+    ? formatDeadline(currentGw.lockTime)
+    : { label: 'Deadline', time: 'Season starts soon' }
+  const deadlineLabel = nextGwNumber ? `GW${nextGwNumber} Deadline` : deadline.label
+
+  // Matches
+  const matches = currentGw?.matches ?? []
+
+  // Standings for display
+  const visibleStandings = showAllStandings ? standings : standings.slice(0, 7)
 
   return (
     <AppFrame>
@@ -162,7 +281,7 @@ export default function DashboardPage() {
       position: 'relative',
       paddingBottom: 80,
     }}>
-      {/* ══════════════════════════ HERO ══════════════════════════ */}
+      {/* HERO */}
       <div style={{
         background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
         padding: '40px 18px 14px',
@@ -200,14 +319,16 @@ export default function DashboardPage() {
           textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.6)',
           fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 2,
         }}>
-          Gameweek 7
+          {gwLabel}
         </div>
 
         {/* Score Trio */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', marginBottom: 8 }}>
           {/* Average */}
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>612</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
+              {hasScores ? formatNumber(avgPoints) : '\u2014'}
+            </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Average</div>
           </div>
 
@@ -217,14 +338,18 @@ export default function DashboardPage() {
             <div style={{ position: 'absolute', top: '10%', bottom: '20%', left: 0, width: 1, background: 'rgba(255,255,255,0.1)' }} />
             {/* Right divider */}
             <div style={{ position: 'absolute', top: '10%', bottom: '20%', right: 0, width: 1, background: 'rgba(255,255,255,0.1)' }} />
-            <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1.5, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>788</div>
+            <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1.5, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              {hasScores ? formatNumber(yourPoints) : '\u2014'}
+            </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginTop: 2 }}>Your Points</div>
             <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 1, fontWeight: 500 }}>tap for detail</div>
           </div>
 
           {/* Highest */}
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>943</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
+              {hasScores ? formatNumber(highestPoints) : '\u2014'}
+            </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Highest</div>
           </div>
         </div>
@@ -235,8 +360,8 @@ export default function DashboardPage() {
         {/* Bottom row: deadline + edit lineup */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>GW8 Deadline</div>
-            <div style={{ fontSize: 13, color: '#fff', fontWeight: 800 }}>Tue 17 Mar, 19:30</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{deadlineLabel}</div>
+            <div style={{ fontSize: 13, color: '#fff', fontWeight: 800 }}>{deadline.time}</div>
           </div>
           <Link href="/lineup" style={{
             padding: '7px 14px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10,
@@ -252,10 +377,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ══════════════════════════ CONTENT ══════════════════════════ */}
+      {/* CONTENT */}
       <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* ── League Standings Card ── */}
+        {/* League Standings Card */}
         <div style={{
           background: '#fff', border: '1px solid rgba(0,0,0,0.06)',
           borderRadius: 16, padding: 14,
@@ -266,70 +391,78 @@ export default function DashboardPage() {
             <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e', letterSpacing: -0.2 }}>League Standings</div>
           </div>
 
-          {/* Column headers */}
-          <div style={{
-            display: 'flex', padding: '0 10px 4px', fontSize: 9, fontWeight: 600,
-            color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: 0.5, gap: 8,
-          }}>
-            <div style={{ width: 22 }}>#</div>
-            <div style={{ flex: 1 }}>Manager</div>
-            <div style={{ width: 20, textAlign: 'center' }}></div>
-            <div style={{ width: 36, textAlign: 'right' }}>GW</div>
-            <div style={{ width: 42, textAlign: 'right' }}>Total</div>
-          </div>
-
-          {/* Standings rows */}
-          {visibleStandings.map((s) => {
-            const isFirst = s.rank === 1
-            const rowStyle: React.CSSProperties = {
-              display: 'flex', alignItems: 'center', padding: '9px 10px',
-              borderRadius: 10, gap: 8, fontSize: 12.5,
-              cursor: 'pointer',
-              marginTop: s.rank > 1 ? 2 : 0,
-              ...(s.isYou ? { background: 'rgba(0,75,160,0.04)', border: '1.5px solid rgba(0,75,160,0.1)' } : {}),
-              ...(isFirst && !s.isYou ? { background: 'rgba(249,205,5,0.05)' } : {}),
-              textDecoration: 'none',
-            }
-
-            const deltaColor = s.delta === 'up' ? '#0d9e5f' : s.delta === 'down' ? '#d63060' : '#ccc'
-            const deltaText = s.delta === 'up' ? `\u25B2${s.deltaVal}` : s.delta === 'down' ? `\u25BC${s.deltaVal}` : '\u2014'
-
-            const ptsColor = s.isYou ? '#004BA0' : isFirst ? '#b58800' : '#333'
-            const nameColor = s.isYou ? '#111' : isFirst ? '#222' : '#555'
-            const nameWeight = s.isYou ? 700 : isFirst ? 600 : 500
-
-            return (
-              <div key={s.rank} style={rowStyle}>
-                <div style={getRankStyle(s.rank, s.isYou)}>{s.rank}</div>
-                <div style={{ flex: 1, fontWeight: nameWeight, color: nameColor }}>{s.name}</div>
-                <div style={{ fontSize: 9, fontWeight: 700, width: 20, textAlign: 'center', color: deltaColor }}>{deltaText}</div>
-                <div style={{ fontSize: 11, color: '#999', fontWeight: 500, fontVariantNumeric: 'tabular-nums', width: 36, textAlign: 'right' }}>{s.gw}</div>
-                <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: ptsColor, width: 42, textAlign: 'right' }}>{formatNumber(s.total)}</div>
+          {standings.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: '#999', fontSize: 13 }}>
+              No teams in this league yet
+            </div>
+          ) : (
+            <>
+              {/* Column headers */}
+              <div style={{
+                display: 'flex', padding: '0 10px 4px', fontSize: 9, fontWeight: 600,
+                color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: 0.5, gap: 8,
+              }}>
+                <div style={{ width: 22 }}>#</div>
+                <div style={{ flex: 1 }}>Manager</div>
+                <div style={{ width: 36, textAlign: 'right' }}>GW</div>
+                <div style={{ width: 42, textAlign: 'right' }}>Total</div>
               </div>
-            )
-          })}
 
-          {/* Expand/collapse button */}
-          <button
-            onClick={() => setShowAllStandings(!showAllStandings)}
-            style={{
-              width: '100%', padding: 8, marginTop: 6,
-              border: 'none', borderRadius: 8,
-              background: '#f2f3f8', color: '#004BA0',
-              fontSize: 11, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            {showAllStandings ? 'Show less \u25B2' : `Show all ${mockStandings.length} \u25BC`}
-          </button>
+              {/* Standings rows */}
+              {visibleStandings.map((s) => {
+                const isYou = s.managerId === userId
+                const isFirst = s.rank === 1
+                const rowStyle: React.CSSProperties = {
+                  display: 'flex', alignItems: 'center', padding: '9px 10px',
+                  borderRadius: 10, gap: 8, fontSize: 12.5,
+                  cursor: 'pointer',
+                  marginTop: s.rank > 1 ? 2 : 0,
+                  ...(isYou ? { background: 'rgba(0,75,160,0.04)', border: '1.5px solid rgba(0,75,160,0.1)' } : {}),
+                  ...(isFirst && !isYou ? { background: 'rgba(249,205,5,0.05)' } : {}),
+                  textDecoration: 'none',
+                }
 
-          {/* Hint */}
-          <div style={{ fontSize: 9, color: '#bbb', textAlign: 'center', marginTop: 6, fontWeight: 500 }}>
-            Tap a manager to view their lineup
-          </div>
+                const ptsColor = isYou ? '#004BA0' : isFirst ? '#b58800' : '#333'
+                const nameColor = isYou ? '#111' : isFirst ? '#222' : '#555'
+                const nameWeight = isYou ? 700 : isFirst ? 600 : 500
+
+                return (
+                  <div key={s.teamId} style={rowStyle}>
+                    <div style={getRankStyle(s.rank, isYou)}>{s.rank}</div>
+                    <div style={{ flex: 1, fontWeight: nameWeight, color: nameColor }}>
+                      {s.manager}{isYou ? ' (You)' : ''}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#999', fontWeight: 500, fontVariantNumeric: 'tabular-nums', width: 36, textAlign: 'right' }}>{s.lastGwPoints}</div>
+                    <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: ptsColor, width: 42, textAlign: 'right' }}>{formatNumber(s.totalPoints)}</div>
+                  </div>
+                )
+              })}
+
+              {/* Expand/collapse button */}
+              {standings.length > 7 && (
+                <button
+                  onClick={() => setShowAllStandings(!showAllStandings)}
+                  style={{
+                    width: '100%', padding: 8, marginTop: 6,
+                    border: 'none', borderRadius: 8,
+                    background: '#f2f3f8', color: '#004BA0',
+                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {showAllStandings ? 'Show less \u25B2' : `Show all ${standings.length} \u25BC`}
+                </button>
+              )}
+
+              {/* Hint */}
+              <div style={{ fontSize: 9, color: '#bbb', textAlign: 'center', marginTop: 6, fontWeight: 500 }}>
+                Tap a manager to view their lineup
+              </div>
+            </>
+          )}
         </div>
 
-        {/* ── This Week's Matches Card ── */}
+        {/* This Week's Matches Card */}
         <div style={{
           background: '#fff', border: '1px solid rgba(0,0,0,0.06)',
           borderRadius: 16, padding: 14,
@@ -337,55 +470,63 @@ export default function DashboardPage() {
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e', letterSpacing: -0.2, marginBottom: 10 }}>This Week</div>
 
-          {mockMatches.map((m, i) => {
-            const c1 = teamColors[m.team1] || '#888'
-            const c2 = teamColors[m.team2] || '#888'
-            // CSK text shown as gold like mockup
-            const t1Color = m.team1 === 'CSK' ? '#b58800' : c1
-            const t2Color = m.team2 === 'CSK' ? '#b58800' : c2
+          {matches.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: '#999', fontSize: 13 }}>
+              No matches scheduled
+            </div>
+          ) : (
+            matches.map((m, i) => {
+              const code1 = getTeamCode(m.localTeamName)
+              const code2 = getTeamCode(m.visitorTeamName)
+              const c1 = teamColors[code1] || '#888'
+              const c2 = teamColors[code2] || '#888'
+              const t1Color = code1 === 'CSK' ? '#b58800' : c1
+              const t2Color = code2 === 'CSK' ? '#b58800' : c2
+              const { display, day } = formatMatchTime(m.startingAt)
 
-            return (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 12px', background: '#f7f8fb',
-                borderRadius: 12, border: '1px solid rgba(0,0,0,0.04)',
-                position: 'relative', overflow: 'hidden',
-                marginTop: i > 0 ? 4 : 0,
-              }}>
-                {/* Left gradient bar */}
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, bottom: 0, width: 3,
-                  borderRadius: '3px 0 0 3px',
-                  background: `linear-gradient(to bottom, ${c1}, ${c2})`,
-                }} />
-                {/* Match info */}
-                <div style={{ paddingLeft: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: c1, boxShadow: `0 0 4px ${c1}`, flexShrink: 0 }} />
-                    <span style={{ color: t1Color }}>{m.team1}</span>
-                    <span style={{ fontSize: 9, color: '#aaa', fontWeight: 500 }}>vs</span>
-                    <span style={{ color: t2Color }}>{m.team2}</span>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: c2, boxShadow: `0 0 4px ${c2}`, flexShrink: 0 }} />
-                  </div>
-                  <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{m.time}</div>
-                </div>
-                {/* Day badge */}
-                <div style={{
-                  fontSize: 9, fontWeight: 600, padding: '3px 8px',
-                  borderRadius: 6, background: '#eef0f5', color: '#777',
+              return (
+                <div key={m.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 12px', background: '#f7f8fb',
+                  borderRadius: 12, border: '1px solid rgba(0,0,0,0.04)',
+                  position: 'relative', overflow: 'hidden',
+                  marginTop: i > 0 ? 4 : 0,
                 }}>
-                  {m.day}
+                  {/* Left gradient bar */}
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, bottom: 0, width: 3,
+                    borderRadius: '3px 0 0 3px',
+                    background: `linear-gradient(to bottom, ${c1}, ${c2})`,
+                  }} />
+                  {/* Match info */}
+                  <div style={{ paddingLeft: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: c1, boxShadow: `0 0 4px ${c1}`, flexShrink: 0 }} />
+                      <span style={{ color: t1Color }}>{code1}</span>
+                      <span style={{ fontSize: 9, color: '#aaa', fontWeight: 500 }}>vs</span>
+                      <span style={{ color: t2Color }}>{code2}</span>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: c2, boxShadow: `0 0 4px ${c2}`, flexShrink: 0 }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>{display}</div>
+                  </div>
+                  {/* Day badge */}
+                  <div style={{
+                    fontSize: 9, fontWeight: 600, padding: '3px 8px',
+                    borderRadius: 6, background: '#eef0f5', color: '#777',
+                  }}>
+                    {day}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
 
         {/* Spacer for scroll */}
         <div style={{ height: 30 }} />
       </div>
 
-      {/* ══════════════════════════ BOTTOM NAV ══════════════════════════ */}
+      {/* BOTTOM NAV */}
       <nav className="bottom-nav-fixed" style={{
         position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: 480,

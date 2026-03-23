@@ -9,7 +9,12 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "seed:players": "tsx scripts/seed-players.ts",
-    "seed:fixtures": "tsx scripts/seed-fixtures.ts"
+    "seed:fixtures": "tsx scripts/seed-fixtures.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
@@ -33,6 +38,7 @@
     "prisma": "^6.5.0",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.0"
   }
 }

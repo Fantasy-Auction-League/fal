@@ -44,6 +44,57 @@ interface Player {
   imageUrl: string | null
 }
 
+interface Performance {
+  id: string
+  runs: number | null
+  balls: number | null
+  fours: number | null
+  sixes: number | null
+  strikeRate: number | null
+  overs: number | null
+  maidens: number | null
+  runsConceded: number | null
+  wickets: number | null
+  economyRate: number | null
+  dotBalls: number | null
+  catches: number
+  stumpings: number
+  runoutsDirect: number
+  runoutsAssisted: number
+  fantasyPoints: number
+  match: {
+    startingAt: string
+    localTeamName: string
+    visitorTeamName: string
+    gameweek: { number: number } | null
+  }
+}
+
+interface PlayerDetailData {
+  player: {
+    id: string
+    fullname: string
+    firstname: string
+    lastname: string
+    role: string
+    iplTeamName: string | null
+    iplTeamCode: string | null
+    battingStyle: string | null
+    bowlingStyle: string | null
+    imageUrl: string | null
+  }
+  stats: {
+    totalPoints: number
+    matches: number
+    runs: number
+    wickets: number
+    catches: number
+    avgPointsPerMatch: number
+  }
+  performances: Performance[]
+  teams: { teamName: string; leagueName: string }[]
+}
+
 /* ─── Helpers ─── */
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
@@ -91,20 +142,41 @@ export default function PlayersPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [playerDetail, setPlayerDetail] = useState<PlayerDetailData | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [activeGwTab, setActiveGwTab] = useState('GW7')
+  const [activeGwTab, setActiveGwTab] = useState('Season')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /* Open / close player detail sheet */
-  const openPlayerSheet = (player: Player) => {
+  const openPlayerSheet = async (player: Player) => {
     setSelectedPlayer(player)
-    setActiveGwTab('GW7')
+    setPlayerDetail(null)
+    setDetailLoading(true)
+    setActiveGwTab('Season')
     // Trigger open on next frame for animation
     requestAnimationFrame(() => setSheetOpen(true))
+    try {
+      const res = await fetch(`/api/players/${player.id}`)
+      if (res.ok) {
+        const data: PlayerDetailData = await res.json()
+        setPlayerDetail(data)
+        // Default to most recent GW if available
+        if (data.performances.length > 0) {
+          const gwNumbers = data.performances
+            .map((p) => p.match.gameweek?.number)
+            .filter((n): n is number => n != null)
+          if (gwNumbers.length > 0) {
+            setActiveGwTab(`GW${Math.max(...gwNumbers)}`)
+          }
+        }
+      }
+    } catch { /* silent */ }
+    finally { setDetailLoading(false) }
   }
   const closePlayerSheet = () => {
     setSheetOpen(false)
-    setTimeout(() => setSelectedPlayer(null), 300) // wait for exit anim
+    setTimeout(() => { setSelectedPlayer(null); setPlayerDetail(null) }, 300)
   }
 
   /* Debounce search */

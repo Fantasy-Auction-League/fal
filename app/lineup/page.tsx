@@ -4,6 +4,13 @@ import { useSession } from 'next-auth/react'
 import { useState, useEffect, useCallback } from 'react'
 import { AppFrame } from '@/app/components/AppFrame'
 
+interface CurrentGameweek {
+  id: string
+  number: number
+  lockTime: string | null
+  status: string
+}
+
 /* ─── IPL team colors & gradients ─── */
 const teamGradients: Record<string, { head: string; body: string; plate: string }> = {
   MI:   { head: 'linear-gradient(180deg, #0066CC, #004BA0)', body: 'linear-gradient(180deg, #0066CC, #004BA0)', plate: 'linear-gradient(90deg, #004BA0, #0066CC)' },
@@ -145,6 +152,15 @@ export default function LineupPage() {
   const [chipModalOpen, setChipModalOpen] = useState(false)
   const [swapMode, setSwapMode] = useState<string | null>(null) // benchPlayerId being swapped
   const [dirty, setDirty] = useState(false)
+  const [currentGW, setCurrentGW] = useState<CurrentGameweek | null>(null)
+
+  /* ─── Fetch current gameweek ─── */
+  useEffect(() => {
+    fetch('/api/gameweeks/current')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && !data.error) setCurrentGW(data) })
+      .catch(() => {})
+  }, [])
 
   /* ─── Fetch squad ─── */
   const fetchSquad = useCallback(async () => {
@@ -438,7 +454,18 @@ export default function LineupPage() {
           </div>
         </div>
         <div style={{ fontSize: 14, fontWeight: 500, color: '#555', marginBottom: 10 }}>
-          Gameweek 8 &middot; <strong style={{ fontWeight: 800, color: '#1a1a2e', fontSize: 15 }}>Deadline: Tue 17 Mar, 19:30</strong>
+          {currentGW ? (
+            <>
+              Gameweek {currentGW.number} &middot;{' '}
+              <strong style={{ fontWeight: 800, color: '#1a1a2e', fontSize: 15 }}>
+                {currentGW.lockTime
+                  ? `Deadline: ${new Date(currentGW.lockTime).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}, ${new Date(currentGW.lockTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+                  : 'Deadline TBD'}
+              </strong>
+            </>
+          ) : (
+            'Set your lineup for the season'
+          )}
         </div>
 
         {/* ── Chips Bar ── */}

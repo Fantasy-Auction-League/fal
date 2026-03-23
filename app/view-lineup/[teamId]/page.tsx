@@ -244,14 +244,21 @@ export default function ViewLineupPage() {
   const [bench, setBench] = useState<SquadPlayer[]>([])
   const [captainId, setCaptainId] = useState<string | null>(null)
   const [vcId, setVcId] = useState<string | null>(null)
+  const [currentGWNumber, setCurrentGWNumber] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!teamId) return
     try {
-      const [squadRes, teamRes] = await Promise.all([
+      const [squadRes, teamRes, gwRes] = await Promise.all([
         fetch(`/api/teams/${teamId}/squad`),
         fetch(`/api/teams/${teamId}`),
+        fetch('/api/gameweeks/current'),
       ])
+
+      if (gwRes.ok) {
+        const gwData = await gwRes.json()
+        if (gwData && !gwData.error) setCurrentGWNumber(gwData.number)
+      }
 
       if (squadRes.ok) {
         const data: SquadData = await squadRes.json()
@@ -399,7 +406,7 @@ export default function ViewLineupPage() {
               fontSize: 10, fontWeight: 600, color: '#999', letterSpacing: -0.1,
               marginTop: 1,
             }}>
-              GW7
+              {currentGWNumber ? `GW${currentGWNumber}` : 'Pre-season'} · 0 pts
             </div>
           </div>
         </div>
