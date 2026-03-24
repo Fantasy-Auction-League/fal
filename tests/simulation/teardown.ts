@@ -1,4 +1,6 @@
 import { prisma } from '../../lib/db'
+import { rmSync, existsSync } from 'fs'
+import { join } from 'path'
 import { SIM_LEAGUE_NAME, SIM_PREFIX } from './helpers'
 
 export async function teardownSimulation() {
@@ -45,6 +47,23 @@ export async function teardownSimulation() {
   await prisma.user.deleteMany({
     where: { email: { startsWith: SIM_PREFIX } },
   })
+
+  // Clean test artifacts and caches so next run starts fresh
+  const root = join(__dirname, '../..')
+  const dirsToClean = [
+    join(root, '.next'),
+    join(root, 'node_modules/.cache'),
+    join(root, 'test-results'),
+    join(root, 'playwright-report'),
+    join(__dirname, 'playwright/.auth'),
+    join(__dirname, 'playwright/layer0.spec.ts-snapshots'),
+  ]
+  for (const dir of dirsToClean) {
+    if (existsSync(dir)) {
+      rmSync(dir, { recursive: true, force: true })
+      log.push(`Cleaned ${dir.replace(root, '.')}`)
+    }
+  }
 
   log.push('Teardown complete')
   return { log }
