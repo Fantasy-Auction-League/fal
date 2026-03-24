@@ -29,17 +29,53 @@ interface TeamDetail {
   league: { id: string; name: string }
 }
 
-/* ─── Helpers ─── */
-function getShortName(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length >= 2) return parts[0][0] + ' ' + parts[parts.length - 1]
-  return name
+/* ─── IPL team colors & gradients (EXACT copy from edit lineup) ─── */
+const teamGradients: Record<string, { head: string; body: string; plate: string }> = {
+  MI:   { head: 'linear-gradient(180deg, #0066CC, #004BA0)', body: 'linear-gradient(180deg, #0066CC, #004BA0)', plate: 'linear-gradient(90deg, #004BA0, #0066CC)' },
+  CSK:  { head: 'linear-gradient(180deg, #FFDA2B, #E8B800)', body: 'linear-gradient(180deg, #FFDA2B, #E8B800)', plate: 'linear-gradient(90deg, #D4A800, #F9CD05)' },
+  RCB:  { head: 'linear-gradient(180deg, #E8222B, #B81820)', body: 'linear-gradient(180deg, #E8222B, #B81820)', plate: 'linear-gradient(90deg, #B81820, #EC1C24)' },
+  KKR:  { head: 'linear-gradient(180deg, #6B4F9E, #3A225D)', body: 'linear-gradient(180deg, #6B4F9E, #3A225D)', plate: 'linear-gradient(90deg, #3A225D, #5A3A8A)' },
+  DC:   { head: 'linear-gradient(180deg, #1A7FE0, #004C93)', body: 'linear-gradient(180deg, #1A7FE0, #004C93)', plate: 'linear-gradient(90deg, #004C93, #1A7FE0)' },
+  RR:   { head: 'linear-gradient(180deg, #F03C96, #C4166E)', body: 'linear-gradient(180deg, #F03C96, #C4166E)', plate: 'linear-gradient(90deg, #C4166E, #EA1A85)' },
+  SRH:  { head: 'linear-gradient(180deg, #FF9A44, #E06A18)', body: 'linear-gradient(180deg, #FF9A44, #E06A18)', plate: 'linear-gradient(90deg, #D96A1E, #FF822A)' },
+  GT:   { head: 'linear-gradient(180deg, #1AD4BF, #0EB1A2)', body: 'linear-gradient(180deg, #1AD4BF, #0EB1A2)', plate: 'linear-gradient(90deg, #0A9688, #0EB1A2)' },
+  LSG:  { head: 'linear-gradient(180deg, #00C4FF, #00AEEF)', body: 'linear-gradient(180deg, #00C4FF, #00AEEF)', plate: 'linear-gradient(90deg, #0098D4, #00AEEF)' },
+  PBKS: { head: 'linear-gradient(180deg, #F44040, #CC2020)', body: 'linear-gradient(180deg, #F44040, #CC2020)', plate: 'linear-gradient(90deg, #CC2020, #ED1B24)' },
 }
 
+const defaultGrad = { head: 'linear-gradient(180deg, #666, #444)', body: 'linear-gradient(180deg, #666, #444)', plate: 'linear-gradient(90deg, #555, #777)' }
+
+const teamLogos: Record<string, string> = {
+  MI:   'https://documents.iplt20.com/ipl/MI/Logos/Logooutline/MIoutline.png',
+  CSK:  'https://documents.iplt20.com/ipl/CSK/logos/Logooutline/CSKoutline.png',
+  RCB:  'https://documents.iplt20.com/ipl/RCB/Logos/Logooutline/RCBoutline.png',
+  KKR:  'https://documents.iplt20.com/ipl/KKR/Logos/Logooutline/KKRoutline.png',
+  DC:   'https://documents.iplt20.com/ipl/DC/Logos/LogoOutline/DCoutline.png',
+  RR:   'https://documents.iplt20.com/ipl/RR/Logos/Logooutline/RRoutline.png',
+  SRH:  'https://documents.iplt20.com/ipl/SRH/Logos/Logooutline/SRHoutline.png',
+  GT:   'https://documents.iplt20.com/ipl/GT/Logos/Logooutline/GToutline.png',
+  LSG:  'https://documents.iplt20.com/ipl/LSG/Logos/Logooutline/LSGoutline.png',
+  PBKS: 'https://documents.iplt20.com/ipl/PBKS/Logos/Logooutline/PBKSoutline.png',
+}
+
+const benchRoleColors: Record<string, string> = {
+  BAT: 'rgba(249,205,5,0.4)',
+  BOWL: 'rgba(160,196,255,0.4)',
+  WK: 'rgba(0,255,135,0.3)',
+  ALL: 'rgba(14,177,162,0.3)',
+}
+
+/* ─── Helpers (EXACT copy from edit lineup) ─── */
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   return name.slice(0, 2).toUpperCase()
+}
+
+function getShortName(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return parts[0][0] + ' ' + parts[parts.length - 1]
+  return name
 }
 
 function normalizeRole(role: string): string {
@@ -50,47 +86,9 @@ function normalizeRole(role: string): string {
   return 'BAT'
 }
 
-function isLightTeam(code: string): boolean {
-  return ['CSK', 'PBKS', 'LSG'].includes(code)
+function isLightTeam(code: string | null): boolean {
+  return code === 'CSK'
 }
-
-/* ─── Team gradients (jersey colors) ─── */
-const teamGradients: Record<string, { primary: string; secondary: string; gradient: string }> = {
-  MI:   { primary: '#004BA0', secondary: '#0078d4', gradient: 'linear-gradient(180deg, #004BA0 0%, #0068c8 100%)' },
-  CSK:  { primary: '#F9CD05', secondary: '#e0b800', gradient: 'linear-gradient(180deg, #F9CD05 0%, #e0b800 100%)' },
-  KKR:  { primary: '#3A225D', secondary: '#6a3fa0', gradient: 'linear-gradient(180deg, #3A225D 0%, #6a3fa0 100%)' },
-  RR:   { primary: '#EA1A85', secondary: '#c4166e', gradient: 'linear-gradient(180deg, #EA1A85 0%, #c4166e 100%)' },
-  RCB:  { primary: '#D4171E', secondary: '#a01218', gradient: 'linear-gradient(180deg, #D4171E 0%, #a01218 100%)' },
-  PBKS: { primary: '#ED1B24', secondary: '#c4161d', gradient: 'linear-gradient(180deg, #ED1B24 0%, #c4161d 100%)' },
-  GT:   { primary: '#1C3A6A', secondary: '#0f2a50', gradient: 'linear-gradient(180deg, #1C3A6A 0%, #2a5090 100%)' },
-  SRH:  { primary: '#F26522', secondary: '#d05010', gradient: 'linear-gradient(180deg, #F26522 0%, #d05010 100%)' },
-  DC:   { primary: '#004C93', secondary: '#0068c8', gradient: 'linear-gradient(180deg, #004C93 0%, #1a6ad0 100%)' },
-  LSG:  { primary: '#A4D4F2', secondary: '#6ab0e0', gradient: 'linear-gradient(180deg, #A4D4F2 0%, #6ab0e0 100%)' },
-}
-
-/* ─── IPL team logos ─── */
-const teamLogos: Record<string, string> = {
-  MI:   'https://scores.iplt20.com/ipl/teamlogos/MI.png',
-  CSK:  'https://scores.iplt20.com/ipl/teamlogos/CSK.png',
-  KKR:  'https://scores.iplt20.com/ipl/teamlogos/KKR.png',
-  RR:   'https://scores.iplt20.com/ipl/teamlogos/RR.png',
-  RCB:  'https://scores.iplt20.com/ipl/teamlogos/RCB.png',
-  PBKS: 'https://scores.iplt20.com/ipl/teamlogos/PBKS.png',
-  GT:   'https://scores.iplt20.com/ipl/teamlogos/GT.png',
-  SRH:  'https://scores.iplt20.com/ipl/teamlogos/SRH.png',
-  DC:   'https://scores.iplt20.com/ipl/teamlogos/DC.png',
-  LSG:  'https://scores.iplt20.com/ipl/teamlogos/LSG.png',
-}
-
-/* ─── Bench role badge colors ─── */
-const benchRoleColors: Record<string, { bg: string; color: string }> = {
-  BAT:  { bg: '#F9CD05', color: '#1a1a1a' },
-  BOWL: { bg: '#004BA0', color: '#fff' },
-  ALL:  { bg: '#0EB1A2', color: '#fff' },
-  WK:   { bg: '#EA1A85', color: '#fff' },
-}
-
-const defaultGradient = { primary: '#555', secondary: '#333', gradient: 'linear-gradient(180deg, #555 0%, #333 100%)' }
 
 /* ─── Nav Icons ─── */
 const IconHome = () => (
@@ -121,191 +119,118 @@ const LockIcon = () => (
   </svg>
 )
 
-/* ─── Player Figure (jersey style) ─── */
-function PlayerFigure({ player, isCaptain, isVC }: {
-  player: SquadPlayer; isCaptain: boolean; isVC: boolean
+/* ─── Player Figure Component (EXACT copy from edit lineup) ─── */
+function PlayerFigure({ player, isCaptain, isVC, isBench }: {
+  player: SquadPlayer; isCaptain: boolean; isVC: boolean; isBench?: boolean
 }) {
   const code = player.iplTeamCode || ''
-  const tg = teamGradients[code] || defaultGradient
+  const grad = teamGradients[code] || defaultGrad
   const logo = teamLogos[code]
   const light = isLightTeam(code)
-  const textColor = light ? '#1a1a1a' : '#fff'
+  const initials = getInitials(player.fullname)
+  const shortName = getShortName(player.fullname)
+
+  const figW = isBench ? 42 : 56
+  const figH = isBench ? 44 : 58
+  const headSize = isBench ? 24 : 34
+  const bodyW = isBench ? 40 : 52
+  const bodyH = isBench ? 28 : 36
+  const bodyTop = isBench ? 16 : 22
+  const logoSize = isBench ? 16 : 22
+  const logoMt = isBench ? 4 : 6
+  const bodyBr = isBench ? '10px 10px 3px 3px' : '12px 12px 4px 4px'
+  const plateMinW = isBench ? 60 : 82
+  const plateMaxW = isBench ? 72 : 90
+  const platePx = isBench ? '2px 5px 1px' : '4px 8px'
+  const nameFs = isBench ? 11 : 12
+  const valueFs = isBench ? 9 : 10
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      width: 66, textAlign: 'center',
-    }}>
-      {/* Figure container */}
-      <div style={{ position: 'relative', marginBottom: 2 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Player figure */}
+      <div style={{ width: figW, height: figH, position: 'relative', marginBottom: 2 }}>
+        {/* C/VC badge */}
+        {(isCaptain || isVC) && (
+          <div style={{
+            position: 'absolute', top: -2, right: isBench ? -2 : 2, zIndex: 5,
+            width: 16, height: 16, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 8, fontWeight: 900,
+            background: isCaptain ? '#F9CD05' : '#C0C7D0',
+            color: '#1a1a1a',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+          }}>
+            {isCaptain ? 'C' : 'V'}
+          </div>
+        )}
         {/* Head */}
         <div style={{
-          width: 18, height: 18, borderRadius: '50%',
-          background: tg.gradient,
-          border: `1.5px solid ${light ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.25)'}`,
-          margin: '0 auto 1px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-        }} />
-        {/* Body / jersey */}
-        <div style={{
-          width: 34, height: 28, borderRadius: '6px 6px 4px 4px',
-          background: tg.gradient,
-          border: `1.5px solid ${light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)'}`,
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: headSize, height: headSize, borderRadius: '50%', zIndex: 3,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-          margin: '0 auto',
+          fontSize: isBench ? 9 : 11, fontWeight: 800,
+          color: light ? '#1a1a1a' : '#fff',
+          textShadow: light ? 'none' : '0 1px 3px rgba(0,0,0,0.4)',
+          border: light ? '2.5px solid rgba(0,0,0,0.1)' : '2.5px solid rgba(255,255,255,0.35)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+          background: grad.head,
+          overflow: 'hidden',
         }}>
-          {/* Team logo on jersey */}
-          {logo ? (
+          {initials}
+        </div>
+        {/* Body */}
+        <div style={{
+          position: 'absolute', top: bodyTop, left: '50%', transform: 'translateX(-50%)',
+          width: bodyW, height: bodyH, zIndex: 2,
+          borderRadius: bodyBr,
+          boxShadow: '0 3px 10px rgba(0,0,0,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: grad.body,
+          overflow: 'hidden',
+        }}>
+          {/* Collar */}
+          <div style={{
+            position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+            width: 14, height: 5, borderRadius: '0 0 7px 7px',
+            background: 'rgba(255,255,255,0.2)',
+          }} />
+          {logo && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logo}
               alt={code}
               style={{
-                width: 16, height: 16,
-                objectFit: 'contain',
-                opacity: light ? 0.7 : 0.85,
-                filter: light ? 'none' : 'brightness(1.8) contrast(0.8)',
+                width: logoSize, height: logoSize, objectFit: 'contain',
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+                marginTop: logoMt,
               }}
             />
-          ) : (
-            <span style={{
-              fontSize: 9, fontWeight: 800, color: textColor, opacity: 0.6,
-              letterSpacing: -0.3,
-            }}>{getInitials(player.fullname)}</span>
           )}
         </div>
-
-        {/* Captain badge */}
-        {isCaptain && (
-          <div style={{
-            position: 'absolute', top: -2, right: -2,
-            width: 16, height: 16, borderRadius: '50%',
-            fontSize: 7.5, fontWeight: 800,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2, border: '2px solid rgba(255,255,255,0.9)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-            background: '#F9CD05', color: '#1a1a1a',
-          }}>C</div>
-        )}
-        {/* VC badge */}
-        {isVC && (
-          <div style={{
-            position: 'absolute', top: -2, right: -2,
-            width: 16, height: 16, borderRadius: '50%',
-            fontSize: 7.5, fontWeight: 800,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2, border: '2px solid rgba(255,255,255,0.9)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-            background: '#C0C7D0', color: '#1a1a1a',
-          }}>V</div>
-        )}
       </div>
-
       {/* Name plate */}
       <div style={{
-        background: `linear-gradient(135deg, ${tg.primary}ee, ${tg.secondary}dd)`,
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        borderRadius: 5, padding: '2px 6px 1.5px',
-        minWidth: 46,
-        border: `1px solid ${light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)'}`,
+        minWidth: plateMinW, maxWidth: plateMaxW,
+        padding: platePx, borderRadius: 5,
+        textAlign: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: grad.plate,
       }}>
-        <span style={{
-          fontSize: 9.5, fontWeight: 700, color: textColor,
+        <div style={{
+          fontSize: nameFs, fontWeight: 700,
+          color: light ? '#1a1a1a' : '#fff',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          maxWidth: 62, display: 'block', textAlign: 'center',
-          letterSpacing: -0.1, lineHeight: '1.35',
-          textShadow: light ? 'none' : '0 1px 2px rgba(0,0,0,0.3)',
+          textShadow: light ? 'none' : '0 1px 2px rgba(0,0,0,0.2)',
         }}>
-          {getShortName(player.fullname)}
-          {isCaptain && (
-            <span style={{
-              display: 'inline-block', fontSize: 6.5, fontWeight: 800,
-              padding: '0.5px 3px', borderRadius: 2.5,
-              verticalAlign: 'middle', marginLeft: 2, letterSpacing: 0.2,
-              background: '#F9CD05', color: '#1a1a1a',
-            }}>C</span>
-          )}
-          {isVC && (
-            <span style={{
-              display: 'inline-block', fontSize: 6.5, fontWeight: 800,
-              padding: '0.5px 3px', borderRadius: 2.5,
-              verticalAlign: 'middle', marginLeft: 2, letterSpacing: 0.2,
-              background: '#C0C7D0', color: '#1a1a1a',
-            }}>VC</span>
-          )}
-          {normalizeRole(player.role) === 'WK' && (
-            <span style={{
-              display: 'inline-block', fontSize: 6.5, fontWeight: 800,
-              padding: '0.5px 3px', borderRadius: 2.5,
-              verticalAlign: 'middle', marginLeft: 2, letterSpacing: 0.2,
-              background: '#00ff87', color: '#1a1a1a',
-            }}>WK</span>
-          )}
-        </span>
-        <span style={{
-          fontSize: 7.5, fontWeight: 600, color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.5)',
-          textAlign: 'center', display: 'block', letterSpacing: 0.3, lineHeight: '1.2',
-        }}>{code || 'IPL'}</span>
-      </div>
-    </div>
-  )
-}
-
-/* ─── Bench Player (jersey style) ─── */
-function BenchPlayer({ player }: { player: SquadPlayer }) {
-  const role = normalizeRole(player.role)
-  const code = player.iplTeamCode || ''
-  const tg = teamGradients[code] || defaultGradient
-  const logo = teamLogos[code]
-  const rc = benchRoleColors[role] || { bg: '#666', color: '#fff' }
-
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      width: 80, textAlign: 'center',
-      padding: '6px 4px', borderRadius: 10,
-      background: '#fff', border: '1px solid rgba(0,0,0,0.06)',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-    }}>
-      {/* Mini jersey */}
-      <div style={{ position: 'relative', marginBottom: 3 }}>
-        <div style={{
-          width: 12, height: 12, borderRadius: '50%',
-          background: tg.gradient, margin: '0 auto 0.5px',
-        }} />
-        <div style={{
-          width: 24, height: 18, borderRadius: '4px 4px 3px 3px',
-          background: tg.gradient,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-        }}>
-          {logo ? (
-            <img src={logo} alt={code} style={{ width: 11, height: 11, objectFit: 'contain', opacity: 0.8 }} />
-          ) : (
-            <span style={{ fontSize: 7, fontWeight: 800, color: '#fff', opacity: 0.6 }}>{getInitials(player.fullname)}</span>
-          )}
+          {shortName}
         </div>
-        {/* Role badge */}
         <div style={{
-          position: 'absolute', bottom: -2, right: -2,
-          width: 13, height: 13, borderRadius: '50%',
-          background: rc.bg, color: rc.color,
-          fontSize: 7, fontWeight: 800,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '1.5px solid #fff',
-        }}>{role === 'WK' ? 'W' : role === 'ALL' ? 'A' : 'B'}</div>
-      </div>
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: '#333',
-        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        maxWidth: 72, lineHeight: '1.3', letterSpacing: -0.1,
-      }}>
-        {getShortName(player.fullname)}
-      </div>
-      <div style={{ fontSize: 8, fontWeight: 500, color: '#aaa', letterSpacing: 0.3 }}>
-        {code || 'IPL'}
+          fontSize: valueFs, fontWeight: 500,
+          color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)',
+          marginTop: 2, lineHeight: '1.55',
+        }}>
+          {code || 'IPL'}
+        </div>
       </div>
     </div>
   )
@@ -376,34 +301,12 @@ export default function ViewLineupPage() {
     else if (sessionStatus === 'unauthenticated') setLoading(false)
   }, [sessionStatus, fetchData])
 
-  /* ─── Arrange XI into rows matching mockup: Openers (2), Middle Order (4), Lower Order (5) ─── */
-  // Group by role for formation
-  const wk = xi.filter(p => normalizeRole(p.role) === 'WK')
-  const bat = xi.filter(p => normalizeRole(p.role) === 'BAT')
-  const all = xi.filter(p => normalizeRole(p.role) === 'ALL')
-  const bowl = xi.filter(p => normalizeRole(p.role) === 'BOWL')
-
-  // Openers: first 2 batsmen (or WK + BAT)
-  const openers = [...bat.slice(0, 2)]
-  if (openers.length < 2 && wk.length > 0) openers.unshift(wk[0])
-
-  // Middle order: remaining bat + WK + all-rounders
-  const usedIds = new Set(openers.map(p => p.id))
-  const middleOrder = [
-    ...bat.filter(p => !usedIds.has(p.id)),
-    ...wk.filter(p => !usedIds.has(p.id)),
-    ...all,
-  ]
-
-  // Lower order: bowlers
-  const lowerOrder = [...bowl]
-
-  // Fallback: if grouping doesn't cover all 11, use simple 2-4-5 split
-  const allGrouped = [...openers, ...middleOrder, ...lowerOrder]
-  const hasAllPlayers = allGrouped.length === xi.length
-  const row1 = hasAllPlayers ? openers : xi.slice(0, 2)
-  const row2 = hasAllPlayers ? middleOrder : xi.slice(2, 6)
-  const row3 = hasAllPlayers ? lowerOrder : xi.slice(6, 11)
+  /* ─── Arrange XI into fixed 4-3-4 formation, sorted by role priority (EXACT copy from edit lineup) ─── */
+  const rolePri: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
+  const sortedXi = [...xi].sort((a, b) => (rolePri[normalizeRole(a.role)] ?? 1) - (rolePri[normalizeRole(b.role)] ?? 1))
+  const row1 = sortedXi.slice(0, 4)     // Top order (4)
+  const row2 = sortedXi.slice(4, 7)     // Middle order (3)
+  const row3 = sortedXi.slice(7, 11)    // Lower order (4)
 
   const managerName = teamDetail?.user?.name || teamDetail?.name || 'Manager'
   const managerFirstName = managerName.split(' ')[0]
@@ -494,65 +397,39 @@ export default function ViewLineupPage() {
         </div>
       </div>
 
-      {/* ── Cricket Pitch ── */}
+      {/* ── Pitch (EXACT copy from edit lineup) ── */}
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        position: 'relative', overflow: 'hidden',
-        background: `repeating-linear-gradient(180deg,
-          rgba(255,255,255,0) 0px, rgba(255,255,255,0) 36px,
-          rgba(255,255,255,0.04) 36px, rgba(255,255,255,0.04) 72px
-        ), linear-gradient(180deg,
-          #3aad5c 0%, #35a254 20%, #30964c 40%,
-          #2b8a45 60%, #267f3e 80%, #217438 100%
+        flex: 1, position: 'relative', overflow: 'hidden',
+        background: `linear-gradient(180deg,
+          #3aad5c 0%, #35a254 15%,
+          #30964c 30%, #34a058 45%,
+          #3aad5c 50%, #30964c 65%,
+          #2b8a45 80%, #267f3e 100%
         )`,
+        minHeight: xi.length > 0 ? 380 : 200,
       }}>
-        {/* Pitch markings */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {/* Center circle */}
-          <div style={{
-            position: 'absolute', top: '38%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 60, height: 60, border: '1.5px solid rgba(255,255,255,0.1)',
-            borderRadius: '50%',
-          }} />
-          {/* Pitch strip */}
-          <div style={{
-            position: 'absolute', top: '38%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 8, height: 44, background: '#c4a265', borderRadius: 2,
-            boxShadow: '0 0 8px rgba(180,150,80,0.25)',
-          }} />
-          {/* Crease lines */}
-          <div style={{
-            position: 'absolute', top: '16%', left: '50%',
-            transform: 'translateX(-50%)',
-            width: 24, borderTop: '1px solid rgba(255,255,255,0.1)',
-          }} />
-          <div style={{
-            position: 'absolute', top: '60%', left: '50%',
-            transform: 'translateX(-50%)',
-            width: 24, borderTop: '1px solid rgba(255,255,255,0.1)',
-          }} />
-          {/* Boundary arcs */}
-          <div style={{
-            position: 'absolute', top: 6, left: 20, right: 20, height: 24,
-            borderTop: '1.5px solid rgba(255,255,255,0.06)',
-            borderRadius: '50% 50% 0 0',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: 6, left: 20, right: 20, height: 24,
-            borderBottom: '1.5px solid rgba(255,255,255,0.06)',
-            borderRadius: '0 0 50% 50%',
-          }} />
-        </div>
+        {/* Concentric circle markings */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 300, height: 300, borderRadius: '50%',
+          border: '1.5px solid rgba(255,255,255,0.07)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 180, height: 180, borderRadius: '50%',
+          border: '1.5px solid rgba(255,255,255,0.05)',
+          pointerEvents: 'none',
+        }} />
 
-        {/* XI container */}
         {xi.length > 0 ? (
           <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
-            justifyContent: 'center', alignItems: 'center',
-            position: 'relative', zIndex: 1,
-            padding: '6px 0 4px',
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column',
+            justifyContent: 'space-evenly', alignItems: 'center',
+            padding: '12px 0 10px', zIndex: 3,
             gap: 6,
           }}>
             {/* Row 1: Top Order */}
@@ -563,7 +440,13 @@ export default function ViewLineupPage() {
             }}>Top Order</div>
             <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
               {row1.map(p => (
-                <PlayerFigure key={p.id} player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                <div key={p.id}
+                  style={{
+                    width: 86,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  }}>
+                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                </div>
               ))}
             </div>
 
@@ -575,7 +458,13 @@ export default function ViewLineupPage() {
             }}>Middle Order</div>
             <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
               {row2.map(p => (
-                <PlayerFigure key={p.id} player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                <div key={p.id}
+                  style={{
+                    width: 86,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  }}>
+                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                </div>
               ))}
             </div>
 
@@ -587,14 +476,21 @@ export default function ViewLineupPage() {
             }}>Lower Order</div>
             <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
               {row3.map(p => (
-                <PlayerFigure key={p.id} player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                <div key={p.id}
+                  style={{
+                    width: 86,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  }}>
+                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                </div>
               ))}
             </div>
           </div>
         ) : (
           <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            position: 'relative', zIndex: 1,
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 3,
           }}>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>
               {squad ? 'No players in squad' : 'No team found'}
@@ -603,27 +499,47 @@ export default function ViewLineupPage() {
         )}
       </div>
 
-      {/* ── Bench ── */}
+      {/* ── Bench (EXACT copy from edit lineup) ── */}
       {bench.length > 0 && (
         <div style={{
-          background: '#f2f3f8',
-          padding: '8px 12px 6px',
-          flexShrink: 0,
-          borderTop: '2px solid rgba(255,255,255,0.08)',
+          flexShrink: 0, padding: '6px 6px 4px',
+          background: 'linear-gradient(180deg, #1a5c32, #16502c)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
         }}>
           <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: 6,
+            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, justifyContent: 'center',
           }}>
-            <span style={{
-              fontSize: 11, fontWeight: 700, letterSpacing: 0.6,
-              textTransform: 'uppercase' as const, color: '#999',
-            }}>Bench</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
+            <div style={{
+              fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.2)',
+              textTransform: 'uppercase', letterSpacing: 2,
+            }}>
+              Bench
+            </div>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
-            {bench.map(p => (
-              <BenchPlayer key={p.id} player={p} />
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+            {bench.map(p => {
+              const role = normalizeRole(p.role)
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    width: 76,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  }}
+                >
+                  <div style={{
+                    fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
+                    textTransform: 'uppercase', letterSpacing: 0.5,
+                    color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
+                  }}>
+                    {role}
+                  </div>
+                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
