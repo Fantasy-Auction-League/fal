@@ -30,6 +30,15 @@ describe('Layer 2: Lineup Lifecycle', () => {
       const squad = teamSquads.get(team.id)!
       const slots = generateLineup(squad)
 
+      // Delete existing lineup if any (idempotent)
+      const existing = await prisma.lineup.findUnique({
+        where: { teamId_gameweekId: { teamId: team.id, gameweekId: gw1.id } },
+      })
+      if (existing) {
+        await prisma.lineupSlot.deleteMany({ where: { lineupId: existing.id } })
+        await prisma.lineup.delete({ where: { id: existing.id } })
+      }
+
       const lineup = await prisma.lineup.create({
         data: {
           teamId: team.id,
@@ -101,6 +110,15 @@ describe('Layer 2: Lineup Lifecycle', () => {
         const squad = teamSquads.get(team.id)!
         const slots = generateLineup(squad, i % 11, (i + 1) % 11) // rotate captain
 
+        // Delete existing lineup if any (idempotent)
+        const existing = await prisma.lineup.findUnique({
+          where: { teamId_gameweekId: { teamId: team.id, gameweekId: gw.id } },
+        })
+        if (existing) {
+          await prisma.lineupSlot.deleteMany({ where: { lineupId: existing.id } })
+          await prisma.lineup.delete({ where: { id: existing.id } })
+        }
+
         await prisma.lineup.create({
           data: {
             teamId: team.id,
@@ -122,6 +140,8 @@ describe('Layer 2: Lineup Lifecycle', () => {
     const team8 = teams[7]
     const midGw = gameweeks[Math.floor(gameweeks.length / 2)]
 
+    // Upsert to be idempotent
+    await prisma.chipUsage.deleteMany({ where: { teamId: team8.id, chipType: 'POWER_PLAY_BAT' } })
     const chip = await prisma.chipUsage.create({
       data: {
         teamId: team8.id,
@@ -138,6 +158,7 @@ describe('Layer 2: Lineup Lifecycle', () => {
     const team9 = teams[8]
     const lastGw = gameweeks[gameweeks.length - 1]
 
+    await prisma.chipUsage.deleteMany({ where: { teamId: team9.id, chipType: 'BOWLING_BOOST' } })
     const chip = await prisma.chipUsage.create({
       data: {
         teamId: team9.id,
