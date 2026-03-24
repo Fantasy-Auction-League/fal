@@ -565,3 +565,39 @@ test('19. Save lineup shows success @user', async ({ page }) => {
     }
   }
 })
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   20. Dashboard shows active gameweek with matches
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('20. Dashboard shows active gameweek with matches @user', async ({ page }) => {
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Should show "Gameweek N" (not "Season not started")
+  await expect(page.getByText(/Gameweek \d+/)).toBeVisible()
+
+  // Should show upcoming match cards in "This Week" section
+  await expect(page.getByText('This Week')).toBeVisible()
+
+  // Should show at least one match with team codes (e.g., "MI vs CSK")
+  await expect(page.getByText('vs').first()).toBeVisible()
+
+  // Should show a deadline
+  await expect(page.getByText(/Deadline/)).toBeVisible()
+
+  await expect(page).toHaveScreenshot('dashboard-mid-season.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   21. Lineup shows gameweek deadline
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('21. Lineup shows gameweek deadline @user', async ({ page }) => {
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  // Should show gameweek number and deadline (not "Lineup Locked")
+  await expect(page.getByText(/Gameweek \d+/)).toBeVisible()
+  await expect(page.getByText(/Deadline/)).toBeVisible()
+
+  await expect(page).toHaveScreenshot('lineup-mid-season.png')
+})

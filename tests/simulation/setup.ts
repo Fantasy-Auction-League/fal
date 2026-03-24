@@ -182,10 +182,115 @@ export async function setupSimulation() {
   }
   log.push('--- End Credentials ---\n')
 
+  // 8. Set up mid-season gameweek state
+  await setupMidSeasonState(log)
+
   const updatedLeague = await prisma.league.findUnique({
     where: { id: league.id },
     include: { teams: { include: { user: true } } },
   })
 
   return { league: updatedLeague, log }
+}
+
+/**
+ * Configures a mid-season state so the dashboard shows an active gameweek
+ * with a mix of completed and upcoming matches.
+ *
+ * - GW1-5 → COMPLETED
+ * - GW6   → ACTIVE, lockTime = tomorrow, matches near today
+ * - GW7+  → UPCOMING
+ */
+async function setupMidSeasonState(log: string[]) {
+  const now = new Date()
+  const yesterday = new Date(now.getTime() - 86_400_000)
+  const today = new Date(now.getTime())
+  const tomorrow = new Date(now.getTime() + 86_400_000)
+  const dayAfter = new Date(now.getTime() + 2 * 86_400_000)
+
+  const allGws = await prisma.gameweek.findMany({ orderBy: { number: 'asc' } })
+  if (allGws.length === 0) {
+    log.push('Mid-season: no gameweeks found, skipping')
+    return
+  }
+
+  // Mark GW1-5 as COMPLETED
+  for (const gw of allGws.filter((g) => g.number <= 5)) {
+    await prisma.gameweek.update({
+      where: { id: gw.id },
+      data: { status: 'COMPLETED' },
+    })
+  }
+
+  // Find GW6 (or the 6th gameweek if numbering differs)
+  const gw6 = allGws.find((g) => g.number === 6)
+  if (!gw6) {
+    log.push('Mid-season: GW6 not found, skipping')
+    return
+  }
+
+  // Set GW6 to ACTIVE with lockTime tomorrow
+  await prisma.gameweek.update({
+    where: { id: gw6.id },
+    data: { status: 'ACTIVE', lockTime: tomorrow },
+  })
+
+  // Mark GW7+ as UPCOMING
+  for (const gw of allGws.filter((g) => g.number > 6)) {
+    await prisma.gameweek.update({
+      where: { id: gw.id },
+      data: { status: 'UPCOMING' },
+    })
+  }
+
+  // Update matches in GW6 to have realistic dates and team names
+  const gw6Matches = await prisma.match.findMany({
+    where: { gameweekId: gw6.id },
+    orderBy: { startingAt: 'asc' },
+  })
+
+  // IPL matchups for realism
+  const matchups = [
+    { local: 'Mumbai Indians', visitor: 'Chennai Super Kings', localId: 62, visitorId: 58 },
+    { local: 'Royal Challengers Bengaluru', visitor: 'Kolkata Knight Riders', localId: 60, visitorId: 61 },
+    { local: 'Delhi Capitals', visitor: 'Rajasthan Royals', localId: 59, visitorId: 63 },
+    { local: 'Sunrisers Hyderabad', visitor: 'Gujarat Titans', localId: 64, visitorId: 4038 },
+    { local: 'Lucknow Super Giants', visitor: 'Punjab Kings', localId: 4037, visitorId: 57 },
+  ]
+
+  // Schedule: first 2-3 yesterday/today (scored), rest tomorrow/day-after (scheduled)
+  const dates = [
+    { date: yesterday, scored: true },
+    { date: today, scored: true },
+    { date: today, scored: true },
+    { date: tomorrow, scored: false },
+    { date: dayAfter, scored: false },
+  ]
+
+  for (let i = 0; i < Math.min(gw6Matches.length, matchups.length); i++) {
+    const match = gw6Matches[i]
+    const matchup = matchups[i]
+    const schedule = dates[i] || dates[dates.length - 1]
+
+    // Set match time to 7:30 PM IST (14:00 UTC) on the given day
+    const matchDate = new Date(schedule.date)
+    matchDate.setUTCHours(14, 0, 0, 0)
+
+    await prisma.match.update({
+      where: { id: match.id },
+      data: {
+        localTeamName: matchup.local,
+        visitorTeamName: matchup.visitor,
+        localTeamId: matchup.localId,
+        visitorTeamId: matchup.visitorId,
+        startingAt: matchDate,
+        scoringStatus: schedule.scored ? 'SCORED' : 'SCHEDULED',
+        apiStatus: schedule.scored ? 'Finished' : 'NS',
+      },
+    })
+  }
+
+  log.push(
+    `Mid-season: GW6 ACTIVE (${gw6Matches.length} matches), GW1-5 COMPLETED, GW7+ UPCOMING`
+  )
 }
