@@ -137,32 +137,51 @@ export default function StandingsPage() {
       paddingBottom: 80,
       fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
     }}>
-      {/* ── Page Header ── */}
+      {/* ── Hero Header ── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '48px 18px 8px',
+        background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+        padding: '40px 18px 20px',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <Link href="/leaderboard" style={{
-          width: 32, height: 32, borderRadius: 10,
-          background: '#fff', border: '1px solid rgba(0,0,0,0.06)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', fontSize: 16, color: '#333',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-          textDecoration: 'none',
-        }}>
-          &#8592;
-        </Link>
-        <div style={{ fontSize: 17, fontWeight: 800, color: '#1a1a2e', letterSpacing: -0.3 }}>
-          League Standings
-        </div>
+        {/* Radial glow */}
         <div style={{
-          marginLeft: 'auto',
-          fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)',
-          background: 'rgba(0,0,0,0.04)', padding: '4px 10px', borderRadius: 8,
-        }}>
-          {leagueName}
+          position: 'absolute', top: '-30%', right: '-20%',
+          width: 300, height: 300,
+          background: 'radial-gradient(circle, rgba(249,205,5,0.07) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Top row: back arrow + page label */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Link href="/" style={{
+            width: 32, height: 32, borderRadius: 10,
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', fontSize: 16, color: '#fff',
+            textDecoration: 'none',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+          }}>
+            &#8592;
+          </Link>
+          <div style={{
+            fontSize: 18, fontWeight: 900, letterSpacing: -0.5,
+            background: 'linear-gradient(135deg, #F9CD05, #FF822A)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>Fantasy</div>
+        </div>
+
+        {/* Title */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: -0.3 }}>
+            League Standings
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginTop: 4 }}>
+            {leagueName}
+          </div>
         </div>
       </div>
 
