@@ -63,6 +63,19 @@ Wherever a manager's name is shown (leaderboard, standings, lineup views, league
 
 ---
 
+### ISSUE-005 — Tapping team name on home screen does not navigate
+**Status:** Open
+**Found:** 2026-03-24
+**Area:** Dashboard / Navigation
+
+**Description:**
+On the home screen, tapping a team name does nothing. It should navigate to the read-only lineup view for that team (the view-lineup screen).
+
+**Expected behaviour:** Tap team name on home screen → opens the read-only lineup view for that team.
+**Actual behaviour:** Nothing happens, no navigation occurs.
+
+---
+
 ## Resolved Issues
 
 _None yet._
