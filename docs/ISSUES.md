@@ -32,6 +32,24 @@ After successfully creating one league, attempting to create a second league fai
 
 ---
 
+### ISSUE-003 — Captain / Vice Captain selection redesign
+**Status:** Open
+**Found:** 2026-03-24
+**Area:** Edit Lineup / Player Stats
+
+**Description:**
+The current C/VC selection flow needs to be replaced with a player-stats-driven approach:
+
+1. Tapping a player name in the Edit Lineup screen should open the **Player Stats screen**.
+2. The Player Stats screen should have two checkboxes: **Captain** and **Vice Captain**.
+3. Selecting Captain on a player automatically removes the Captain badge from whoever previously held it (and same for Vice Captain) — only one player can hold each role at a time.
+4. The existing C/VC action buttons in the list view can be removed or demoted once this flow is in place.
+
+**Expected behaviour:** User taps player name → Player Stats screen opens → checks Captain or VC checkbox → previous C/VC is overridden → change reflected immediately in the lineup.
+**Actual behaviour:** C/VC is assigned via action buttons directly in the lineup list view with no player stats context.
+
+---
+
 ## Resolved Issues
 
 _None yet._
