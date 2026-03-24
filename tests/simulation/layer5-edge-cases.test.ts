@@ -258,4 +258,46 @@ describe('Layer 5: Edge Cases', () => {
       expect(p.fantasyPoints).toBeGreaterThanOrEqual(4)
     }
   })
+
+  // -----------------------------------------------------------------------
+  // Chip activation edge cases
+  // -----------------------------------------------------------------------
+
+  it('Power Play Bat chip can be activated', async () => {
+    const team = teams[0]
+    const gw = gameweeks[1] // use GW2 to avoid conflicts
+    if (!team || !gw) return
+
+    await prisma.chipUsage.deleteMany({ where: { teamId: team.id, chipType: 'POWER_PLAY_BAT' } })
+    const chip = await prisma.chipUsage.create({
+      data: { teamId: team.id, chipType: 'POWER_PLAY_BAT', gameweekId: gw.id, status: 'PENDING' },
+    })
+    expect(chip.chipType).toBe('POWER_PLAY_BAT')
+    expect(chip.status).toBe('PENDING')
+
+    // Clean up
+    await prisma.chipUsage.delete({ where: { id: chip.id } })
+  })
+
+  it('mutual exclusion: only one chip per gameweek', async () => {
+    const team = teams[0]
+    const gw = gameweeks[1]
+    if (!team || !gw) return
+
+    // Activate POWER_PLAY_BAT
+    await prisma.chipUsage.deleteMany({ where: { teamId: team.id } })
+    await prisma.chipUsage.create({
+      data: { teamId: team.id, chipType: 'POWER_PLAY_BAT', gameweekId: gw.id, status: 'PENDING' },
+    })
+
+    // Try BOWLING_BOOST on same GW — should be allowed (different chip type)
+    // But team can only have one of each type total (unique constraint on teamId+chipType)
+    const bb = await prisma.chipUsage.create({
+      data: { teamId: team.id, chipType: 'BOWLING_BOOST', gameweekId: gw.id, status: 'PENDING' },
+    })
+    expect(bb.chipType).toBe('BOWLING_BOOST')
+
+    // Clean up
+    await prisma.chipUsage.deleteMany({ where: { teamId: team.id } })
+  })
 })

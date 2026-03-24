@@ -85,6 +85,11 @@ test('3. User sets lineup @user', async ({ page }) => {
   await expect(page.getByText('Bowling Boost')).toBeVisible()
   await expect(page.getByText('Power Play Bat')).toBeVisible()
 
+  // 2-4-5 formation row labels should be visible
+  await expect(page.getByText('Openers')).toBeVisible()
+  await expect(page.getByText('Middle Order')).toBeVisible()
+  await expect(page.getByText('Lower Order')).toBeVisible()
+
   // Captain badge ("C") should be visible on the pitch
   const captainBadge = page.locator('div').filter({ hasText: /^C$/ }).first()
   await expect(captainBadge).toBeVisible()
@@ -141,7 +146,10 @@ test('4. User edits lineup @user', async ({ page }) => {
   const saveBtn = page.getByText('Save Lineup')
   // It may or may not appear depending on state — just verify the UI flow works
   if (await saveBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await expect(saveBtn).toBeVisible()
+    await saveBtn.click()
+
+    // After saving, a success message should appear
+    await expect(page.getByText('Lineup saved!')).toBeVisible({ timeout: 5000 })
   }
 
   await expect(page).toHaveScreenshot('lineup-edited.png')
@@ -154,13 +162,12 @@ test('5. User activates chip @user', async ({ page }) => {
   await page.goto('/lineup')
   await waitForApp(page)
 
-  // Find the Bowling Boost toggle (the switch div)
-  // The toggle is a 48x28 div inside the Bowling Boost section
+  // --- Test Bowling Boost chip ---
   const bowlingSection = page.locator('div').filter({ hasText: 'Bowling Boost' }).filter({ hasText: 'Doubles all bowling points' })
-  const toggle = bowlingSection.locator('div[style*="width: 48"]').first()
+  const bbToggle = bowlingSection.locator('div[style*="width: 48"]').first()
 
-  if (await toggle.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await toggle.click()
+  if (await bbToggle.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await bbToggle.click()
 
     // Chip confirmation modal should appear
     await expect(page.getByText('Play Bowling Boost?')).toBeVisible()
@@ -170,13 +177,32 @@ test('5. User activates chip @user', async ({ page }) => {
     // Verify warning text
     await expect(page.getByText('cannot be changed')).toBeVisible()
 
-    await expect(page).toHaveScreenshot('chip-confirmation.png')
+    await expect(page).toHaveScreenshot('chip-confirmation-bb.png')
 
-    // Confirm the chip
-    await page.getByText('Yes, Play Bowling Boost').click()
-
-    // Modal should close and toggle should be green
+    // Cancel so we can test Power Play Bat next
+    await page.getByText('Cancel').click()
     await expect(page.getByText('Play Bowling Boost?')).toBeHidden()
+  }
+
+  // --- Test Power Play Bat chip ---
+  const ppbSection = page.locator('div').filter({ hasText: 'Power Play Bat' }).filter({ hasText: 'Doubles all batting points' })
+  const ppbToggle = ppbSection.locator('div[style*="width: 48"]').first()
+
+  if (await ppbToggle.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await ppbToggle.click()
+
+    // Chip confirmation modal should appear for Power Play Bat
+    await expect(page.getByText('Play Power Play Bat?')).toBeVisible()
+    await expect(page.getByText('Yes, Play Power Play Bat')).toBeVisible()
+    await expect(page.getByText('Cancel')).toBeVisible()
+
+    await expect(page).toHaveScreenshot('chip-confirmation-ppb.png')
+
+    // Confirm the Power Play Bat chip
+    await page.getByText('Yes, Play Power Play Bat').click()
+
+    // Modal should close
+    await expect(page.getByText('Play Power Play Bat?')).toBeHidden()
   }
 })
 
@@ -513,4 +539,70 @@ test('17. Password too short rejected @noauth', async ({ page }) => {
   await expect(errorMsg).toBeVisible({ timeout: 10_000 })
 
   await expect(page).toHaveScreenshot('password-too-short.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   18. Lineup lock prevents edits — verify lock badge
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('18. Lineup lock prevents edits @user', async ({ page }) => {
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  await expect(page.getByText('Pick Team')).toBeVisible()
+
+  // If the current GW lock time is in the past, a "Lineup Locked" badge should appear
+  const lockBadge = page.getByText('Lineup Locked')
+  const isLocked = await lockBadge.isVisible({ timeout: 3000 }).catch(() => false)
+
+  if (isLocked) {
+    await expect(lockBadge).toBeVisible()
+
+    // When locked, Save Lineup button should NOT be visible
+    await expect(page.getByText('Save Lineup')).toBeHidden()
+
+    // Chip toggles should be disabled (not clickable)
+    // Verify the lock badge is styled as a warning indicator
+    await expect(page).toHaveScreenshot('lineup-locked.png')
+  } else {
+    // Lineup is not locked — verify the editable state is present
+    // Chip bar and save capability should be available
+    await expect(page.getByText('Bowling Boost')).toBeVisible()
+    await expect(page.getByText('Power Play Bat')).toBeVisible()
+
+    await expect(page).toHaveScreenshot('lineup-unlocked.png')
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   19. Save lineup shows success — make a change and save
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('19. Save lineup shows success @user', async ({ page }) => {
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  await expect(page.getByText('Pick Team')).toBeVisible()
+
+  // If lineup is locked, skip this test
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) {
+    return
+  }
+
+  // Tap the VC badge to change vice-captain (makes lineup dirty)
+  const vcBadge = page.locator('div').filter({ hasText: /^V$/ }).first()
+  if (await vcBadge.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await vcBadge.click()
+  }
+
+  // Click Save Lineup
+  const saveBtn = page.getByText('Save Lineup')
+  if (await saveBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await saveBtn.click()
+
+    // Assert success message appears
+    const successMsg = page.getByText('Lineup saved!')
+    await expect(successMsg).toBeVisible({ timeout: 5000 })
+
+    await expect(page).toHaveScreenshot('lineup-save-success.png')
+  }
 })
