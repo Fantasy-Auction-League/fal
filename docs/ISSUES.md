@@ -50,6 +50,19 @@ The current C/VC selection flow needs to be replaced with a player-stats-driven 
 
 ---
 
+### ISSUE-004 — Manager name should display as team name
+**Status:** Open
+**Found:** 2026-03-24
+**Area:** UI / Display
+
+**Description:**
+Wherever a manager's name is shown (leaderboard, standings, lineup views, league screens), it should display the team name instead of the manager's account name.
+
+**Expected behaviour:** All references to the manager show their team name (e.g. "Cummin Side", "BashXI").
+**Actual behaviour:** Manager's account name/email is shown instead of their team name.
+
+---
+
 ## Resolved Issues
 
 _None yet._
