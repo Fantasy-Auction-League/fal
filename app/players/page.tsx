@@ -1046,7 +1046,7 @@ export default function PlayersPage() {
         {[
           { href: '/', label: 'Home', icon: <IconHome />, active: false },
           { href: '/lineup', label: 'Lineup', icon: <IconLineup />, active: false },
-          { href: '#', label: 'Board', icon: <IconBoard />, active: false },
+
           { href: '/players', label: 'Players', icon: <IconPlayers />, active: true },
           { href: '/admin', label: 'League', icon: <IconLeague />, active: false },
         ].map((item) => (
