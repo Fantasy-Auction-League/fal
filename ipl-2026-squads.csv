@@ -65,7 +65,7 @@ KKR,Kolkata Knight Riders,24882,Vaibhav Arora,Bowler,right-hand-bat,right-arm-fa
 KKR,Kolkata Knight Riders,118,Rovman Powell,Batsman,right-hand-bat,right-arm-fast-medium,24150873,1993-07-23,AVAILABLE,,
 KKR,Kolkata Knight Riders,208,Tim Seifert,Wicketkeeper,right-hand-bat,,2817,1994-12-14,AVAILABLE,,
 KKR,Kolkata Knight Riders,51,Ajinkya Rahane,Batsman,right-hand-bat,right-arm-fast-medium,153732,1988-06-06,AVAILABLE,,
-KKR,Kolkata Knight Riders,23685,Akash Deep,Allrounder,right-hand-bat,right-arm-fast-medium,153732,1996-12-15,AVAILABLE,,
+KKR,Kolkata Knight Riders,23685,[REMOVED] Akash Deep,Allrounder,right-hand-bat,right-arm-fast-medium,153732,1996-12-15,OUT - Not in squad,,
 KKR,Kolkata Knight Riders,33572,Umran Malik,Bowler,right-hand-bat,right-arm-fast-medium,153732,1999-11-22,AVAILABLE,,
 KKR,Kolkata Knight Riders,3305,Rahul Tripathi,Batsman,right-hand-bat,right-arm-fast-medium,153732,1991-03-02,AVAILABLE,,
 KKR,Kolkata Knight Riders,276,Manish Pandey,Batsman,right-hand-bat,right-arm-fast-medium,153732,1989-09-10,AVAILABLE,,
@@ -85,7 +85,7 @@ RR,Rajasthan Royals,6697,Tushar Deshpande,Bowler,left-hand-bat,right-arm-fast-me
 RR,Rajasthan Royals,2966,Sandeep Sharma,Bowler,right-hand-bat,right-arm-fast-medium,153732,1993-05-18,AVAILABLE,,
 RR,Rajasthan Royals,4346,Nandre Burger,Bowler,left-hand-bat,left-arm-fast-medium,146,1995-08-11,AVAILABLE,,
 RR,Rajasthan Royals,134,[REMOVED] Sam Curran,Allrounder,left-hand-bat,left-arm-fast-medium,462,1998-06-03,OUT - Groin injury,Groin injury,Exploring options (Shanaka/Atkinson)
-RR,Rajasthan Royals,215,Adam Milne,Bowler,right-hand-bat,right-arm-fast,2817,1992-04-13,AVAILABLE,,
+RR,Rajasthan Royals,215,[REMOVED] Adam Milne,Bowler,right-hand-bat,right-arm-fast,2817,1992-04-13,OUT - Not in squad,,
 RR,Rajasthan Royals,35321,Kwena Maphaka,Bowler,left-hand-bat,left-arm-fast-medium,146,2006-04-08,AVAILABLE,,
 RR,Rajasthan Royals,57622,Vaibhav Suryavanshi,Batsman,left-hand-bat,slow-left-arm-orthodox,153732,2011-03-27,AVAILABLE,,
 RR,Rajasthan Royals,6472,Donovan Ferreira,Wicketkeeper,right-hand-bat,right-arm-offbreak,146,1998-07-21,AVAILABLE,,
@@ -229,7 +229,7 @@ LSG,Lucknow Super Giants,736,Nicholas Pooran,Wicketkeeper,left-hand-bat,,2415087
 LSG,Lucknow Super Giants,36521,Mayank Yadav,Bowler,right-hand-bat,right-arm-fast-medium,153732,2002-06-17,DOUBTFUL,Fitness concerns,Uncertain
 LSG,Lucknow Super Giants,57,Mohammed Shami,Bowler,right-hand-bat,right-arm-fast,153732,1990-09-03,AVAILABLE,,
 LSG,Lucknow Super Giants,3152,Avesh Khan,Bowler,right-hand-bat,right-arm-fast-medium,153732,1996-12-13,AVAILABLE,,
-LSG,Lucknow Super Giants,623,Josh Inglis,Wicketkeeper,right-hand-bat,,98,1995-03-04,AVAILABLE,,
+LSG,Lucknow Super Giants,623,[REMOVED] Josh Inglis,Wicketkeeper,right-hand-bat,,98,1995-03-04,OUT - Not in squad,,
 LSG,Lucknow Super Giants,9927,Abdul Samad,Allrounder,right-hand-bat,legbreak,153732,2001-10-28,AVAILABLE,,
 LSG,Lucknow Super Giants,36515,Ayush Badoni,Batsman,right-hand-bat,right-arm-offbreak,153732,1999-12-03,AVAILABLE,,
 LSG,Lucknow Super Giants,3353,Mohsin Khan,Bowler,left-hand-bat,left-arm-fast-medium,153732,1998-07-15,DOUBTFUL,Knee surgery rehab,Uncertain
