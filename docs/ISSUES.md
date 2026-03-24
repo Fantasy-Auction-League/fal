@@ -76,6 +76,19 @@ On the home screen, tapping a team name does nothing. It should navigate to the 
 
 ---
 
+### ISSUE-006 — Read-only team view should show the locked GW lineup, not pending changes
+**Status:** Open
+**Found:** 2026-03-24
+**Area:** View Lineup (Read-only)
+
+**Description:**
+When viewing another team's lineup (or your own in read-only mode), the screen is showing lineup changes that have been made for the upcoming gameweek but not yet locked. It should only show the team as it was locked for the most recently completed or active gameweek.
+
+**Expected behaviour:** The read-only team view shows the lineup that was locked at the GW deadline — no in-progress edits or future GW changes should be visible.
+**Actual behaviour:** Pending/unsaved lineup changes for the next GW are visible in the read-only view.
+
+---
+
 ## Resolved Issues
 
 _None yet._
