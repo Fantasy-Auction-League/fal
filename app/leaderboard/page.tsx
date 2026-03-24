@@ -436,7 +436,6 @@ export default function LeaderboardPage() {
       }}>
         <NavItem href="/" icon={<IconHome />} label="Home" active={false} />
         <NavItem href="/lineup" icon={<IconLineup />} label="Lineup" active={false} />
-        <NavItem href="/leaderboard" icon={<IconBoard />} label="Board" active />
         <NavItem href="/players" icon={<IconPlayers />} label="Players" active={false} />
         <NavItem href="/admin" icon={<IconLeague />} label="League" active={false} />
       </nav>
