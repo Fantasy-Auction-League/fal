@@ -220,6 +220,26 @@ function PlayerFigure({ player, isCaptain, isVC, isBench }: {
   )
 }
 
+/* ─── Role icon gradients for list view ─── */
+const roleIconGradients: Record<string, { bg: string; color: string; letter: string }> = {
+  BAT:  { bg: 'linear-gradient(135deg, #F9CD05, #e0b800)', color: '#1a1a1a', letter: 'B' },
+  BOWL: { bg: 'linear-gradient(135deg, #004BA0, #0066cc)', color: '#fff', letter: 'B' },
+  ALL:  { bg: 'linear-gradient(135deg, #0EB1A2, #089e90)', color: '#fff', letter: 'A' },
+  WK:   { bg: 'linear-gradient(135deg, #EA1A85, #c4166e)', color: '#fff', letter: 'W' },
+}
+
+/* ─── Toggle SVG Icons ─── */
+const IconGrid = () => (
+  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+  </svg>
+)
+const IconList = () => (
+  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+)
+
 /* ─── Main Page ─── */
 export default function ViewLineupPage() {
   const { data: session, status: sessionStatus } = useSession()
@@ -235,6 +255,7 @@ export default function ViewLineupPage() {
   const [captainId, setCaptainId] = useState<string | null>(null)
   const [vcId, setVcId] = useState<string | null>(null)
   const [currentGWNumber, setCurrentGWNumber] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<'pitch' | 'list'>('pitch')
 
   const fetchData = useCallback(async () => {
     if (!teamId) return
@@ -381,149 +402,337 @@ export default function ViewLineupPage() {
         </div>
       </div>
 
-      {/* ── Pitch (EXACT copy from edit lineup) ── */}
+      {/* ── View Toggle ── */}
       <div style={{
-        flex: 1, position: 'relative', overflow: 'hidden',
-        background: `linear-gradient(180deg,
-          #3aad5c 0%, #35a254 15%,
-          #30964c 30%, #34a058 45%,
-          #3aad5c 50%, #30964c 65%,
-          #2b8a45 80%, #267f3e 100%
-        )`,
-        minHeight: xi.length > 0 ? 380 : 200,
+        background: '#fff', padding: '6px 16px 8px',
+        display: 'flex', flexShrink: 0, borderBottom: '1px solid #efefF3',
       }}>
-        {/* Concentric circle markings */}
         <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 300, height: 300, borderRadius: '50%',
-          border: '1.5px solid rgba(255,255,255,0.07)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 180, height: 180, borderRadius: '50%',
-          border: '1.5px solid rgba(255,255,255,0.05)',
-          pointerEvents: 'none',
-        }} />
-
-        {xi.length > 0 ? (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column',
-            justifyContent: 'space-evenly', alignItems: 'center',
-            padding: '12px 0 10px', zIndex: 3,
-            gap: 6,
-          }}>
-            {/* Row 1: Top Order */}
-            <div style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-              textAlign: 'center', marginBottom: -2,
-            }}>Top Order</div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
-              {row1.map(p => (
-                <div key={p.id}
-                  style={{
-                    width: 86,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  }}>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
-                </div>
-              ))}
-            </div>
-
-            {/* Row 2: Middle Order */}
-            <div style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-              textAlign: 'center', marginBottom: -2,
-            }}>Middle Order</div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
-              {row2.map(p => (
-                <div key={p.id}
-                  style={{
-                    width: 86,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  }}>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
-                </div>
-              ))}
-            </div>
-
-            {/* Row 3: Lower Order */}
-            <div style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-              textAlign: 'center', marginBottom: -2,
-            }}>Lower Order</div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
-              {row3.map(p => (
-                <div key={p.id}
-                  style={{
-                    width: 86,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  }}>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 3,
-          }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>
-              {squad ? 'No players in squad' : 'No team found'}
-            </p>
-          </div>
-        )}
+          display: 'flex', background: '#f2f3f8', borderRadius: 10, padding: 3, flex: 1,
+        }}>
+          {(['pitch', 'list'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              style={{
+                flex: 1, padding: '6px 0', border: 'none', borderRadius: 8,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                background: viewMode === mode ? '#fff' : 'transparent',
+                color: viewMode === mode ? '#1a1a2e' : '#888',
+                boxShadow: viewMode === mode ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {mode === 'pitch' ? <IconGrid /> : <IconList />}
+              {mode === 'pitch' ? 'Pitch View' : 'List View'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Bench (EXACT copy from edit lineup) ── */}
-      {bench.length > 0 && (
-        <div style={{
-          flexShrink: 0, padding: '6px 6px 4px',
-          background: 'linear-gradient(180deg, #1a5c32, #16502c)',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-        }}>
+      {/* ── Pitch View ── */}
+      {viewMode === 'pitch' && (
+        <>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, justifyContent: 'center',
+            flex: 1, position: 'relative', overflow: 'hidden',
+            background: `linear-gradient(180deg,
+              #3aad5c 0%, #35a254 15%,
+              #30964c 30%, #34a058 45%,
+              #3aad5c 50%, #30964c 65%,
+              #2b8a45 80%, #267f3e 100%
+            )`,
+            minHeight: xi.length > 0 ? 380 : 200,
           }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
+            {/* Concentric circle markings */}
             <div style={{
-              fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.2)',
-              textTransform: 'uppercase', letterSpacing: 2,
-            }}>
-              Bench
-            </div>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-            {bench.map(p => {
-              const role = normalizeRole(p.role)
-              return (
-                <div
-                  key={p.id}
-                  style={{
-                    width: 76,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  }}
-                >
-                  <div style={{
-                    fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
-                    textTransform: 'uppercase', letterSpacing: 0.5,
-                    color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
-                  }}>
-                    {role}
-                  </div>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 300, height: 300, borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.07)',
+              pointerEvents: 'none',
+            }} />
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 180, height: 180, borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.05)',
+              pointerEvents: 'none',
+            }} />
+
+            {xi.length > 0 ? (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', flexDirection: 'column',
+                justifyContent: 'space-evenly', alignItems: 'center',
+                padding: '12px 0 10px', zIndex: 3,
+                gap: 6,
+              }}>
+                {/* Row 1: Top Order */}
+                <div style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+                  textAlign: 'center', marginBottom: -2,
+                }}>Top Order</div>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
+                  {row1.map(p => (
+                    <div key={p.id}
+                      style={{
+                        width: 86,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      }}>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                    </div>
+                  ))}
                 </div>
-              )
-            })}
+
+                {/* Row 2: Middle Order */}
+                <div style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+                  textAlign: 'center', marginBottom: -2,
+                }}>Middle Order</div>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
+                  {row2.map(p => (
+                    <div key={p.id}
+                      style={{
+                        width: 86,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      }}>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Row 3: Lower Order */}
+                <div style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+                  textAlign: 'center', marginBottom: -2,
+                }}>Lower Order</div>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
+                  {row3.map(p => (
+                    <div key={p.id}
+                      style={{
+                        width: 86,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      }}>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 3,
+              }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>
+                  {squad ? 'No players in squad' : 'No team found'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Bench (pitch view) ── */}
+          {bench.length > 0 && (
+            <div style={{
+              flexShrink: 0, padding: '6px 6px 4px',
+              background: 'linear-gradient(180deg, #1a5c32, #16502c)',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, justifyContent: 'center',
+              }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
+                <div style={{
+                  fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.2)',
+                  textTransform: 'uppercase', letterSpacing: 2,
+                }}>
+                  Bench
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                {bench.map(p => {
+                  const role = normalizeRole(p.role)
+                  return (
+                    <div
+                      key={p.id}
+                      style={{
+                        width: 76,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      }}
+                    >
+                      <div style={{
+                        fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
+                        textTransform: 'uppercase', letterSpacing: 0.5,
+                        color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
+                      }}>
+                        {role}
+                      </div>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── List View (read-only) ── */}
+      {viewMode === 'list' && (
+        <div style={{
+          flex: 1, overflowY: 'auto', background: '#f2f3f8',
+          display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Playing XI section */}
+          <div style={{
+            fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
+            letterSpacing: 0.8, padding: '10px 16px 4px',
+          }}>Playing XI</div>
+
+          {sortedXi.map(p => {
+            const role = normalizeRole(p.role)
+            const isCap = captainId === p.id
+            const isVc = vcId === p.id
+            const iconStyle = roleIconGradients[role] || roleIconGradients.BAT
+            return (
+              <div key={p.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 16px', background: '#fff',
+                borderBottom: '1px solid #f2f3f8',
+              }}>
+                {/* Role icon */}
+                <div style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800, flexShrink: 0,
+                  background: iconStyle.bg, color: iconStyle.color,
+                }}>{iconStyle.letter}</div>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13, fontWeight: 700, color: '#1a1a2e',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                  }}>
+                    {getShortName(p.fullname)}
+                    {isCap && (
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, padding: '1.5px 5px', borderRadius: 4,
+                        background: '#F9CD05', color: '#1a1a1a', flexShrink: 0,
+                      }}>C</span>
+                    )}
+                    {isVc && (
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, padding: '1.5px 5px', borderRadius: 4,
+                        background: '#C0C7D0', color: '#1a1a1a', flexShrink: 0,
+                      }}>VC</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                    {p.iplTeamCode || 'IPL'} · {role}
+                  </div>
+                </div>
+                {/* Points */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
+                }}>
+                  <span style={{
+                    fontSize: 15, fontWeight: 800,
+                    color: isCap ? '#b58800' : '#1a1a2e',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>0</span>
+                  {isCap && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, color: '#004BA0',
+                      background: 'rgba(0,75,160,0.06)', padding: '1px 4px', borderRadius: 3,
+                    }}>2&times;</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Bench section */}
+          {bench.length > 0 && (
+            <>
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
+                letterSpacing: 0.8, padding: '10px 16px 4px', marginTop: 4,
+              }}>Bench</div>
+
+              {bench.map((p, idx) => {
+                const role = normalizeRole(p.role)
+                const iconStyle = roleIconGradients[role] || roleIconGradients.BAT
+                return (
+                  <div key={p.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 16px', background: '#fafbfd',
+                    borderBottom: '1px solid #f2f3f8',
+                    opacity: 0.75,
+                  }}>
+                    {/* Priority badge */}
+                    <div style={{
+                      width: 22, height: 22, borderRadius: 6,
+                      background: '#e8eaf0', color: '#888',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 800, flexShrink: 0,
+                    }}>{idx + 1}</div>
+                    {/* Role icon */}
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 10,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 800, flexShrink: 0,
+                      background: iconStyle.bg, color: iconStyle.color,
+                    }}>{iconStyle.letter}</div>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e' }}>
+                        {getShortName(p.fullname)}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                        {p.iplTeamCode || 'IPL'} · {role}
+                      </div>
+                    </div>
+                    {/* Muted dash */}
+                    <span style={{
+                      fontSize: 15, fontWeight: 800, color: '#ccc',
+                      fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+                    }}>&mdash;</span>
+                  </div>
+                )
+              })}
+            </>
+          )}
+
+          {/* Summary bar */}
+          <div style={{
+            margin: '10px 16px 16px', padding: '12px 16px', borderRadius: 14,
+            background: '#fff', border: '1px solid #eef0f5',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>0</div>
+              <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
+                {currentGWNumber ? `GW${currentGWNumber} Total` : 'Total'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#b58800' }}>
+                {captainId ? getShortName(sortedXi.find(p => p.id === captainId)?.fullname || bench.find(p => p.id === captainId)?.fullname || '—') : '—'}
+              </div>
+              <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Captain (2&times;)</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#666' }}>
+                {vcId ? getShortName(sortedXi.find(p => p.id === vcId)?.fullname || bench.find(p => p.id === vcId)?.fullname || '—') : '—'}
+              </div>
+              <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Vice Captain</div>
+            </div>
           </div>
         </div>
       )}
