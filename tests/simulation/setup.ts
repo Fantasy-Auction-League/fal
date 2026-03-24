@@ -292,8 +292,24 @@ async function setupMidSeasonState(log: string[]) {
   }
 
   // --- GW6 Lineups, PlayerScores, GameweekScores ---
+  await applyGw6Scores(gw6, log)
 
-  // Get all teams with their squads
+  log.push(
+    `Mid-season: GW6 ACTIVE (${gw6Matches.length} matches), GW1-5 COMPLETED, GW7+ UPCOMING`
+  )
+}
+
+// Deterministic but varied score array (non-zero, one per squad slot)
+const baseScores = [42, 28, 56, 14, 38, 72, 20, 48, 34, 62, 18, 52, 30, 44, 66]
+
+/**
+ * Core logic to upsert GW6 lineups, PlayerScores, GameweekScores, and team totals.
+ * Shared by setupMidSeasonState (first-time) and reapplyMidSeasonScores (post-aggregation fix).
+ */
+async function applyGw6Scores(
+  gw6: { id: string },
+  log: string[]
+) {
   const league = await prisma.league.findFirst({
     where: { name: SIM_LEAGUE_NAME },
     include: {
@@ -312,9 +328,6 @@ async function setupMidSeasonState(log: string[]) {
     return
   }
 
-  // Deterministic but varied score generator (seeded per player index)
-  const baseScores = [72, 48, 35, 22, 56, 14, 41, 63, 28, 19, 50, 33, 67, 26, 45]
-
   for (const team of league.teams) {
     const squad = team.teamPlayers.map((tp) => ({
       id: tp.player.id,
@@ -326,26 +339,30 @@ async function setupMidSeasonState(log: string[]) {
       continue
     }
 
-    // Create lineup for GW6
-    const slots = generateLineup(squad)
-    const lineup = await prisma.lineup.upsert({
+    // Upsert lineup for GW6 (create if not exists)
+    const existingLineup = await prisma.lineup.findUnique({
       where: { teamId_gameweekId: { teamId: team.id, gameweekId: gw6.id } },
-      update: {},
-      create: {
-        teamId: team.id,
-        gameweekId: gw6.id,
-        slots: {
-          create: slots.map((s) => ({
-            playerId: s.playerId,
-            slotType: s.slotType,
-            benchPriority: s.benchPriority,
-            role: s.role,
-          })),
-        },
-      },
     })
 
-    // Create PlayerScore records for each squad member
+    if (!existingLineup) {
+      const slots = generateLineup(squad)
+      await prisma.lineup.create({
+        data: {
+          teamId: team.id,
+          gameweekId: gw6.id,
+          slots: {
+            create: slots.map((s) => ({
+              playerId: s.playerId,
+              slotType: s.slotType,
+              benchPriority: s.benchPriority,
+              role: s.role,
+            })),
+          },
+        },
+      })
+    }
+
+    // Upsert PlayerScore records for each squad member
     let gwTotal = 0
     for (let i = 0; i < squad.length; i++) {
       const rawPoints = baseScores[i % baseScores.length]
@@ -374,7 +391,7 @@ async function setupMidSeasonState(log: string[]) {
       }
     }
 
-    // Create GameweekScore
+    // Upsert GameweekScore
     await prisma.gameweekScore.upsert({
       where: {
         teamId_gameweekId: { teamId: team.id, gameweekId: gw6.id },
@@ -387,16 +404,103 @@ async function setupMidSeasonState(log: string[]) {
       },
     })
 
-    // Update team totalPoints
+    // Re-compute team totalPoints from all GameweekScores
+    const allGwScores = await prisma.gameweekScore.findMany({
+      where: { teamId: team.id },
+    })
+    const teamTotal = allGwScores.reduce((sum, gs) => sum + gs.totalPoints, 0)
     await prisma.team.update({
       where: { id: team.id },
-      data: { totalPoints: { increment: gwTotal } },
+      data: { totalPoints: teamTotal },
     })
 
     log.push(`Mid-season: ${team.name} GW6 lineup + scores (total: ${gwTotal})`)
   }
+}
+
+/**
+ * Re-applies GW6 mid-season state after Vitest Layer 4 aggregation
+ * has wiped PlayerScore data. Call this AFTER aggregateGameweek() runs.
+ *
+ * Re-sets GW statuses, match dates, and upserts all GW6 scores.
+ */
+export async function reapplyMidSeasonScores() {
+  const log: string[] = ['Reapplying mid-season GW6 scores...']
+
+  const now = new Date()
+  const yesterday = new Date(now.getTime() - 86_400_000)
+  const today = new Date(now.getTime())
+  const tomorrow = new Date(now.getTime() + 86_400_000)
+  const dayAfter = new Date(now.getTime() + 2 * 86_400_000)
+
+  const allGws = await prisma.gameweek.findMany({ orderBy: { number: 'asc' } })
+  if (allGws.length === 0) {
+    log.push('No gameweeks found, skipping')
+    return log
+  }
+
+  // Re-set GW statuses: GW1-5 COMPLETED
+  for (const gw of allGws.filter((g) => g.number <= 5)) {
+    await prisma.gameweek.update({
+      where: { id: gw.id },
+      data: { status: 'COMPLETED' },
+    })
+  }
+
+  // GW6 ACTIVE with lockTime tomorrow
+  const gw6 = allGws.find((g) => g.number === 6)
+  if (!gw6) {
+    log.push('GW6 not found, skipping')
+    return log
+  }
+
+  await prisma.gameweek.update({
+    where: { id: gw6.id },
+    data: { status: 'ACTIVE', lockTime: tomorrow },
+  })
+
+  // GW7+ UPCOMING
+  for (const gw of allGws.filter((g) => g.number > 6)) {
+    await prisma.gameweek.update({
+      where: { id: gw.id },
+      data: { status: 'UPCOMING' },
+    })
+  }
+
+  // Re-set GW6 match dates
+  const gw6Matches = await prisma.match.findMany({
+    where: { gameweekId: gw6.id },
+    orderBy: { startingAt: 'asc' },
+  })
+
+  const dates = [
+    { date: yesterday, scored: true },
+    { date: today, scored: true },
+    { date: today, scored: true },
+    { date: tomorrow, scored: false },
+    { date: dayAfter, scored: false },
+  ]
+
+  for (let i = 0; i < gw6Matches.length; i++) {
+    const schedule = dates[i] || dates[dates.length - 1]
+    const matchDate = new Date(schedule.date)
+    matchDate.setUTCHours(14, 0, 0, 0)
+
+    await prisma.match.update({
+      where: { id: gw6Matches[i].id },
+      data: {
+        startingAt: matchDate,
+        scoringStatus: schedule.scored ? 'SCORED' : 'SCHEDULED',
+        apiStatus: schedule.scored ? 'Finished' : 'NS',
+      },
+    })
+  }
+
+  // Re-apply GW6 scores
+  await applyGw6Scores(gw6, log)
 
   log.push(
-    `Mid-season: GW6 ACTIVE (${gw6Matches.length} matches), GW1-5 COMPLETED, GW7+ UPCOMING`
+    `Reapply complete: GW6 ACTIVE (${gw6Matches.length} matches), GW1-5 COMPLETED, GW7+ UPCOMING`
   )
+  return log
 }
