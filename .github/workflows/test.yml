@@ -55,7 +55,7 @@ jobs:
         run: |
           URL="${{ steps.deploy.outputs.url }}"
           for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/login")
             if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ]; then
               echo "Ready! ($STATUS)"
               exit 0
