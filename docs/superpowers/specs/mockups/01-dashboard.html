@@ -63,6 +63,109 @@
     font-size: 13px; font-weight: 700; color: #fff;
   }
 
+  /* League switcher pill */
+  .league-switcher-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(6px); border-radius: 20px;
+    padding: 5px 10px 5px 8px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .league-switcher-btn:hover { background: rgba(255,255,255,0.2); }
+  .league-switcher-btn .ls-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--csk);
+    flex-shrink: 0;
+  }
+  .league-switcher-btn .ls-name {
+    font-size: 12px; font-weight: 700; color: #fff;
+    max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .league-switcher-btn .ls-chevron {
+    color: rgba(255,255,255,0.6); font-size: 10px; flex-shrink: 0;
+  }
+
+  /* League switcher bottom sheet */
+  .league-sheet-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(3px); z-index: 60;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .league-sheet-overlay.open { opacity: 1; pointer-events: all; }
+  .league-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #fff; border-radius: 24px 24px 0 0; z-index: 61;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    padding-bottom: 36px;
+  }
+  .league-sheet-overlay.open .league-sheet { transform: translateY(0); }
+  .ls-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 12px auto 16px; }
+  .ls-sheet-title {
+    font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase;
+    letter-spacing: 0.8px; padding: 0 20px 10px;
+  }
+  .ls-league-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 20px; cursor: pointer; transition: background 0.15s;
+  }
+  .ls-league-row:hover { background: #f7f8fb; }
+  .ls-league-row + .ls-league-row { border-top: 1px solid #f2f3f8; }
+  .ls-league-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .ls-league-info { flex: 1; min-width: 0; }
+  .ls-league-info .ls-li-name {
+    font-size: 14px; font-weight: 700; color: #1a1a2e;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ls-league-info .ls-li-sub {
+    font-size: 11px; font-weight: 500; color: #999; margin-top: 1px;
+  }
+  .ls-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--mi); display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; color: #fff;
+  }
+  .ls-check.hidden { visibility: hidden; }
+  .ls-divider { height: 1px; background: #eef0f5; margin: 8px 20px; }
+  .ls-join-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 20px; cursor: pointer; transition: background 0.15s;
+  }
+  .ls-join-row:hover { background: #f7f8fb; }
+  .ls-join-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: #f2f3f8; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .ls-join-text .ls-jt-label {
+    font-size: 14px; font-weight: 700; color: var(--mi);
+  }
+  .ls-join-text .ls-jt-sub {
+    font-size: 11px; font-weight: 500; color: #999; margin-top: 1px;
+  }
+
+  /* Join League inline form */
+  .ls-join-form {
+    padding: 0 20px 4px; display: none;
+  }
+  .ls-join-form.visible { display: block; }
+  .ls-join-input {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1.5px solid #e0e2ea; font-size: 14px; font-family: inherit;
+    color: #1a1a2e; background: #f7f8fb; outline: none;
+    transition: border-color 0.2s;
+  }
+  .ls-join-input:focus { border-color: var(--mi); background: #fff; }
+  .ls-join-submit {
+    width: 100%; margin-top: 8px; padding: 12px; border: none; border-radius: 12px;
+    background: var(--mi); color: #fff; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+
   .hero-league-sub {
     text-align: center; margin-bottom: 6px;
   }
@@ -420,12 +523,12 @@
     <!-- Compact Hero ~28% screen -->
     <div class="hero">
       <div class="hero-header">
-        <div class="logo">Fantasy</div>
+        <div class="league-switcher-btn" onclick="openLeagueSheet()">
+          <div class="ls-dot"></div>
+          <div class="ls-name">Weekend Warriors</div>
+          <div class="ls-chevron">▾</div>
+        </div>
         <div class="league-name">Dashboard</div>
-      </div>
-
-      <div class="hero-league-sub">
-        <div class="league-full-name">Weekend Warriors</div>
       </div>
 
       <div class="gw-label">Gameweek 7</div>
@@ -865,6 +968,59 @@
 </div>
 </div>
 
+<!-- League Switcher Sheet -->
+<div class="league-sheet-overlay" id="leagueSheetOverlay" onclick="closeLeagueSheet(event)">
+  <div class="league-sheet" onclick="event.stopPropagation()">
+    <div class="ls-handle"></div>
+    <div class="ls-sheet-title">Your Leagues</div>
+
+    <!-- Active league -->
+    <div class="ls-league-row" onclick="switchLeague('Weekend Warriors', this)">
+      <div class="ls-league-icon" style="background: linear-gradient(135deg, #004BA0, #0EB1A2);">WW</div>
+      <div class="ls-league-info">
+        <div class="ls-li-name">Weekend Warriors</div>
+        <div class="ls-li-sub">10 managers · GW7 active</div>
+      </div>
+      <div class="ls-check" id="check-ww">✓</div>
+    </div>
+
+    <!-- Second league -->
+    <div class="ls-league-row" onclick="switchLeague('Office XI', this)">
+      <div class="ls-league-icon" style="background: linear-gradient(135deg, #EA1A85, #3A225D);">OX</div>
+      <div class="ls-league-info">
+        <div class="ls-li-name">Office XI</div>
+        <div class="ls-li-sub">8 managers · GW7 active</div>
+      </div>
+      <div class="ls-check hidden" id="check-ox">✓</div>
+    </div>
+
+    <!-- Third league -->
+    <div class="ls-league-row" onclick="switchLeague('Family Cup', this)">
+      <div class="ls-league-icon" style="background: linear-gradient(135deg, #FF822A, #F9CD05);">FC</div>
+      <div class="ls-league-info">
+        <div class="ls-li-name">Family Cup</div>
+        <div class="ls-li-sub">6 managers · GW7 active</div>
+      </div>
+      <div class="ls-check hidden" id="check-fc">✓</div>
+    </div>
+
+    <div class="ls-divider"></div>
+
+    <!-- Join a League -->
+    <div class="ls-join-row" onclick="toggleJoinForm()">
+      <div class="ls-join-icon">+</div>
+      <div class="ls-join-text">
+        <div class="ls-jt-label">Join a League</div>
+        <div class="ls-jt-sub">Enter an invite code to join</div>
+      </div>
+    </div>
+    <div class="ls-join-form" id="lsJoinForm">
+      <input class="ls-join-input" type="text" placeholder="Enter invite code (e.g. FAL-2026)" id="lsInviteInput">
+      <button class="ls-join-submit" onclick="submitJoin()">Join League</button>
+    </div>
+  </div>
+</div>
+
 <script>
 function openSheet() {
   document.getElementById('sheetOverlay').classList.add('open');
@@ -876,6 +1032,38 @@ function closeSheet() {
 }
 // Wire up points tap → GW sheet
 document.querySelector('.score-center .val').addEventListener('click', openSheet);
+
+// League switcher
+function openLeagueSheet() {
+  document.getElementById('leagueSheetOverlay').classList.add('open');
+}
+function closeLeagueSheet(e) {
+  document.getElementById('leagueSheetOverlay').classList.remove('open');
+  document.getElementById('lsJoinForm').classList.remove('visible');
+}
+function switchLeague(name, row) {
+  // Update all check marks
+  document.querySelectorAll('.ls-check').forEach(c => c.classList.add('hidden'));
+  row.querySelector('.ls-check').classList.remove('hidden');
+  // Update the pill in the hero
+  document.querySelector('.league-switcher-btn .ls-name').textContent = name;
+  // Update league full name below
+  document.querySelector('.hero-league-sub .league-full-name') &&
+    (document.querySelector('.hero-league-sub .league-full-name').textContent = name);
+  setTimeout(closeLeagueSheet, 300);
+}
+function toggleJoinForm() {
+  document.getElementById('lsJoinForm').classList.toggle('visible');
+  if (document.getElementById('lsJoinForm').classList.contains('visible')) {
+    setTimeout(() => document.getElementById('lsInviteInput').focus(), 50);
+  }
+}
+function submitJoin() {
+  var code = document.getElementById('lsInviteInput').value.trim();
+  if (!code) return;
+  alert('Joined league with code: ' + code);
+  closeLeagueSheet();
+}
 
 // Toggle full standings
 function toggleStandings() {
