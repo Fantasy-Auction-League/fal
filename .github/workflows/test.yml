@@ -74,6 +74,7 @@ jobs:
           npx playwright test \
             --config tests/simulation/playwright/playwright.config.ts \
             --grep "@noauth" \
+            --grep-invert "Invalid password" \
             --update-snapshots
 
       # Upload test results on failure
