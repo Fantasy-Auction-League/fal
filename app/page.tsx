@@ -92,6 +92,21 @@ interface GwPlayerScore {
   }
 }
 
+/* ─── Team gradients (for pitch view figures) ─── */
+const teamGradients: Record<string, { head: string; body: string; plate: string }> = {
+  MI:   { head: 'linear-gradient(180deg, #0066CC, #004BA0)', body: 'linear-gradient(180deg, #0066CC, #004BA0)', plate: 'linear-gradient(90deg, #004BA0, #0066CC)' },
+  CSK:  { head: 'linear-gradient(180deg, #FFDA2B, #E8B800)', body: 'linear-gradient(180deg, #FFDA2B, #E8B800)', plate: 'linear-gradient(90deg, #D4A800, #F9CD05)' },
+  RCB:  { head: 'linear-gradient(180deg, #E8222B, #B81820)', body: 'linear-gradient(180deg, #E8222B, #B81820)', plate: 'linear-gradient(90deg, #B81820, #EC1C24)' },
+  KKR:  { head: 'linear-gradient(180deg, #6B4F9E, #3A225D)', body: 'linear-gradient(180deg, #6B4F9E, #3A225D)', plate: 'linear-gradient(90deg, #3A225D, #5A3A8A)' },
+  DC:   { head: 'linear-gradient(180deg, #1A7FE0, #004C93)', body: 'linear-gradient(180deg, #1A7FE0, #004C93)', plate: 'linear-gradient(90deg, #004C93, #1A7FE0)' },
+  RR:   { head: 'linear-gradient(180deg, #F03C96, #C4166E)', body: 'linear-gradient(180deg, #F03C96, #C4166E)', plate: 'linear-gradient(90deg, #C4166E, #EA1A85)' },
+  SRH:  { head: 'linear-gradient(180deg, #FF9A44, #E06A18)', body: 'linear-gradient(180deg, #FF9A44, #E06A18)', plate: 'linear-gradient(90deg, #D96A1E, #FF822A)' },
+  GT:   { head: 'linear-gradient(180deg, #1AD4BF, #0EB1A2)', body: 'linear-gradient(180deg, #1AD4BF, #0EB1A2)', plate: 'linear-gradient(90deg, #0A9688, #0EB1A2)' },
+  LSG:  { head: 'linear-gradient(180deg, #00C4FF, #00AEEF)', body: 'linear-gradient(180deg, #00C4FF, #00AEEF)', plate: 'linear-gradient(90deg, #0098D4, #00AEEF)' },
+  PBKS: { head: 'linear-gradient(180deg, #F44040, #CC2020)', body: 'linear-gradient(180deg, #F44040, #CC2020)', plate: 'linear-gradient(90deg, #CC2020, #ED1B24)' },
+}
+const defaultGrad = { head: 'linear-gradient(180deg, #666, #444)', body: 'linear-gradient(180deg, #666, #444)', plate: 'linear-gradient(90deg, #555, #777)' }
+
 /* ─── Icons ─── */
 const IconHome = () => (
   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -1041,15 +1056,130 @@ export default function DashboardPage() {
               )}
             </>
           ) : (
-            /* Pitch View — Coming Soon */
-            <div style={{ textAlign: 'center', padding: '50px 20px', color: '#999' }}>
-              <svg width="40" height="40" fill="none" stroke="#ccc" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ marginBottom: 12 }}>
-                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-              </svg>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#666', marginBottom: 4 }}>Pitch View</div>
-              <div style={{ fontSize: 12, color: '#999' }}>Coming soon</div>
-            </div>
+            /* Pitch View — 4-3-4 Formation */
+            (() => {
+              const rolePriority: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
+              const sorted = [...gwPlayerScores].sort((a, b) =>
+                (rolePriority[getRoleKey(a.player.role)] ?? 9) - (rolePriority[getRoleKey(b.player.role)] ?? 9)
+              )
+              const xi = sorted.slice(0, 11)
+              const bench = sorted.slice(11)
+              const rows: { label: string; players: typeof xi }[] = [
+                { label: 'Top Order', players: xi.slice(0, 4) },
+                { label: 'Middle Order', players: xi.slice(4, 7) },
+                { label: 'Lower Order', players: xi.slice(7, 11) },
+              ]
+
+              const renderFigure = (ps: GwPlayerScore, size: 'normal' | 'bench' = 'normal') => {
+                const grad = teamGradients[ps.player.iplTeamCode || ''] || defaultGrad
+                const isBench = size === 'bench'
+                const headSize = isBench ? 14 : 18
+                const bodyW = isBench ? 22 : 28
+                const bodyH = isBench ? 12 : 16
+                const plateW = isBench ? 32 : 40
+                return (
+                  <div key={ps.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: isBench ? 56 : 68 }}>
+                    {/* Head */}
+                    <div style={{
+                      width: headSize, height: headSize, borderRadius: '50%',
+                      background: grad.head, border: '1.5px solid rgba(255,255,255,0.5)',
+                    }} />
+                    {/* Body */}
+                    <div style={{
+                      width: bodyW, height: bodyH, borderRadius: '0 0 6px 6px',
+                      background: grad.body, marginTop: -2,
+                      border: '1.5px solid rgba(255,255,255,0.3)', borderTop: 'none',
+                    }} />
+                    {/* Points plate */}
+                    <div style={{
+                      background: grad.plate, borderRadius: 4,
+                      padding: '1px 5px', marginTop: 2,
+                      minWidth: plateW, textAlign: 'center',
+                    }}>
+                      <span style={{
+                        fontSize: isBench ? 9 : 11, fontWeight: 800, color: '#fff',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {ps.totalPoints} pts
+                      </span>
+                    </div>
+                    {/* Name */}
+                    <div style={{
+                      fontSize: isBench ? 7.5 : 8.5, color: 'rgba(255,255,255,0.85)',
+                      fontWeight: 600, textAlign: 'center', marginTop: 1,
+                      maxWidth: isBench ? 54 : 66, overflow: 'hidden', textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap', lineHeight: 1.2,
+                    }}>
+                      {ps.player.fullname.split(' ').pop()}
+                    </div>
+                  </div>
+                )
+              }
+
+              return gwScoresLoading ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#999', fontSize: 13 }}>
+                  Loading scores...
+                </div>
+              ) : gwPlayerScores.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#999', fontSize: 13 }}>
+                  No player scores available yet
+                </div>
+              ) : (
+                <div style={{
+                  background: 'linear-gradient(180deg, #3aad5c 0%, #2b8a45 50%, #267f3e 100%)',
+                  borderRadius: 14, minHeight: 280, padding: '14px 6px 10px',
+                  position: 'relative', overflow: 'hidden', margin: '0 10px',
+                }}>
+                  {/* Center circle marking */}
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 70, height: 70, borderRadius: '50%',
+                    border: '1.5px solid rgba(255,255,255,0.15)',
+                  }} />
+                  {/* Halfway line */}
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '10%', right: '10%',
+                    height: 0, borderTop: '1.5px solid rgba(255,255,255,0.1)',
+                  }} />
+
+                  {/* Formation rows */}
+                  {rows.map((row) => (
+                    <div key={row.label} style={{ marginBottom: 6 }}>
+                      <div style={{
+                        fontSize: 8, fontWeight: 600, color: 'rgba(255,255,255,0.4)',
+                        textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.8,
+                        marginBottom: 4,
+                      }}>
+                        {row.label}
+                      </div>
+                      <div style={{
+                        display: 'flex', justifyContent: 'center', gap: 4,
+                      }}>
+                        {row.players.map((ps) => renderFigure(ps))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Bench */}
+                  {bench.length > 0 && (
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(255,255,255,0.2)' }}>
+                      <div style={{
+                        fontSize: 8, fontWeight: 600, color: 'rgba(255,255,255,0.35)',
+                        textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.8,
+                        marginBottom: 4,
+                      }}>
+                        Bench
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
+                        {bench.map((ps) => renderFigure(ps, 'bench'))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()
           )}
         </div>
       </div>
