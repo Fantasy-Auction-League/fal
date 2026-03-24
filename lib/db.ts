@@ -3,11 +3,9 @@ import { PrismaClient } from '@prisma/client'
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createPrismaClient(): PrismaClient {
-  if (process.env.NEON_DATABASE_URL || process.env.VERCEL) {
-    const { Pool, neonConfig } = require('@neondatabase/serverless')
+  if (process.env.VERCEL) {
+    const { Pool } = require('@neondatabase/serverless')
     const { PrismaNeon } = require('@prisma/adapter-neon')
-    const ws = require('ws')
-    neonConfig.webSocketConstructor = ws
     const pool = new Pool({ connectionString: process.env.DATABASE_URL })
     return new PrismaClient({ adapter: new PrismaNeon(pool) })
   }
