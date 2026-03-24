@@ -377,29 +377,13 @@ export default function LineupPage() {
     }
   }
 
-  /* ─── Arrange XI into rows matching mockup: Openers (2), Middle Order (4), Lower Order (5) ─── */
-  const wk = xi.filter(p => normalizeRole(p.role) === 'WK')
-  const bat = xi.filter(p => normalizeRole(p.role) === 'BAT')
-  const all = xi.filter(p => normalizeRole(p.role) === 'ALL')
-  const bowl = xi.filter(p => normalizeRole(p.role) === 'BOWL')
-
-  const openers = [...bat.slice(0, 2)]
-  if (openers.length < 2 && wk.length > 0) openers.unshift(wk[0])
-
-  const usedIds = new Set(openers.map(p => p.id))
-  const middleOrder = [
-    ...bat.filter(p => !usedIds.has(p.id)),
-    ...wk.filter(p => !usedIds.has(p.id)),
-    ...all,
-  ]
-
-  const lowerOrder = [...bowl]
-
-  const allGrouped = [...openers, ...middleOrder, ...lowerOrder]
-  const hasAllPlayers = allGrouped.length === xi.length
-  const row1 = hasAllPlayers ? openers : xi.slice(0, 2)
-  const row2 = hasAllPlayers ? middleOrder : xi.slice(2, 6)
-  const row3 = hasAllPlayers ? lowerOrder : xi.slice(6, 11)
+  /* ─── Arrange XI into fixed 2-4-5 rows, sorted by role priority within rows ─── */
+  const rolePri: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
+  const sortedXi = [...xi].sort((a, b) => (rolePri[normalizeRole(a.role)] ?? 1) - (rolePri[normalizeRole(b.role)] ?? 1))
+  // Always 2-4-5 split regardless of role distribution
+  const row1 = sortedXi.slice(0, 2)     // Openers (top 2 by role priority)
+  const row2 = sortedXi.slice(2, 6)     // Middle Order (next 4)
+  const row3 = sortedXi.slice(6, 11)    // Lower Order (remaining 5)
 
   /* ─── Auth guard ─── */
   if (sessionStatus === 'loading' || loading) {
