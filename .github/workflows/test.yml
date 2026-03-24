@@ -59,13 +59,26 @@ jobs:
           echo "branch_id=$BRANCH_ID" >> $GITHUB_OUTPUT
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-          # Get the branch endpoint (connection string)
-          sleep 5  # Wait for endpoint to be ready
-          ENDPOINTS=$(curl -s \
-            "https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}/branches/${BRANCH_ID}/endpoints" \
-            -H "Authorization: Bearer ${NEON_API_KEY}")
+          # Wait for endpoint to be ready (retry up to 30s)
+          HOST=""
+          for i in {1..6}; do
+            sleep 5
+            ENDPOINTS=$(curl -s \
+              "https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}/branches/${BRANCH_ID}/endpoints" \
+              -H "Authorization: Bearer ${NEON_API_KEY}")
+            HOST=$(echo $ENDPOINTS | jq -r '.endpoints[0].host')
+            if [ "$HOST" != "null" ] && [ -n "$HOST" ]; then
+              echo "Endpoint ready: $HOST"
+              break
+            fi
+            echo "Waiting for endpoint... (attempt $i)"
+          done
 
-          HOST=$(echo $ENDPOINTS | jq -r '.endpoints[0].host')
+          if [ "$HOST" = "null" ] || [ -z "$HOST" ]; then
+            echo "Failed to get Neon endpoint after 30s"
+            echo "$ENDPOINTS" | jq .
+            exit 1
+          fi
 
           # Build connection strings
           DB_URL="postgresql://neondb_owner:${{ secrets.NEON_DB_PASSWORD }}@${HOST}/neondb?sslmode=require"
