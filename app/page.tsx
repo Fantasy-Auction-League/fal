@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { AppFrame } from '@/app/components/AppFrame'
 
@@ -81,6 +81,17 @@ interface Standing {
   chipUsed: string | null
 }
 
+interface GwPlayerScore {
+  id: string
+  totalPoints: number
+  player: {
+    id: string
+    fullname: string
+    role: string
+    iplTeamCode: string | null
+  }
+}
+
 /* ─── Icons ─── */
 const IconHome = () => (
   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -151,6 +162,37 @@ function formatMatchTime(startingAt: string): { display: string; day: string } {
   }
 }
 
+/* ─── League icon gradient colors ─── */
+const leagueGradients = [
+  'linear-gradient(135deg, #004BA0, #0066cc)',
+  'linear-gradient(135deg, #0EB1A2, #089e90)',
+  'linear-gradient(135deg, #EA1A85, #c4166e)',
+  'linear-gradient(135deg, #3A225D, #5a3d8a)',
+  'linear-gradient(135deg, #FF822A, #e06a10)',
+]
+
+function getLeagueInitials(name: string): string {
+  return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+}
+
+/* ─── Role icon helpers ─── */
+const roleIconStyles: Record<string, React.CSSProperties> = {
+  BAT: { background: 'linear-gradient(135deg, #F9CD05, #e0b800)', color: '#1a1a1a' },
+  BOWL: { background: 'linear-gradient(135deg, #004BA0, #0066cc)', color: '#fff' },
+  ALL: { background: 'linear-gradient(135deg, #0EB1A2, #089e90)', color: '#fff' },
+  WK: { background: 'linear-gradient(135deg, #EA1A85, #c4166e)', color: '#fff' },
+}
+
+function getRoleLabel(role: string): string {
+  const map: Record<string, string> = { BAT: 'BAT', BOWL: 'BWL', ALL: 'ALL', WK: 'WK', BATSMAN: 'BAT', BOWLER: 'BWL', 'ALL-ROUNDER': 'ALL', 'WICKET-KEEPER': 'WK' }
+  return map[role?.toUpperCase()] || role?.slice(0, 3).toUpperCase() || '?'
+}
+
+function getRoleKey(role: string): string {
+  const map: Record<string, string> = { BAT: 'BAT', BOWL: 'BOWL', ALL: 'ALL', WK: 'WK', BATSMAN: 'BAT', BOWLER: 'BOWL', 'ALL-ROUNDER': 'ALL', 'WICKET-KEEPER': 'WK' }
+  return map[role?.toUpperCase()] || 'BAT'
+}
+
 export default function DashboardPage() {
   const { data: session, status: sessionStatus } = useSession()
 
@@ -160,9 +202,23 @@ export default function DashboardPage() {
   const [currentGw, setCurrentGw] = useState<CurrentGameweek | null>(null)
   const [gwNotFound, setGwNotFound] = useState(false)
   const [standings, setStandings] = useState<Standing[]>([])
-  const [allLeagues, setAllLeagues] = useState<{ id: string; name: string }[]>([])
+  const [allLeagues, setAllLeagues] = useState<{ id: string; name: string; teamCount: number }[]>([])
   const [switchingLeague, setSwitchingLeague] = useState(false)
   const activeLeagueId = session?.user?.activeLeagueId
+
+  // Sheet states
+  const [leagueSheetOpen, setLeagueSheetOpen] = useState(false)
+  const [gwSheetOpen, setGwSheetOpen] = useState(false)
+  const [gwSheetView, setGwSheetView] = useState<'list' | 'pitch'>('list')
+  const [gwPlayerScores, setGwPlayerScores] = useState<GwPlayerScore[]>([])
+  const [gwScoresLoading, setGwScoresLoading] = useState(false)
+
+  // Join league
+  const [joinFormOpen, setJoinFormOpen] = useState(false)
+  const [joinCode, setJoinCode] = useState('')
+  const [joinLoading, setJoinLoading] = useState(false)
+  const [joinError, setJoinError] = useState('')
+  const joinInputRef = useRef<HTMLInputElement>(null)
 
   /* ─── Fetch league on mount ─── */
   const fetchLeague = useCallback(async () => {
@@ -170,7 +226,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/leagues')
       if (!res.ok) return
       const leagues: League[] = await res.json()
-      setAllLeagues(leagues.map(l => ({ id: l.id, name: l.name })))
+      setAllLeagues(leagues.map(l => ({ id: l.id, name: l.name, teamCount: l._count?.teams ?? l.teams?.length ?? 0 })))
       if (leagues.length > 0) {
         const targetLeague = leagues.find(l => l.id === activeLeagueId) || leagues[0]
         const detail = await fetch(`/api/leagues/${targetLeague.id}`)
@@ -224,6 +280,75 @@ export default function DashboardPage() {
       }).finally(() => setInitialLoad(false))
     }
   }, [sessionStatus, fetchLeague, fetchCurrentGw, fetchStandings])
+
+  /* ─── GW Score Detail fetch ─── */
+  const openGwSheet = useCallback(async () => {
+    if (!league || !currentGw) return
+    setGwSheetOpen(true)
+    setGwSheetView('list')
+
+    // Find user's team in this league
+    const userId = session?.user?.id
+    const myTeam = league.teams?.find(t => t.userId === userId)
+    if (!myTeam) return
+
+    setGwScoresLoading(true)
+    try {
+      const res = await fetch(`/api/teams/${myTeam.id}/scores/${currentGw.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setGwPlayerScores(data.playerScores || [])
+      }
+    } catch {
+      // silent
+    } finally {
+      setGwScoresLoading(false)
+    }
+  }, [league, currentGw, session?.user?.id])
+
+  /* ─── League switch handler ─── */
+  const handleSwitchLeague = useCallback(async (leagueId: string) => {
+    if (league?.id === leagueId) return
+    setSwitchingLeague(true)
+    try {
+      const res = await fetch('/api/user/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activeLeagueId: leagueId }),
+      })
+      if (res.ok) {
+        window.location.reload()
+      }
+    } catch {
+      // silent
+    } finally {
+      setSwitchingLeague(false)
+    }
+  }, [league?.id])
+
+  /* ─── Join league handler ─── */
+  const handleJoinLeague = useCallback(async () => {
+    if (!joinCode.trim()) return
+    setJoinLoading(true)
+    setJoinError('')
+    try {
+      const res = await fetch('/api/leagues/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: joinCode.trim() }),
+      })
+      if (res.ok) {
+        window.location.reload()
+      } else {
+        const data = await res.json()
+        setJoinError(data.error || 'Failed to join league')
+      }
+    } catch {
+      setJoinError('Something went wrong')
+    } finally {
+      setJoinLoading(false)
+    }
+  }, [joinCode])
 
   /* ─── Auth guard ─── */
   if (sessionStatus === 'loading' || initialLoad) {
@@ -280,6 +405,9 @@ export default function DashboardPage() {
   // Standings for display
   const visibleStandings = showAllStandings ? standings : standings.slice(0, 7)
 
+  // GW score total from player scores
+  const gwScoreTotal = gwPlayerScores.reduce((sum, s) => sum + s.totalPoints, 0)
+
   return (
     <AppFrame>
     <div style={{
@@ -301,28 +429,49 @@ export default function DashboardPage() {
           pointerEvents: 'none',
         }} />
 
-        {/* Header row: logo + league tag */}
+        {/* Header row: league pill + league tag */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-          <div style={{
-            fontSize: 18, fontWeight: 900, letterSpacing: -0.5,
-            background: 'linear-gradient(135deg, #F9CD05, #FF822A)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>Fantasy</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Dashboard</div>
-        </div>
+          {/* League Switcher Pill */}
+          <button
+            onClick={() => setLeagueSheetOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              background: 'rgba(255,255,255,0.12)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              borderRadius: 20,
+              padding: '5px 10px 5px 8px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#F9CD05', flexShrink: 0,
+            }} />
+            <div style={{
+              fontSize: 12, fontWeight: 700, color: '#fff',
+              maxWidth: 130, overflow: 'hidden',
+              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {leagueName}
+            </div>
+            <div style={{
+              color: 'rgba(255,255,255,0.6)', fontSize: 10, flexShrink: 0,
+            }}>{'\u25BE'}</div>
+          </button>
 
-        {/* League full name */}
-        <div style={{ textAlign: 'center', marginBottom: 6 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: -0.3 }}>
-            {leagueName}
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Dashboard</div>
         </div>
 
         {/* Gameweek label */}
         <div style={{
           textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.6)',
           fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 2,
+          marginTop: 6,
         }}>
           {gwLabel}
         </div>
@@ -337,8 +486,11 @@ export default function DashboardPage() {
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Average</div>
           </div>
 
-          {/* Your Points (center) */}
-          <div style={{ flex: 1.3, textAlign: 'center', position: 'relative' }}>
+          {/* Your Points (center) — tappable */}
+          <div
+            onClick={openGwSheet}
+            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer' }}
+          >
             {/* Left divider */}
             <div style={{ position: 'absolute', top: '10%', bottom: '20%', left: 0, width: 1, background: 'rgba(255,255,255,0.1)' }} />
             {/* Right divider */}
@@ -384,69 +536,6 @@ export default function DashboardPage() {
 
       {/* CONTENT */}
       <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-        {/* League Switcher */}
-        {allLeagues.length > 1 && (
-          <div style={{
-            background: '#fff', border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: 16, padding: 14,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e', letterSpacing: -0.2, marginBottom: 8 }}>Your Leagues</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {allLeagues.map((l) => {
-                const isActive = league?.id === l.id
-                return (
-                  <button
-                    key={l.id}
-                    disabled={switchingLeague}
-                    onClick={async () => {
-                      if (isActive) return
-                      setSwitchingLeague(true)
-                      try {
-                        const res = await fetch('/api/user/preferences', {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ activeLeagueId: l.id }),
-                        })
-                        if (res.ok) {
-                          window.location.reload()
-                        }
-                      } catch {
-                        // silent
-                      } finally {
-                        setSwitchingLeague(false)
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      background: isActive ? 'rgba(0,75,160,0.06)' : '#f8f9fc',
-                      border: isActive ? '2px solid #004BA0' : '1px solid rgba(0,0,0,0.04)',
-                      borderRadius: 10,
-                      padding: '10px 14px',
-                      cursor: isActive ? 'default' : 'pointer',
-                      textAlign: 'left' as const,
-                      opacity: switchingLeague ? 0.6 : 1,
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: isActive ? 700 : 500, color: isActive ? '#004BA0' : '#1a1a2e' }}>
-                        {l.name}
-                      </div>
-                    </div>
-                    {isActive && (
-                      <div style={{ fontSize: 16, color: '#004BA0', fontWeight: 700 }}>&#10003;</div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
 
         {/* League Standings Card */}
         <div style={{
@@ -595,6 +684,374 @@ export default function DashboardPage() {
 
         {/* Spacer for scroll */}
         <div style={{ height: 30 }} />
+      </div>
+
+      {/* ═══ LEAGUE SWITCHER BOTTOM SHEET ═══ */}
+      {/* Overlay */}
+      <div
+        onClick={() => setLeagueSheetOpen(false)}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(3px)',
+          WebkitBackdropFilter: 'blur(3px)',
+          zIndex: 60,
+          opacity: leagueSheetOpen ? 1 : 0,
+          pointerEvents: leagueSheetOpen ? 'all' : 'none',
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: '50%',
+        width: '100%', maxWidth: 480,
+        background: '#fff',
+        borderRadius: '24px 24px 0 0',
+        zIndex: 61,
+        transform: leagueSheetOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)',
+        transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
+        paddingBottom: 36,
+      }}>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 16px' }} />
+
+        {/* Title */}
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: '#aaa',
+          textTransform: 'uppercase', letterSpacing: 0.8,
+          padding: '0 20px 10px',
+        }}>
+          YOUR LEAGUES
+        </div>
+
+        {/* League rows */}
+        {allLeagues.map((l, i) => {
+          const isActive = league?.id === l.id
+          return (
+            <div
+              key={l.id}
+              onClick={() => !switchingLeague && handleSwitchLeague(l.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '13px 20px',
+                cursor: isActive ? 'default' : 'pointer',
+                borderTop: i > 0 ? '1px solid #f2f3f8' : 'none',
+                opacity: switchingLeague ? 0.6 : 1,
+                transition: 'background 0.15s',
+              }}
+            >
+              {/* Icon */}
+              <div style={{
+                width: 38, height: 38, borderRadius: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0,
+                background: leagueGradients[i % leagueGradients.length],
+              }}>
+                {getLeagueInitials(l.name)}
+              </div>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 14, fontWeight: 700, color: '#1a1a2e',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {l.name}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: '#999', marginTop: 1 }}>
+                  {l.teamCount} manager{l.teamCount !== 1 ? 's' : ''}{currentGw ? ` \u00B7 GW ${currentGw.number}` : ''}
+                </div>
+              </div>
+              {/* Check */}
+              {isActive ? (
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: '#004BA0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, fontSize: 11, color: '#fff',
+                }}>
+                  {'\u2713'}
+                </div>
+              ) : (
+                <div style={{ width: 20, flexShrink: 0 }} />
+              )}
+            </div>
+          )
+        })}
+
+        {/* Divider */}
+        <div style={{ height: 1, background: '#eef0f5', margin: '8px 20px' }} />
+
+        {/* Join a League row */}
+        <div
+          onClick={() => {
+            setJoinFormOpen(!joinFormOpen)
+            if (!joinFormOpen) {
+              setTimeout(() => joinInputRef.current?.focus(), 100)
+            }
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '13px 20px', cursor: 'pointer',
+            transition: 'background 0.15s',
+          }}
+        >
+          <div style={{
+            width: 38, height: 38, borderRadius: 12,
+            background: '#f2f3f8',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, flexShrink: 0, color: '#004BA0',
+          }}>
+            +
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#004BA0' }}>Join a League</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#999', marginTop: 1 }}>Enter an invite code</div>
+          </div>
+        </div>
+
+        {/* Join form (inline expand) */}
+        {joinFormOpen && (
+          <div style={{ padding: '0 20px 4px' }}>
+            <input
+              ref={joinInputRef}
+              type="text"
+              placeholder="Invite code (e.g. ABC123)"
+              value={joinCode}
+              onChange={e => { setJoinCode(e.target.value); setJoinError('') }}
+              onKeyDown={e => { if (e.key === 'Enter') handleJoinLeague() }}
+              style={{
+                width: '100%', padding: '12px 14px', borderRadius: 12,
+                border: '1.5px solid #e0e2ea', fontSize: 14,
+                fontFamily: 'inherit', color: '#1a1a2e',
+                background: '#f7f8fb', outline: 'none',
+              }}
+            />
+            {joinError && (
+              <div style={{ fontSize: 11, color: '#d63060', marginTop: 4, fontWeight: 500 }}>
+                {joinError}
+              </div>
+            )}
+            <button
+              onClick={handleJoinLeague}
+              disabled={joinLoading || !joinCode.trim()}
+              style={{
+                width: '100%', marginTop: 8, padding: 12,
+                border: 'none', borderRadius: 12,
+                background: '#004BA0', color: '#fff',
+                fontSize: 14, fontWeight: 700,
+                cursor: joinLoading || !joinCode.trim() ? 'default' : 'pointer',
+                fontFamily: 'inherit',
+                opacity: joinLoading || !joinCode.trim() ? 0.5 : 1,
+              }}
+            >
+              {joinLoading ? 'Joining...' : 'Join League'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ GW SCORE DETAIL BOTTOM SHEET ═══ */}
+      {/* Overlay */}
+      <div
+        onClick={() => setGwSheetOpen(false)}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.45)',
+          backdropFilter: 'blur(3px)',
+          WebkitBackdropFilter: 'blur(3px)',
+          zIndex: 50,
+          opacity: gwSheetOpen ? 1 : 0,
+          pointerEvents: gwSheetOpen ? 'all' : 'none',
+          transition: 'opacity 0.3s ease',
+        }}
+      />
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: '50%',
+        width: '100%', maxWidth: 480,
+        background: '#fff',
+        borderRadius: '24px 24px 0 0',
+        zIndex: 51,
+        transform: gwSheetOpen ? 'translate(-50%, 0)' : 'translate(-50%, 100%)',
+        transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+        maxHeight: '88vh',
+        overflow: 'hidden',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
+      }}>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '10px auto 0' }} />
+
+        {/* Header */}
+        <div style={{ padding: '12px 18px 10px', position: 'relative' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            {currentGw ? `Gameweek ${currentGw.number} Breakdown` : 'Gameweek Breakdown'}
+          </div>
+          <div style={{ fontSize: 34, fontWeight: 800, color: '#1a1a2e', letterSpacing: -1.5, lineHeight: 1.1 }}>
+            {gwScoresLoading ? '\u2014' : gwScoreTotal} <span style={{ fontSize: 14, fontWeight: 500, color: '#999', letterSpacing: 0 }}>pts</span>
+          </div>
+          {myStanding && (
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#0d9e5f', marginTop: 2 }}>
+              {myStanding.rank === 1 ? '1st' : myStanding.rank === 2 ? '2nd' : myStanding.rank === 3 ? '3rd' : `${myStanding.rank}th`} in league
+            </div>
+          )}
+          {/* Close button */}
+          <button
+            onClick={() => setGwSheetOpen(false)}
+            style={{
+              position: 'absolute', top: 14, right: 16,
+              width: 30, height: 30, borderRadius: '50%',
+              background: '#f2f3f8', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 15, color: '#999', fontFamily: 'inherit',
+            }}
+          >
+            {'\u2715'}
+          </button>
+        </div>
+
+        {/* Toggle pill */}
+        <div style={{ display: 'flex', padding: '8px 16px 6px' }}>
+          <div style={{ display: 'flex', background: '#f2f3f8', borderRadius: 10, padding: 3, flex: 1 }}>
+            <button
+              onClick={() => setGwSheetView('list')}
+              style={{
+                flex: 1, padding: '5px 0', border: 'none', borderRadius: 8,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                background: gwSheetView === 'list' ? '#fff' : 'transparent',
+                color: gwSheetView === 'list' ? '#1a1a2e' : '#888',
+                boxShadow: gwSheetView === 'list' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s ease',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              }}
+            >
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+              List View
+            </button>
+            <button
+              onClick={() => setGwSheetView('pitch')}
+              style={{
+                flex: 1, padding: '5px 0', border: 'none', borderRadius: 8,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                background: gwSheetView === 'pitch' ? '#fff' : 'transparent',
+                color: gwSheetView === 'pitch' ? '#1a1a2e' : '#888',
+                boxShadow: gwSheetView === 'pitch' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s ease',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              }}
+            >
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+              Pitch View
+            </button>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: '#f0f0f4', margin: '0 18px' }} />
+
+        {/* Scrollable content */}
+        <div style={{
+          overflowY: 'auto', maxHeight: 'calc(88vh - 160px)', padding: '8px 0 30px',
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          {gwSheetView === 'list' ? (
+            <>
+              {gwScoresLoading ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#999', fontSize: 13 }}>
+                  Loading scores...
+                </div>
+              ) : gwPlayerScores.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#999', fontSize: 13 }}>
+                  No player scores available yet
+                </div>
+              ) : (
+                <>
+                  {/* Player rows */}
+                  {gwPlayerScores.map((ps) => {
+                    const roleKey = getRoleKey(ps.player.role)
+                    const iconStyle = roleIconStyles[roleKey] || roleIconStyles.BAT
+                    return (
+                      <div key={ps.id} style={{
+                        display: 'flex', alignItems: 'center', padding: '8px 18px', gap: 8,
+                      }}>
+                        {/* Role icon */}
+                        <div style={{
+                          width: 28, height: 28, borderRadius: 8,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 12, fontWeight: 800, flexShrink: 0,
+                          ...iconStyle,
+                        }}>
+                          {getRoleLabel(ps.player.role)}
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 12, fontWeight: 600, color: '#222',
+                            display: 'flex', alignItems: 'center', gap: 4,
+                          }}>
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {ps.player.fullname}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 9.5, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                            {ps.player.iplTeamCode || ''}
+                          </div>
+                        </div>
+                        {/* Points */}
+                        <div style={{
+                          fontSize: 14, fontWeight: 800, color: ps.totalPoints < 0 ? '#d63060' : '#1a1a2e',
+                          width: 36, textAlign: 'right', flexShrink: 0,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {ps.totalPoints}
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* Summary bar */}
+                  <div style={{
+                    margin: '10px 18px', padding: '10px 14px', borderRadius: 12,
+                    background: '#f7f8fb', border: '1px solid #eef0f5',
+                    display: 'flex', justifyContent: 'space-between',
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>{gwScoreTotal}</div>
+                      <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Base Pts</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>0</div>
+                      <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>C/VC Bonus</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#333' }}>0</div>
+                      <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Chip Bonus</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#004BA0' }}>{gwScoreTotal}</div>
+                      <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Total</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            /* Pitch View — Coming Soon */
+            <div style={{ textAlign: 'center', padding: '50px 20px', color: '#999' }}>
+              <svg width="40" height="40" fill="none" stroke="#ccc" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ marginBottom: 12 }}>
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#666', marginBottom: 4 }}>Pitch View</div>
+              <div style={{ fontSize: 12, color: '#999' }}>Coming soon</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* BOTTOM NAV */}
