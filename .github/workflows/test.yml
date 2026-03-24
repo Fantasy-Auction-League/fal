@@ -1,0 +1,182 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Job 1: Unit + integration tests (no deploy needed)
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  # Job 2: E2E tests against Vercel preview with Neon branch DB
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+
+      # Create Neon branch for isolated test DB
+      - name: Create Neon test branch
+        id: neon
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          BRANCH_NAME="test-$(date +%s)"
+
+          # Create branch via Neon API
+          RESPONSE=$(curl -s -X POST \
+            "https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}/branches" \
+            -H "Authorization: Bearer ${NEON_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"branch\": {\"name\": \"${BRANCH_NAME}\"}}")
+
+          BRANCH_ID=$(echo $RESPONSE | jq -r '.branch.id')
+
+          if [ "$BRANCH_ID" = "null" ] || [ -z "$BRANCH_ID" ]; then
+            echo "Failed to create Neon branch"
+            echo "$RESPONSE" | jq .
+            exit 1
+          fi
+
+          echo "branch_id=$BRANCH_ID" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Get the branch endpoint (connection string)
+          sleep 5  # Wait for endpoint to be ready
+          ENDPOINTS=$(curl -s \
+            "https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}/branches/${BRANCH_ID}/endpoints" \
+            -H "Authorization: Bearer ${NEON_API_KEY}")
+
+          HOST=$(echo $ENDPOINTS | jq -r '.endpoints[0].host')
+
+          # Build connection strings
+          DB_URL="postgresql://neondb_owner:${{ secrets.NEON_DB_PASSWORD }}@${HOST}/neondb?sslmode=require"
+          DB_URL_POOLED="postgresql://neondb_owner:${{ secrets.NEON_DB_PASSWORD }}@$(echo $HOST | sed 's/\./.pooler./')/neondb?sslmode=require"
+
+          echo "database_url=$DB_URL_POOLED" >> $GITHUB_OUTPUT
+          echo "direct_url=$DB_URL" >> $GITHUB_OUTPUT
+          echo "Created Neon branch: $BRANCH_NAME ($BRANCH_ID)"
+
+      # Push schema to test branch
+      - name: Push DB schema
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.database_url }}
+          DIRECT_URL: ${{ steps.neon.outputs.direct_url }}
+        run: npx prisma db push --accept-data-loss
+
+      # Seed test data
+      - name: Seed test data
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.database_url }}
+          DIRECT_URL: ${{ steps.neon.outputs.direct_url }}
+          SPORTMONKS_API_TOKEN: ${{ secrets.SPORTMONKS_API_TOKEN }}
+          SPORTMONKS_SEASON_ID: "1795"
+        run: |
+          npx tsx scripts/seed-players.ts
+          npx tsx scripts/seed-fixtures.ts
+
+      # Deploy Vercel preview with test branch DB
+      - name: Deploy Vercel preview
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm i -g vercel
+
+          # Deploy with test branch DB URL overrides
+          URL=$(vercel deploy \
+            --token $VERCEL_TOKEN \
+            -e DATABASE_URL="${{ steps.neon.outputs.database_url }}" \
+            -e DIRECT_URL="${{ steps.neon.outputs.direct_url }}" \
+            -e AUTH_SECRET="${{ secrets.AUTH_SECRET }}" \
+            -e SPORTMONKS_API_TOKEN="${{ secrets.SPORTMONKS_API_TOKEN }}" \
+            -e SPORTMONKS_SEASON_ID="1795" \
+            -e SPORTMONKS_LEAGUE_ID="1" \
+            -e ADMIN_SECRET="fal-ci-test" \
+            2>&1 | tail -1)
+
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Preview deployed: $URL"
+
+      # Wait for deployment to be ready
+      - name: Wait for deployment
+        run: |
+          URL="${{ steps.deploy.outputs.url }}"
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ]; then
+              echo "Ready! ($STATUS)"
+              exit 0
+            fi
+            echo "Waiting... ($STATUS)"
+            sleep 5
+          done
+          echo "Timeout" && exit 1
+
+      # Seed simulation data for Playwright tests
+      - name: Seed simulation data
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.database_url }}
+          DIRECT_URL: ${{ steps.neon.outputs.direct_url }}
+          SPORTMONKS_API_TOKEN: ${{ secrets.SPORTMONKS_API_TOKEN }}
+          SPORTMONKS_SEASON_ID: "1795"
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          ADMIN_SECRET: "fal-ci-test"
+        run: |
+          npx tsx -e "
+            const { setupSimulation } = require('./tests/simulation/setup');
+            setupSimulation().then(r => r.log.forEach(l => console.log(l)));
+          "
+
+      # Run Playwright tests against preview
+      - name: Run Playwright tests
+        env:
+          TEST_BASE_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          npx playwright test \
+            --config tests/simulation/playwright/playwright.config.ts \
+            --update-snapshots
+
+      # Upload test results on failure
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 7
+
+      # Cleanup: delete Neon branch
+      - name: Cleanup Neon branch
+        if: always()
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          BRANCH_ID="${{ steps.neon.outputs.branch_id }}"
+          if [ -n "$BRANCH_ID" ]; then
+            curl -s -X DELETE \
+              "https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}/branches/${BRANCH_ID}" \
+              -H "Authorization: Bearer ${NEON_API_KEY}"
+            echo "Deleted Neon branch: $BRANCH_ID"
+          fi
