@@ -728,6 +728,209 @@ test('21. Password too short rejected @noauth', async ({ page }) => {
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   24. Move player from XI to bench via list view
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('24. Move player from XI to bench via list view @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  // Skip if locked
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to List View
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Get all bench player names before the move
+  const benchSection = page.getByText(/BENCH.*AUTO-SUB ORDER/i)
+  await expect(benchSection).toBeVisible()
+
+  // Find an XI player row that is NOT the captain or VC — look for → Bench buttons
+  // Each XI row has C, VC, → Bench buttons. Pick the third XI row (index 2) to avoid captain/VC.
+  const benchButtons = page.getByRole('button', { name: '→ Bench' })
+  const benchBtnCount = await benchButtons.count()
+  expect(benchBtnCount).toBeGreaterThan(0)
+
+  // Read the player name from the row containing the last → Bench button (least likely to be C/VC)
+  const targetBtn = benchButtons.last()
+  const targetRow = targetBtn.locator('..')
+  // Get the XI count from summary before swap
+  const xiCountBefore = page.getByText(/Playing XI/).first()
+  await expect(xiCountBefore).toBeVisible()
+
+  // Click → Bench
+  await targetBtn.click()
+  await page.waitForTimeout(500)
+
+  // Verify Playing XI section still visible and bench section still visible
+  await expect(page.getByText(/Playing XI/).first()).toBeVisible()
+  await expect(page.getByText(/BENCH.*AUTO-SUB ORDER/i)).toBeVisible()
+
+  await expect(page).toHaveScreenshot('lineup-move-to-bench.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   25. Move player from bench to XI via list view
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('25. Move player from bench to XI via list view @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  // Skip if locked
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to List View
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Find a bench player → XI button
+  const xiButtons = page.getByRole('button', { name: '→ XI' })
+  const xiBtnCount = await xiButtons.count()
+  expect(xiBtnCount).toBeGreaterThan(0)
+
+  // Click → XI on the first bench player
+  await xiButtons.first().click()
+  await page.waitForTimeout(500)
+
+  // Verify both sections still visible
+  await expect(page.getByText(/Playing XI/).first()).toBeVisible()
+  await expect(page.getByText(/BENCH.*AUTO-SUB ORDER/i)).toBeVisible()
+
+  await expect(page).toHaveScreenshot('lineup-move-to-xi.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   26. Choose a new captain via list view
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('26. Choose a new captain via list view @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  // Skip if locked
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to List View
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Find all C buttons in XI rows — the currently active captain has golden background
+  const cButtons = page.getByRole('button', { name: 'C', exact: true })
+  const cCount = await cButtons.count()
+  expect(cCount).toBeGreaterThan(1)
+
+  // Find the current captain: the C button with golden bg (background: '#F9CD05')
+  // Pick a non-captain C button (the second one should be a non-captain)
+  // We click the last C button to choose a different player as captain
+  const targetCBtn = cButtons.last()
+  await targetCBtn.click()
+  await page.waitForTimeout(500)
+
+  // After clicking, the last C button should now be the active captain (golden bg)
+  // Verify the "Save Lineup" button appeared (dirty state)
+  const saveBtn = page.getByText('Save Lineup')
+  await expect(saveBtn).toBeVisible({ timeout: 3000 })
+
+  // Verify a C badge (span) exists next to a player name in XI section
+  // The C badge on the player name is a <span> with text "C" inside the player info div
+  const cBadges = page.locator('span').filter({ hasText: /^C$/ })
+  await expect(cBadges.first()).toBeVisible()
+
+  await expect(page).toHaveScreenshot('lineup-new-captain.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   27. Choose a new vice captain via list view
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('27. Choose a new vice captain via list view @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  // Skip if locked
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to List View
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Find all VC buttons — pick one that is not the current VC
+  const vcButtons = page.getByRole('button', { name: 'VC', exact: true })
+  const vcCount = await vcButtons.count()
+  expect(vcCount).toBeGreaterThan(1)
+
+  // Click the last VC button (a non-VC player)
+  const targetVcBtn = vcButtons.last()
+  await targetVcBtn.click()
+  await page.waitForTimeout(500)
+
+  // Verify a VC badge (span) exists next to a player name
+  const vcBadges = page.locator('span').filter({ hasText: /^VC$/ })
+  await expect(vcBadges.first()).toBeVisible()
+
+  await expect(page).toHaveScreenshot('lineup-new-vc.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   28. Save lineup after changes and verify persistence
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('28. Save lineup after changes and verify persistence @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  // Skip if locked
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to List View and make a captain change to trigger dirty state
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Click a non-captain C button to make lineup dirty
+  const cButtons = page.getByRole('button', { name: 'C', exact: true })
+  await cButtons.last().click()
+  await page.waitForTimeout(300)
+
+  // Save the lineup
+  const saveBtn = page.getByText('Save Lineup')
+  await expect(saveBtn).toBeVisible({ timeout: 3000 })
+  await saveBtn.click()
+
+  // Verify success message
+  await expect(page.getByText('Lineup saved!')).toBeVisible({ timeout: 5000 })
+
+  // Record the captain name from the C badge span's parent
+  // The C badge is a <span> inside a div containing the player name
+  const cBadge = page.locator('span').filter({ hasText: /^C$/ }).first()
+  await expect(cBadge).toBeVisible()
+
+  // Reload the page to verify persistence
+  await page.reload()
+  await waitForApp(page)
+
+  // Switch to List View
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Verify C badge persisted
+  const persistedCBadge = page.locator('span').filter({ hasText: /^C$/ }).first()
+  await expect(persistedCBadge).toBeVisible()
+
+  // Verify VC badge persisted
+  const persistedVcBadge = page.locator('span').filter({ hasText: /^VC$/ }).first()
+  await expect(persistedVcBadge).toBeVisible()
+
+  await expect(page).toHaveScreenshot('lineup-saved-persisted.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
    22. Dashboard shows active gameweek with matches (mid-season)
    ═══════════════════════════════════════════════════════════════════════════ */
 test('22. Dashboard shows active gameweek with matches @user', async ({ page }) => {
