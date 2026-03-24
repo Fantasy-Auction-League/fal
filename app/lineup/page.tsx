@@ -148,8 +148,9 @@ export default function LineupPage() {
   const [bench, setBench] = useState<SquadPlayer[]>([])
   const [captainId, setCaptainId] = useState<string | null>(null)
   const [vcId, setVcId] = useState<string | null>(null)
-  const [bowlingBoostOn, setBowlingBoostOn] = useState(false)
-  const [chipModalOpen, setChipModalOpen] = useState(false)
+  const [activeChip, setActiveChip] = useState<'POWER_PLAY_BAT' | 'BOWLING_BOOST' | null>(null)
+  const [usedChips, setUsedChips] = useState<Record<string, number>>({}) // chipType -> GW number
+  const [chipModalType, setChipModalType] = useState<'POWER_PLAY_BAT' | 'BOWLING_BOOST' | null>(null)
   const [swapMode, setSwapMode] = useState<string | null>(null) // benchPlayerId being swapped
   const [dirty, setDirty] = useState(false)
   const [currentGW, setCurrentGW] = useState<CurrentGameweek | null>(null)
@@ -197,6 +198,28 @@ export default function LineupPage() {
       const data: SquadData = await res.json()
       setSquad(data)
 
+      // Fetch chip usage for this team (use any gameweekId — GET returns all usages)
+      if (currentGW) {
+        try {
+          const chipRes = await fetch(`/api/teams/${teamId}/lineups/${currentGW.id}/chip`)
+          if (chipRes.ok) {
+            const chipData = await chipRes.json()
+            const chips: Record<string, number> = {}
+            let pendingChip: 'POWER_PLAY_BAT' | 'BOWLING_BOOST' | null = null
+            for (const cu of chipData.chipUsages || []) {
+              if (cu.status === 'PENDING' && cu.gameweekId === currentGW.id) {
+                pendingChip = cu.chipType
+              }
+              if (cu.status === 'USED' && cu.gameweekNumber) {
+                chips[cu.chipType] = cu.gameweekNumber
+              }
+            }
+            setUsedChips(chips)
+            setActiveChip(pendingChip)
+          }
+        } catch { /* silent */ }
+      }
+
       // Build initial lineup: first 11 = XI, rest = bench
       const players = data.players || []
       // Sort by role priority: WK first, then BAT, ALL, BOWL
@@ -217,7 +240,7 @@ export default function LineupPage() {
     } finally {
       setLoading(false)
     }
-  }, [activeLeagueId, session?.user?.id])
+  }, [activeLeagueId, session?.user?.id, currentGW])
 
   useEffect(() => {
     if (sessionStatus === 'authenticated') fetchSquad()
@@ -309,26 +332,74 @@ export default function LineupPage() {
     }
   }
 
-  const handleChipToggle = () => {
-    if (isLocked) return
-    if (bowlingBoostOn) {
-      setBowlingBoostOn(false)
-      setDirty(true)
+  const handleChipToggle = async (chipType: 'POWER_PLAY_BAT' | 'BOWLING_BOOST') => {
+    if (isLocked || !squad || !currentGW) return
+    // If this chip was already used in a previous GW, do nothing
+    if (usedChips[chipType]) return
+    // If the OTHER chip is active this GW, do nothing
+    if (activeChip && activeChip !== chipType) return
+
+    if (activeChip === chipType) {
+      // Deactivate
+      try {
+        const res = await fetch(`/api/teams/${squad.teamId}/lineups/${currentGW.id}/chip`, { method: 'DELETE' })
+        if (res.ok) {
+          setActiveChip(null)
+          setDirty(true)
+        }
+      } catch { /* silent */ }
     } else {
-      setChipModalOpen(true)
+      // Show confirmation modal
+      setChipModalType(chipType)
     }
   }
 
-  const confirmChip = () => {
-    setBowlingBoostOn(true)
-    setChipModalOpen(false)
-    setDirty(true)
+  const confirmChip = async () => {
+    if (!chipModalType || !squad || !currentGW) return
+    try {
+      const res = await fetch(`/api/teams/${squad.teamId}/lineups/${currentGW.id}/chip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chipType: chipModalType }),
+      })
+      if (res.ok) {
+        setActiveChip(chipModalType)
+        setChipModalType(null)
+        setDirty(true)
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Failed to activate chip' }))
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to activate chip' })
+        setChipModalType(null)
+      }
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Failed to activate chip' })
+      setChipModalType(null)
+    }
   }
 
-  /* ─── Arrange XI into 3 rows: 4-4-3 like mockup ─── */
-  const row1 = xi.slice(0, 4)
-  const row2 = xi.slice(4, 8)
-  const row3 = xi.slice(8, 11)
+  /* ─── Arrange XI into rows matching mockup: Openers (2), Middle Order (4), Lower Order (5) ─── */
+  const wk = xi.filter(p => normalizeRole(p.role) === 'WK')
+  const bat = xi.filter(p => normalizeRole(p.role) === 'BAT')
+  const all = xi.filter(p => normalizeRole(p.role) === 'ALL')
+  const bowl = xi.filter(p => normalizeRole(p.role) === 'BOWL')
+
+  const openers = [...bat.slice(0, 2)]
+  if (openers.length < 2 && wk.length > 0) openers.unshift(wk[0])
+
+  const usedIds = new Set(openers.map(p => p.id))
+  const middleOrder = [
+    ...bat.filter(p => !usedIds.has(p.id)),
+    ...wk.filter(p => !usedIds.has(p.id)),
+    ...all,
+  ]
+
+  const lowerOrder = [...bowl]
+
+  const allGrouped = [...openers, ...middleOrder, ...lowerOrder]
+  const hasAllPlayers = allGrouped.length === xi.length
+  const row1 = hasAllPlayers ? openers : xi.slice(0, 2)
+  const row2 = hasAllPlayers ? middleOrder : xi.slice(2, 6)
+  const row3 = hasAllPlayers ? lowerOrder : xi.slice(6, 11)
 
   /* ─── Auth guard ─── */
   if (sessionStatus === 'loading' || loading) {
@@ -626,10 +697,16 @@ export default function LineupPage() {
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', flexDirection: 'column',
-            justifyContent: 'space-evenly',
+            justifyContent: 'space-evenly', alignItems: 'center',
             padding: '12px 0 10px', zIndex: 3,
+            gap: 6,
           }}>
-            {/* Row 1 */}
+            {/* Row 1: Openers */}
+            <div style={{
+              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+              textAlign: 'center', marginBottom: -2,
+            }}>Openers</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
               {row1.map(p => (
                 <div key={p.id} onClick={() => handlePlayerTap(p.id)}
@@ -643,7 +720,13 @@ export default function LineupPage() {
                 </div>
               ))}
             </div>
-            {/* Row 2 */}
+
+            {/* Row 2: Middle Order */}
+            <div style={{
+              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+              textAlign: 'center', marginBottom: -2,
+            }}>Middle Order</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
               {row2.map(p => (
                 <div key={p.id} onClick={() => handlePlayerTap(p.id)}
@@ -657,7 +740,13 @@ export default function LineupPage() {
                 </div>
               ))}
             </div>
-            {/* Row 3 */}
+
+            {/* Row 3: Lower Order */}
+            <div style={{
+              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+              textAlign: 'center', marginBottom: -2,
+            }}>Lower Order</div>
             <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
               {row3.map(p => (
                 <div key={p.id} onClick={() => handlePlayerTap(p.id)}
