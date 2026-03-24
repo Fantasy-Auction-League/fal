@@ -102,6 +102,20 @@ When moving a player to/from the bench in the list view, the app automatically s
 
 ---
 
+### ISSUE-008 — Lineup and captain changes lost after re-login despite "Saved Successfully" confirmation
+**Status:** Open
+**Found:** 2026-03-24
+**Reported by:** Sanket Subu
+**Area:** Edit Lineup / Persistence
+
+**Description:**
+After editing the lineup and changing captains, the user received a "Saved Successfully" confirmation. However, upon logging out and back in, all changes were reset to the previous state — indicating the save either failed silently on the backend or was only saved to local/session state and not persisted to the database.
+
+**Expected behaviour:** Lineup and captain changes are persisted to the database on save. Re-login shows the last saved state.
+**Actual behaviour:** Changes appear saved (confirmation shown) but are lost on re-login — the lineup reverts to its previous state.
+
+---
+
 ## Resolved Issues
 
 _None yet._
