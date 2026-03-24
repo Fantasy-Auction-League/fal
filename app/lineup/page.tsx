@@ -35,6 +35,14 @@ const benchRoleColors: Record<string, string> = {
   ALL: 'rgba(14,177,162,0.3)',
 }
 
+/* ─── List view role gradients ─── */
+const listRoleGradients: Record<string, { bg: string; color: string }> = {
+  BAT:  { bg: 'linear-gradient(135deg, #F9CD05, #e0b800)', color: '#1a1a1a' },
+  BOWL: { bg: 'linear-gradient(135deg, #004BA0, #0066cc)', color: '#fff' },
+  ALL:  { bg: 'linear-gradient(135deg, #0EB1A2, #089e90)', color: '#fff' },
+  WK:   { bg: 'linear-gradient(135deg, #EA1A85, #c4166e)', color: '#fff' },
+}
+
 /* ─── Types ─── */
 interface SquadPlayer {
   id: string
@@ -107,7 +115,7 @@ const IconLeague = () => (
 
 /* ─── Bowling Boost SVG ─── */
 const BowlingBoostIcon = ({ color }: { color: string }) => (
-  <svg viewBox="0 0 36 36" width="26" height="26" fill="none">
+  <svg viewBox="0 0 36 36" width="18" height="18" fill="none">
     <circle cx="9" cy="9" r="6" fill={color === 'grey' ? '#bbb' : '#DC2020'} />
     <path d="M6 7.5 Q9 9.5 12 7.5" stroke="white" strokeWidth="0.9" fill="none" strokeLinecap="round" />
     <path d="M6 10.5 Q9 8.5 12 10.5" stroke="white" strokeWidth="0.9" fill="none" strokeLinecap="round" />
@@ -121,9 +129,27 @@ const BowlingBoostIcon = ({ color }: { color: string }) => (
 
 /* ─── Power Play Bat SVG ─── */
 const PowerPlayBatIcon = ({ color }: { color: string }) => (
-  <svg viewBox="0 0 36 36" width="26" height="26" fill="none">
+  <svg viewBox="0 0 36 36" width="18" height="18" fill="none">
     <rect x="16" y="4" width="5" height="22" rx="2.5" fill={color === 'grey' ? '#bbb' : '#fff'} transform="rotate(20 16 4)" />
     <ellipse cx="10" cy="28" rx="5" ry="3.5" fill={color === 'grey' ? '#bbb' : '#fff'} transform="rotate(20 10 28)" />
+  </svg>
+)
+
+/* ─── View toggle icons ─── */
+const PitchViewIcon = ({ color }: { color: string }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1" width="5" height="5" rx="1" fill={color} />
+    <rect x="8" y="1" width="5" height="5" rx="1" fill={color} />
+    <rect x="1" y="8" width="5" height="5" rx="1" fill={color} />
+    <rect x="8" y="8" width="5" height="5" rx="1" fill={color} />
+  </svg>
+)
+
+const ListViewIcon = ({ color }: { color: string }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="2" width="12" height="2" rx="1" fill={color} />
+    <rect x="1" y="6" width="12" height="2" rx="1" fill={color} />
+    <rect x="1" y="10" width="12" height="2" rx="1" fill={color} />
   </svg>
 )
 
@@ -144,6 +170,9 @@ export default function LineupPage() {
   const [currentGW, setCurrentGW] = useState<CurrentGameweek | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [viewMode, setViewMode] = useState<'pitch' | 'list'>('pitch')
+  const [actionSheetPlayer, setActionSheetPlayer] = useState<SquadPlayer | null>(null)
+  const [actionSheetIsBench, setActionSheetIsBench] = useState(false)
   const isLocked = currentGW?.lockTime ? new Date() >= new Date(currentGW.lockTime) : false
 
   /* ─── Fetch current gameweek ─── */
@@ -365,7 +394,68 @@ export default function LineupPage() {
     }
   }
 
-  /* ─── Arrange XI into fixed 4-3-3 formation, sorted by role priority ─── */
+  /* ─── List view handlers ─── */
+  const openActionSheet = (player: SquadPlayer, isBench: boolean) => {
+    if (isLocked) return
+    setActionSheetPlayer(player)
+    setActionSheetIsBench(isBench)
+  }
+
+  const closeActionSheet = () => {
+    setActionSheetPlayer(null)
+  }
+
+  const handleMakeCaptain = (playerId: string) => {
+    if (isLocked) return
+    if (captainId === playerId) return
+    if (vcId === playerId) {
+      setVcId(captainId)
+    }
+    setCaptainId(playerId)
+    setDirty(true)
+    closeActionSheet()
+  }
+
+  const handleMakeVC = (playerId: string) => {
+    if (isLocked) return
+    if (vcId === playerId) return
+    if (captainId === playerId) {
+      setCaptainId(vcId)
+    }
+    setVcId(playerId)
+    setDirty(true)
+    closeActionSheet()
+  }
+
+  const handleMoveToBench = (playerId: string) => {
+    if (isLocked) return
+    const xiPlayer = xi.find(p => p.id === playerId)
+    if (!xiPlayer || bench.length === 0) return
+    // Swap with first bench player
+    const benchPlayer = bench[0]
+    setXi(prev => prev.map(p => p.id === playerId ? benchPlayer : p))
+    setBench(prev => [xiPlayer, ...prev.slice(1)])
+    if (captainId === playerId) setCaptainId(benchPlayer.id)
+    if (vcId === playerId) setVcId(benchPlayer.id)
+    setDirty(true)
+    closeActionSheet()
+  }
+
+  const handleMoveToXI = (playerId: string) => {
+    if (isLocked) return
+    const benchPlayer = bench.find(p => p.id === playerId)
+    if (!benchPlayer || xi.length === 0) return
+    // Swap with last XI player
+    const xiPlayer = xi[xi.length - 1]
+    setXi(prev => [...prev.slice(0, -1), benchPlayer])
+    setBench(prev => prev.map(p => p.id === playerId ? xiPlayer : p))
+    if (captainId === xiPlayer.id) setCaptainId(benchPlayer.id)
+    if (vcId === xiPlayer.id) setVcId(benchPlayer.id)
+    setDirty(true)
+    closeActionSheet()
+  }
+
+  /* ─── Arrange XI into fixed 4-3-4 formation, sorted by role priority ─── */
   const rolePri: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
   const sortedXi = [...xi].sort((a, b) => (rolePri[normalizeRole(a.role)] ?? 1) - (rolePri[normalizeRole(b.role)] ?? 1))
   const row1 = sortedXi.slice(0, 4)     // Top order (4)
@@ -509,6 +599,81 @@ export default function LineupPage() {
     )
   }
 
+  /* ─── Chip rendering helpers ─── */
+  const renderChipRow = (chipType: 'BOWLING_BOOST' | 'POWER_PLAY_BAT') => {
+    const isBB = chipType === 'BOWLING_BOOST'
+    const usedGW = usedChips[chipType]
+    const isActive = activeChip === chipType
+    const isUnavailable = !!usedGW || (!!activeChip && activeChip !== chipType)
+    const isDisabled = isUnavailable || isLocked
+    const chipLabel = isBB ? 'Bowling Boost' : 'Power Play Bat'
+    const ChipIcon = isBB ? BowlingBoostIcon : PowerPlayBatIcon
+
+    return (
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'row',
+        alignItems: 'center',
+        padding: '6px 10px', gap: 8,
+      }}>
+        <div style={{
+          width: 26, height: 26, borderRadius: 7, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: isUnavailable && !isActive ? '#e8e8ee' : 'linear-gradient(135deg, #0d9e5f, #07c472)',
+        }}>
+          <ChipIcon color={isUnavailable && !isActive ? 'grey' : 'white'} />
+        </div>
+        <div style={{
+          fontSize: 12, fontWeight: 700, flex: 1,
+          color: isUnavailable && !isActive ? '#bbb' : '#1a1a2e',
+        }}>
+          {chipLabel}
+        </div>
+        {usedGW ? (
+          <div style={{
+            fontSize: 10, fontWeight: 700,
+            background: '#f0f0f5', color: '#999', padding: '3px 8px',
+            borderRadius: 7, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            Used GW {usedGW}
+          </div>
+        ) : isActive ? (
+          <button
+            onClick={() => handleChipToggle(chipType)}
+            style={{
+              padding: '4px 10px', borderRadius: 8,
+              border: '1.5px solid rgba(13,158,95,0.3)',
+              cursor: 'pointer',
+              fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+              background: 'rgba(13,158,95,0.12)', color: '#0d9e5f',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            Active
+          </button>
+        ) : (
+          <button
+            onClick={() => { if (!isDisabled) handleChipToggle(chipType) }}
+            style={{
+              padding: '4px 10px', borderRadius: 8, border: 'none',
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
+              fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+              background: '#0d9e5f', color: '#fff',
+              whiteSpace: 'nowrap', flexShrink: 0,
+              opacity: isDisabled ? 0.4 : 1,
+            }}
+          >
+            Play
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  /* ─── Get captain/VC names for summary ─── */
+  const allPlayers = [...xi, ...bench]
+  const captainName = allPlayers.find(p => p.id === captainId)?.fullname
+  const vcName = allPlayers.find(p => p.id === vcId)?.fullname
+
   return (
     <AppFrame>
     <div style={{
@@ -563,313 +728,492 @@ export default function LineupPage() {
             'Set your lineup for the season'
           )}
         </div>
-
-        {/* ── Chips Bar ── */}
-        <div style={{
-          display: 'flex', flexDirection: 'row',
-          borderBottom: '1px solid #efeff3',
-          borderTop: '1px solid #efeff3',
-          margin: '0 -20px',
-        }}>
-          {/* Bowling Boost */}
-          {(() => {
-            const bbUsedGW = usedChips['BOWLING_BOOST']
-            const bbActive = activeChip === 'BOWLING_BOOST'
-            const bbUnavailable = !!bbUsedGW || (!!activeChip && activeChip !== 'BOWLING_BOOST')
-            const bbDisabled = bbUnavailable || isLocked
-            return (
-              <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', textAlign: 'center',
-                padding: '7px 10px 6px', gap: 4,
-                borderRight: '1px solid #efeff3',
-                opacity: bbUnavailable && !bbActive ? 0.45 : 1,
-                transition: 'opacity 0.25s ease',
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 9,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: bbUnavailable && !bbActive ? '#e8e8ee' : 'linear-gradient(135deg, #0d9e5f, #07c472)',
-                }}>
-                  <BowlingBoostIcon color={bbUnavailable && !bbActive ? 'grey' : 'white'} />
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: bbUnavailable && !bbActive ? '#bbb' : '#1a1a2e', lineHeight: 1.2 }}>Bowling Boost</div>
-                <div style={{ fontSize: 11, fontWeight: 500, color: bbUnavailable && !bbActive ? '#ccc' : '#888', lineHeight: 1.35 }}>Doubles all bowling points this GW</div>
-                {bbUsedGW ? (
-                  <div style={{
-                    fontSize: 11, fontWeight: 700,
-                    background: '#f0f0f5', color: '#999', padding: '4px 10px',
-                    borderRadius: 8, whiteSpace: 'nowrap',
-                  }}>
-                    Used GW {bbUsedGW}
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => { if (!bbDisabled) handleChipToggle('BOWLING_BOOST') }}
-                    style={{
-                      width: 48, height: 28, borderRadius: 14,
-                      position: 'relative', cursor: bbDisabled ? 'not-allowed' : 'pointer',
-                      transition: 'background 0.25s ease',
-                      background: bbActive ? '#0d9e5f' : '#dde0e8',
-                      flexShrink: 0,
-                      opacity: bbDisabled && !bbActive ? 0.5 : 1,
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute', top: 3,
-                      left: bbActive ? 23 : 3,
-                      width: 22, height: 22, borderRadius: '50%', background: '#fff',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.22)',
-                      transition: 'left 0.22s ease',
-                    }} />
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-          {/* Power Play Bat */}
-          {(() => {
-            const ppUsedGW = usedChips['POWER_PLAY_BAT']
-            const ppActive = activeChip === 'POWER_PLAY_BAT'
-            const ppUnavailable = !!ppUsedGW || (!!activeChip && activeChip !== 'POWER_PLAY_BAT')
-            const ppDisabled = ppUnavailable || isLocked
-            return (
-              <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', textAlign: 'center',
-                padding: '7px 10px 6px', gap: 4,
-                opacity: ppUnavailable && !ppActive ? 0.45 : 1,
-                transition: 'opacity 0.25s ease',
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 9,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: ppUnavailable && !ppActive ? '#e8e8ee' : 'linear-gradient(135deg, #d4340f, #f05a28)',
-                }}>
-                  <PowerPlayBatIcon color={ppUnavailable && !ppActive ? 'grey' : 'white'} />
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: ppUnavailable && !ppActive ? '#bbb' : '#1a1a2e', lineHeight: 1.2 }}>Power Play Bat</div>
-                <div style={{ fontSize: 11, fontWeight: 500, color: ppUnavailable && !ppActive ? '#ccc' : '#888', lineHeight: 1.35 }}>Doubles all batting points this GW</div>
-                {ppUsedGW ? (
-                  <div style={{
-                    fontSize: 11, fontWeight: 700,
-                    background: '#f0f0f5', color: '#999', padding: '4px 10px',
-                    borderRadius: 8, whiteSpace: 'nowrap',
-                  }}>
-                    Used GW {ppUsedGW}
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => { if (!ppDisabled) handleChipToggle('POWER_PLAY_BAT') }}
-                    style={{
-                      width: 48, height: 28, borderRadius: 14,
-                      position: 'relative', cursor: ppDisabled ? 'not-allowed' : 'pointer',
-                      transition: 'background 0.25s ease',
-                      background: ppActive ? '#d4340f' : '#dde0e8',
-                      flexShrink: 0,
-                      opacity: ppDisabled && !ppActive ? 0.5 : 1,
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute', top: 3,
-                      left: ppActive ? 23 : 3,
-                      width: 22, height: 22, borderRadius: '50%', background: '#fff',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.22)',
-                      transition: 'left 0.22s ease',
-                    }} />
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-        </div>
       </div>
 
-      {/* ── Pitch ── */}
+      {/* ── Compact Chip Bar ── */}
       <div style={{
-        flex: 1, position: 'relative', overflow: 'hidden',
-        background: `linear-gradient(180deg,
-          #3aad5c 0%, #35a254 15%,
-          #30964c 30%, #34a058 45%,
-          #3aad5c 50%, #30964c 65%,
-          #2b8a45 80%, #267f3e 100%
-        )`,
-        minHeight: xi.length > 0 ? 380 : 200,
+        background: '#fff',
+        display: 'flex', flexDirection: 'row',
+        borderBottom: '1px solid #efefF3',
+        flexShrink: 0,
       }}>
-        {/* Concentric circle markings */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 300, height: 300, borderRadius: '50%',
-          border: '1.5px solid rgba(255,255,255,0.07)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 180, height: 180, borderRadius: '50%',
-          border: '1.5px solid rgba(255,255,255,0.05)',
-          pointerEvents: 'none',
-        }} />
-
-        {xi.length > 0 ? (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column',
-            justifyContent: 'space-evenly', alignItems: 'center',
-            padding: '12px 0 10px', zIndex: 3,
-            gap: 6,
-          }}>
-            {/* Row 1: Top Order */}
-            <div style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-              textAlign: 'center', marginBottom: -2,
-            }}>Top Order</div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
-              {row1.map(p => (
-                <div key={p.id} onClick={() => handlePlayerTap(p.id)}
-                  style={{
-                    width: 86, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    opacity: swapMode ? 0.7 : 1,
-                    transition: 'opacity 0.2s',
-                  }}>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
-                </div>
-              ))}
-            </div>
-
-            {/* Row 2: Middle order */}
-            <div style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-              textAlign: 'center', marginBottom: -2,
-            }}>Middle Order</div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
-              {row2.map(p => (
-                <div key={p.id} onClick={() => handlePlayerTap(p.id)}
-                  style={{
-                    width: 86, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    opacity: swapMode ? 0.7 : 1,
-                    transition: 'opacity 0.2s',
-                  }}>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
-                </div>
-              ))}
-            </div>
-
-            {/* Row 3: Lower order */}
-            <div style={{
-              fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-              textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-              textAlign: 'center', marginBottom: -2,
-            }}>Lower Order</div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
-              {row3.map(p => (
-                <div key={p.id} onClick={() => handlePlayerTap(p.id)}
-                  style={{
-                    width: 86, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    opacity: swapMode ? 0.7 : 1,
-                    transition: 'opacity 0.2s',
-                  }}>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 3,
-          }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>
-              {squad ? 'No players in squad' : 'No team found'}
-            </p>
-          </div>
-        )}
+        <div style={{ borderRight: '1px solid #efefF3', flex: 1, display: 'flex' }}>
+          {renderChipRow('BOWLING_BOOST')}
+        </div>
+        <div style={{ flex: 1, display: 'flex' }}>
+          {renderChipRow('POWER_PLAY_BAT')}
+        </div>
       </div>
 
-      {/* ── Bench ── */}
-      {bench.length > 0 && (
+      {/* ── View Toggle ── */}
+      <div style={{
+        background: '#fff', padding: '6px 16px 8px',
+        display: 'flex', flexShrink: 0,
+        borderBottom: '1px solid #efefF3',
+      }}>
         <div style={{
-          flexShrink: 0, padding: '6px 6px 4px',
-          background: 'linear-gradient(180deg, #1a5c32, #16502c)',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', background: '#f2f3f8', borderRadius: 10, padding: 3, flex: 1,
         }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, justifyContent: 'center',
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
-            <div style={{
-              fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.2)',
-              textTransform: 'uppercase', letterSpacing: 2,
-            }}>
-              Bench
-            </div>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-            {bench.map(p => {
-              const role = normalizeRole(p.role)
-              const isSwapping = swapMode === p.id
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => handleBenchTap(p.id)}
-                  style={{
-                    width: 76, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    opacity: isSwapping ? 1 : (swapMode ? 0.5 : 1),
-                    transform: isSwapping ? 'scale(1.05)' : 'scale(1)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div style={{
-                    fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
-                    textTransform: 'uppercase', letterSpacing: 0.5,
-                    color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
-                  }}>
-                    {role}
-                  </div>
-                  <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
-                </div>
-              )
-            })}
-          </div>
+          <button
+            onClick={() => setViewMode('pitch')}
+            style={{
+              flex: 1, padding: '6px 0', border: 'none', borderRadius: 8,
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              background: viewMode === 'pitch' ? '#fff' : 'transparent',
+              color: viewMode === 'pitch' ? '#1a1a2e' : '#888',
+              boxShadow: viewMode === 'pitch' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+            }}
+          >
+            <PitchViewIcon color={viewMode === 'pitch' ? '#1a1a2e' : '#888'} />
+            Pitch View
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            style={{
+              flex: 1, padding: '6px 0', border: 'none', borderRadius: 8,
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              background: viewMode === 'list' ? '#fff' : 'transparent',
+              color: viewMode === 'list' ? '#1a1a2e' : '#888',
+              boxShadow: viewMode === 'list' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+            }}
+          >
+            <ListViewIcon color={viewMode === 'list' ? '#1a1a2e' : '#888'} />
+            List View
+          </button>
         </div>
+      </div>
+
+      {/* ── Pitch View ── */}
+      {viewMode === 'pitch' && (
+        <>
+          <div style={{
+            flex: 1, position: 'relative', overflow: 'hidden',
+            background: `linear-gradient(180deg,
+              #3aad5c 0%, #35a254 15%,
+              #30964c 30%, #34a058 45%,
+              #3aad5c 50%, #30964c 65%,
+              #2b8a45 80%, #267f3e 100%
+            )`,
+            minHeight: xi.length > 0 ? 380 : 200,
+          }}>
+            {/* Concentric circle markings */}
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 300, height: 300, borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.07)',
+              pointerEvents: 'none',
+            }} />
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 180, height: 180, borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.05)',
+              pointerEvents: 'none',
+            }} />
+
+            {xi.length > 0 ? (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', flexDirection: 'column',
+                justifyContent: 'space-evenly', alignItems: 'center',
+                padding: '12px 0 10px', zIndex: 3,
+                gap: 6,
+              }}>
+                {/* Row 1: Top Order */}
+                <div style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+                  textAlign: 'center', marginBottom: -2,
+                }}>Top Order</div>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
+                  {row1.map(p => (
+                    <div key={p.id} onClick={() => handlePlayerTap(p.id)}
+                      style={{
+                        width: 86, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        opacity: swapMode ? 0.7 : 1,
+                        transition: 'opacity 0.2s',
+                      }}>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Row 2: Middle order */}
+                <div style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+                  textAlign: 'center', marginBottom: -2,
+                }}>Middle Order</div>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
+                  {row2.map(p => (
+                    <div key={p.id} onClick={() => handlePlayerTap(p.id)}
+                      style={{
+                        width: 86, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        opacity: swapMode ? 0.7 : 1,
+                        transition: 'opacity 0.2s',
+                      }}>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Row 3: Lower order */}
+                <div style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
+                  textAlign: 'center', marginBottom: -2,
+                }}>Lower Order</div>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
+                  {row3.map(p => (
+                    <div key={p.id} onClick={() => handlePlayerTap(p.id)}
+                      style={{
+                        width: 86, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        opacity: swapMode ? 0.7 : 1,
+                        transition: 'opacity 0.2s',
+                      }}>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 3,
+              }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>
+                  {squad ? 'No players in squad' : 'No team found'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Bench ── */}
+          {bench.length > 0 && (
+            <div style={{
+              flexShrink: 0, padding: '6px 6px 4px',
+              background: 'linear-gradient(180deg, #1a5c32, #16502c)',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, justifyContent: 'center',
+              }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
+                <div style={{
+                  fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.2)',
+                  textTransform: 'uppercase', letterSpacing: 2,
+                }}>
+                  Bench
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)', maxWidth: 80 }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                {bench.map(p => {
+                  const role = normalizeRole(p.role)
+                  const isSwapping = swapMode === p.id
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleBenchTap(p.id)}
+                      style={{
+                        width: 76, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        opacity: isSwapping ? 1 : (swapMode ? 0.5 : 1),
+                        transform: isSwapping ? 'scale(1.05)' : 'scale(1)',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <div style={{
+                        fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
+                        textTransform: 'uppercase', letterSpacing: 0.5,
+                        color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
+                      }}>
+                        {role}
+                      </div>
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Save Area (Pitch View) ── */}
+          {(dirty || saveMessage) && !isLocked && (
+            <div style={{
+              flexShrink: 0, padding: '6px 16px 34px', background: '#f2f3f8',
+              animation: 'slideUp 0.3s ease',
+            }}>
+              {dirty && (
+                <button
+                  onClick={saveLineup}
+                  disabled={saving}
+                  style={{
+                    display: 'block', width: '100%', padding: 13, border: 'none', borderRadius: 14,
+                    background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+                    color: '#fff', fontSize: 14, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit', letterSpacing: -0.3,
+                    opacity: saving ? 0.6 : 1,
+                  }}>
+                  {saving ? 'Saving...' : 'Save Lineup'}
+                </button>
+              )}
+              {saveMessage && (
+                <div style={{
+                  textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: 600,
+                  fontFamily: 'inherit',
+                  color: saveMessage.type === 'success' ? '#0a8754' : '#d32f2f',
+                }}>
+                  {saveMessage.text}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
-      {/* ── Save Area ── */}
-      {(dirty || saveMessage) && !isLocked && (
+      {/* ── List View ── */}
+      {viewMode === 'list' && (
         <div style={{
-          flexShrink: 0, padding: '6px 16px 34px', background: '#f2f3f8',
-          animation: 'slideUp 0.3s ease',
+          flex: 1, overflowY: 'auto', background: '#f2f3f8',
+          display: 'flex', flexDirection: 'column',
         }}>
-          {dirty && (
-            <button
-              onClick={saveLineup}
-              disabled={saving}
-              style={{
-                display: 'block', width: '100%', padding: 13, border: 'none', borderRadius: 14,
-                background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
-                color: '#fff', fontSize: 14, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit', letterSpacing: -0.3,
-                opacity: saving ? 0.6 : 1,
+          {/* Playing XI Section */}
+          <div style={{
+            fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
+            letterSpacing: 0.8, padding: '8px 16px 4px',
+          }}>
+            Playing XI &mdash; {xi.length} Selected
+          </div>
+          {sortedXi.map(p => {
+            const role = normalizeRole(p.role)
+            const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
+            const isCap = captainId === p.id
+            const isVC = vcId === p.id
+            return (
+              <div
+                key={p.id}
+                onClick={() => openActionSheet(p, false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 16px', background: '#fff',
+                  borderBottom: '1px solid #f2f3f8', cursor: 'pointer',
+                  transition: 'background 0.12s',
+                }}
+              >
+                {/* Role icon */}
+                <div style={{
+                  width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800,
+                  background: roleStyle.bg, color: roleStyle.color,
+                }}>
+                  {role}
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13, fontWeight: 700, color: '#1a1a2e',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {p.fullname}
+                    {isCap && (
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, padding: '1.5px 5px', borderRadius: 4,
+                        background: '#F9CD05', color: '#1a1a1a', flexShrink: 0, lineHeight: '1.4',
+                      }}>C</span>
+                    )}
+                    {isVC && (
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, padding: '1.5px 5px', borderRadius: 4,
+                        background: '#C0C7D0', color: '#1a1a1a', flexShrink: 0, lineHeight: '1.4',
+                      }}>VC</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                    {p.iplTeamCode || 'IPL'}
+                  </div>
+                </div>
+                {/* Action buttons */}
+                {!isLocked && (
+                  <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleMakeCaptain(p.id) }}
+                      style={{
+                        padding: '5px 8px', borderRadius: 7, fontSize: 10, fontWeight: 700,
+                        cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                        transition: 'all 0.15s',
+                        ...(isCap ? {
+                          background: '#F9CD05', color: '#1a1a1a', border: '1.5px solid #F9CD05',
+                        } : {
+                          border: '1.5px solid rgba(249,205,5,0.5)', color: '#b58800',
+                          background: 'rgba(249,205,5,0.08)',
+                        }),
+                      }}
+                    >C</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleMakeVC(p.id) }}
+                      style={{
+                        padding: '5px 8px', borderRadius: 7, fontSize: 10, fontWeight: 700,
+                        cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                        transition: 'all 0.15s',
+                        ...(isVC ? {
+                          background: '#C0C7D0', color: '#1a1a1a', border: '1.5px solid #C0C7D0',
+                        } : {
+                          border: '1.5px solid rgba(192,199,208,0.6)', color: '#666',
+                          background: 'rgba(192,199,208,0.1)',
+                        }),
+                      }}
+                    >VC</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleMoveToBench(p.id) }}
+                      style={{
+                        padding: '5px 8px', borderRadius: 7, fontSize: 10, fontWeight: 700,
+                        cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                        transition: 'all 0.15s',
+                        border: '1.5px solid rgba(0,0,0,0.08)', color: '#888', background: '#f2f3f8',
+                      }}
+                    >&rarr; Bench</button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Bench Section */}
+          {bench.length > 0 && (
+            <>
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
+                letterSpacing: 0.8, padding: '10px 16px 4px',
               }}>
-              {saving ? 'Saving...' : 'Save Lineup'}
-            </button>
+                Bench &mdash; Auto-Sub Order
+              </div>
+              {bench.map((p, idx) => {
+                const role = normalizeRole(p.role)
+                const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => openActionSheet(p, true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 16px', background: '#fafbfd',
+                      borderBottom: '1px solid #f2f3f8', cursor: 'pointer',
+                      transition: 'background 0.12s',
+                    }}
+                  >
+                    {/* Priority badge */}
+                    <div style={{
+                      width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                      background: '#e8eaf0', color: '#888',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 800,
+                    }}>
+                      {idx + 1}
+                    </div>
+                    {/* Role icon */}
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 800,
+                      background: roleStyle.bg, color: roleStyle.color,
+                    }}>
+                      {role}
+                    </div>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 700, color: '#1a1a2e',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {p.fullname}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                        {p.iplTeamCode || 'IPL'}
+                      </div>
+                    </div>
+                    {/* Move to XI button */}
+                    {!isLocked && (
+                      <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMoveToXI(p.id) }}
+                          style={{
+                            padding: '5px 8px', borderRadius: 7, fontSize: 10, fontWeight: 700,
+                            cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                            transition: 'all 0.15s',
+                            border: '1.5px solid rgba(13,158,95,0.3)', color: '#0d9e5f',
+                            background: 'rgba(13,158,95,0.06)',
+                          }}
+                        >&rarr; XI</button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </>
           )}
-          {saveMessage && (
-            <div style={{
-              textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: 600,
-              fontFamily: 'inherit',
-              color: saveMessage.type === 'success' ? '#0a8754' : '#d32f2f',
-            }}>
-              {saveMessage.text}
+
+          {/* Summary bar */}
+          <div style={{
+            margin: '10px 16px 16px', padding: '12px 16px', borderRadius: 14,
+            background: '#fff', border: '1px solid #eef0f5',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>{xi.length}/11</div>
+              <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Playing XI</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>
+                {captainName ? getShortName(captainName) : '-'}
+              </div>
+              <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Captain</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>
+                {vcName ? getShortName(vcName) : '-'}
+              </div>
+              <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>Vice Captain</div>
+            </div>
+          </div>
+
+          {/* Save button (list view) */}
+          {(dirty || saveMessage) && !isLocked && (
+            <div style={{ padding: '0 16px 16px', flexShrink: 0, background: '#f2f3f8' }}>
+              {dirty && (
+                <button
+                  onClick={saveLineup}
+                  disabled={saving}
+                  style={{
+                    display: 'block', width: '100%', padding: 13, border: 'none', borderRadius: 14,
+                    background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+                    color: '#fff', fontSize: 14, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit', letterSpacing: -0.3, textAlign: 'center',
+                    opacity: saving ? 0.6 : 1,
+                  }}>
+                  {saving ? 'Saving...' : 'Save Lineup'}
+                </button>
+              )}
+              {saveMessage && (
+                <div style={{
+                  textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: 600,
+                  fontFamily: 'inherit',
+                  color: saveMessage.type === 'success' ? '#0a8754' : '#d32f2f',
+                }}>
+                  {saveMessage.text}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -944,7 +1288,7 @@ export default function LineupPage() {
                   style={{
                     display: 'block', width: '100%', padding: 15, border: 'none', borderRadius: 14,
                     background: chipGrad,
-                    color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                    color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
                   Yes, Play {chipLabel}
@@ -960,6 +1304,151 @@ export default function LineupPage() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </>
+        )
+      })()}
+
+      {/* ── Action Sheet (List View) ── */}
+      {actionSheetPlayer && (() => {
+        const p = actionSheetPlayer
+        const role = normalizeRole(p.role)
+        const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
+        const isBenchPlayer = actionSheetIsBench
+        const isCap = captainId === p.id
+        const isVCPlayer = vcId === p.id
+        return (
+          <>
+            <div
+              onClick={closeActionSheet}
+              style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.4)',
+                backdropFilter: 'blur(3px)',
+                WebkitBackdropFilter: 'blur(3px)',
+                zIndex: 200,
+              }}
+            />
+            <div style={{
+              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '100%', maxWidth: 480,
+              background: '#fff', borderRadius: '20px 20px 0 0',
+              zIndex: 210, paddingBottom: 36,
+            }}>
+              {/* Handle */}
+              <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 8px' }} />
+              {/* Player info */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 12px',
+                borderBottom: '1px solid #f2f3f8',
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800,
+                  background: roleStyle.bg, color: roleStyle.color,
+                }}>
+                  {role}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#1a1a2e' }}>{p.fullname}</div>
+                  <div style={{ fontSize: 11, color: '#999' }}>{p.iplTeamCode || 'IPL'}</div>
+                </div>
+              </div>
+              {/* Actions */}
+              {!isBenchPlayer && (
+                <>
+                  <button
+                    onClick={() => handleMakeCaptain(p.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                      cursor: 'pointer', border: 'none', background: 'transparent',
+                      width: '100%', fontFamily: 'inherit', borderTop: 'none',
+                    }}
+                  >
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, background: 'rgba(249,205,5,0.12)',
+                    }}>
+                      {isCap ? '&#10003;' : 'C'}
+                    </div>
+                    {isCap ? 'Captain (current)' : 'Make Captain'}
+                  </button>
+                  <button
+                    onClick={() => handleMakeVC(p.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                      cursor: 'pointer', border: 'none', background: 'transparent',
+                      width: '100%', fontFamily: 'inherit',
+                      borderTop: '1px solid #f2f3f8',
+                    }}
+                  >
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, background: 'rgba(192,199,208,0.15)',
+                    }}>
+                      {isVCPlayer ? '&#10003;' : 'VC'}
+                    </div>
+                    {isVCPlayer ? 'Vice Captain (current)' : 'Make Vice Captain'}
+                  </button>
+                  <button
+                    onClick={() => handleMoveToBench(p.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                      cursor: 'pointer', border: 'none', background: 'transparent',
+                      width: '100%', fontFamily: 'inherit',
+                      borderTop: '1px solid #f2f3f8',
+                    }}
+                  >
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, background: '#f2f3f8',
+                    }}>
+                      &darr;
+                    </div>
+                    Move to Bench
+                  </button>
+                </>
+              )}
+              {isBenchPlayer && (
+                <button
+                  onClick={() => handleMoveToXI(p.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '14px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                    cursor: 'pointer', border: 'none', background: 'transparent',
+                    width: '100%', fontFamily: 'inherit',
+                  }}
+                >
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, background: 'rgba(13,158,95,0.08)',
+                  }}>
+                    &uarr;
+                  </div>
+                  Move to Playing XI
+                </button>
+              )}
+              {/* Cancel */}
+              <button
+                onClick={closeActionSheet}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '14px 20px', fontSize: 13, fontWeight: 600, color: '#999',
+                  cursor: 'pointer', border: 'none', background: 'transparent',
+                  width: '100%', fontFamily: 'inherit',
+                  borderTop: '1px solid #f2f3f8', marginTop: 4,
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </>
         )
