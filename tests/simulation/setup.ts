@@ -10,6 +10,7 @@ import {
   SIM_INVITE_CODE,
   IPL_2025_SEASON_ID,
   simUserEmail,
+  generateLineup,
 } from './helpers'
 
 export async function setupSimulation() {
@@ -288,6 +289,111 @@ async function setupMidSeasonState(log: string[]) {
         apiStatus: schedule.scored ? 'Finished' : 'NS',
       },
     })
+  }
+
+  // --- GW6 Lineups, PlayerScores, GameweekScores ---
+
+  // Get all teams with their squads
+  const league = await prisma.league.findFirst({
+    where: { name: SIM_LEAGUE_NAME },
+    include: {
+      teams: {
+        include: {
+          teamPlayers: {
+            include: { player: { select: { id: true, role: true } } },
+          },
+        },
+      },
+    },
+  })
+
+  if (!league) {
+    log.push('Mid-season: league not found for GW6 scores, skipping')
+    return
+  }
+
+  // Deterministic but varied score generator (seeded per player index)
+  const baseScores = [72, 48, 35, 22, 56, 14, 41, 63, 28, 19, 50, 33, 67, 26, 45]
+
+  for (const team of league.teams) {
+    const squad = team.teamPlayers.map((tp) => ({
+      id: tp.player.id,
+      role: tp.player.role,
+    }))
+
+    if (squad.length < 11) {
+      log.push(`Mid-season: ${team.name} has only ${squad.length} players, skipping GW6 scores`)
+      continue
+    }
+
+    // Create lineup for GW6
+    const slots = generateLineup(squad)
+    const lineup = await prisma.lineup.upsert({
+      where: { teamId_gameweekId: { teamId: team.id, gameweekId: gw6.id } },
+      update: {},
+      create: {
+        teamId: team.id,
+        gameweekId: gw6.id,
+        slots: {
+          create: slots.map((s) => ({
+            playerId: s.playerId,
+            slotType: s.slotType,
+            benchPriority: s.benchPriority,
+            role: s.role,
+          })),
+        },
+      },
+    })
+
+    // Create PlayerScore records for each squad member
+    let gwTotal = 0
+    for (let i = 0; i < squad.length; i++) {
+      const rawPoints = baseScores[i % baseScores.length]
+      // Captain (index 0) gets 2x multiplier
+      const isCaptain = i === 0
+      const totalPoints = isCaptain ? rawPoints * 2 : rawPoints
+
+      await prisma.playerScore.upsert({
+        where: {
+          playerId_gameweekId: {
+            playerId: squad[i].id,
+            gameweekId: gw6.id,
+          },
+        },
+        update: { totalPoints },
+        create: {
+          playerId: squad[i].id,
+          gameweekId: gw6.id,
+          totalPoints,
+        },
+      })
+
+      // Only XI players count toward the GW total
+      if (i < 11) {
+        gwTotal += totalPoints
+      }
+    }
+
+    // Create GameweekScore
+    await prisma.gameweekScore.upsert({
+      where: {
+        teamId_gameweekId: { teamId: team.id, gameweekId: gw6.id },
+      },
+      update: { totalPoints: gwTotal },
+      create: {
+        teamId: team.id,
+        gameweekId: gw6.id,
+        totalPoints: gwTotal,
+      },
+    })
+
+    // Update team totalPoints
+    await prisma.team.update({
+      where: { id: team.id },
+      data: { totalPoints: { increment: gwTotal } },
+    })
+
+    log.push(`Mid-season: ${team.name} GW6 lineup + scores (total: ${gwTotal})`)
   }
 
   log.push(
