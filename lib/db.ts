@@ -4,10 +4,14 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createPrismaClient(): PrismaClient {
   if (process.env.VERCEL) {
-    const { Pool } = require('@neondatabase/serverless')
+    const { neon } = require('@neondatabase/serverless')
     const { PrismaNeon } = require('@prisma/adapter-neon')
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-    return new PrismaClient({ adapter: new PrismaNeon(pool) })
+    // Use DATABASE_URL_UNPOOLED for direct connection (avoids channel_binding issues)
+    const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
+    // Strip channel_binding parameter which causes issues with the serverless driver
+    const cleanUrl = connectionString?.replace(/[&?]channel_binding=[^&]*/, '') || ''
+    const sql = neon(cleanUrl)
+    return new PrismaClient({ adapter: new PrismaNeon(sql) })
   }
   return new PrismaClient()
 }
