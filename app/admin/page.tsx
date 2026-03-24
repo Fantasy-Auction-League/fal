@@ -138,6 +138,11 @@ export default function AdminPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  /* ─── Join league state ─── */
+  const [joinCode, setJoinCode] = useState('')
+  const [joinLoading, setJoinLoading] = useState(false)
+  const [joinMsg, setJoinMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
   /* ─── All leagues for switcher ─── */
   const [allLeagues, setAllLeagues] = useState<{ id: string; name: string }[]>([])
   const [switchingLeague, setSwitchingLeague] = useState(false)
@@ -298,6 +303,31 @@ export default function AdminPage() {
       setLeague((prev) => prev ? { ...prev, seasonStarted: true } : prev)
     } catch { setError('Network error') }
     finally { setLoading(false) }
+  }
+
+  const joinLeague = async () => {
+    if (!joinCode.trim()) return
+    setJoinLoading(true)
+    setJoinMsg(null)
+    try {
+      const res = await fetch('/api/leagues/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: joinCode.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setJoinMsg({ type: 'error', text: data.error || 'Failed to join league' })
+        return
+      }
+      setJoinMsg({ type: 'success', text: `Joined ${data.name}!` })
+      setJoinCode('')
+      setTimeout(() => window.location.reload(), 1000)
+    } catch {
+      setJoinMsg({ type: 'error', text: 'Network error' })
+    } finally {
+      setJoinLoading(false)
+    }
   }
 
   const openSquadSheet = async (teamId: string) => {
@@ -532,6 +562,57 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* ── Join a League ── */}
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Join a League</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              placeholder="Enter invite code"
+              value={joinCode}
+              onChange={(e) => { setJoinCode(e.target.value); setJoinMsg(null) }}
+              onKeyDown={(e) => e.key === 'Enter' && joinLeague()}
+              style={{
+                flex: 1,
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: '1px solid rgba(0,0,0,0.1)',
+                fontSize: 14,
+                outline: 'none',
+                background: '#f8f9fc',
+                color: '#1a1a2e',
+              }}
+            />
+            <button
+              onClick={joinLeague}
+              disabled={joinLoading || !joinCode.trim()}
+              style={{
+                padding: '10px 20px',
+                borderRadius: 10,
+                border: 'none',
+                background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: joinLoading || !joinCode.trim() ? 'not-allowed' : 'pointer',
+                opacity: joinLoading || !joinCode.trim() ? 0.4 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {joinLoading ? 'Joining...' : 'Join'}
+            </button>
+          </div>
+          {joinMsg && (
+            <div style={{
+              marginTop: 8,
+              fontSize: 13,
+              fontWeight: 500,
+              color: joinMsg.type === 'success' ? '#0d9e5f' : '#d63060',
+            }}>
+              {joinMsg.text}
+            </div>
+          )}
+        </div>
 
         {/* Messages */}
         {error && (
