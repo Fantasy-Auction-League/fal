@@ -89,6 +89,19 @@ When viewing another team's lineup (or your own in read-only mode), the screen i
 
 ---
 
+### ISSUE-007 — Bench swap in list view auto-selects first eligible player instead of letting user choose
+**Status:** Open
+**Found:** 2026-03-24
+**Area:** Edit Lineup / List View
+
+**Description:**
+When moving a player to/from the bench in the list view, the app automatically swaps with the first eligible player of the same role (e.g. first bowler swaps with first bowler on bench) instead of letting the user pick which player they want to swap with.
+
+**Expected behaviour:** When the user initiates a bench swap, they should be presented with a list of eligible players in the same role to choose from, then confirm the swap.
+**Actual behaviour:** The swap happens automatically with the first matching player in the same role category — no choice is given to the user.
+
+---
+
 ## Resolved Issues
 
 _None yet._
