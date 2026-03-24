@@ -33,7 +33,7 @@ All users created via credentials provider. You can log in as any of them during
 | User 9 | `sim-user-9@fal-test.com` | USER | Chip strategist (Bowling Boost on wicket-friendly week) |
 | User 10 | `sim-user-10@fal-test.com` | USER | Chip strategist (both chips, different weeks) |
 
-**Password:** `sim-test-2025` (all accounts)
+**Password:** `sim-test-2025` (all accounts, min 6 chars enforced by login API)
 
 ---
 
@@ -41,7 +41,7 @@ All users created via credentials provider. You can log in as any of them during
 
 1. **Seed 2025 players** — Call SportMonks `/teams/{id}/squad/1689` for all 10 IPL teams, upsert into Player table
 2. **Create simulation league** — Dedicated league with `sim-admin@fal-test.com` as admin
-3. **Generate 10 test user accounts** — `sim-user-1` through `sim-user-10`
+3. **Generate 10 test user accounts** — `sim-user-1` through `sim-user-10` with password `sim-test-2025` (bcryptjs hashed)
 4. **Build roster CSV** — Each user gets 15 players drafted from different IPL 2025 squads (realistic auction-style distribution)
 5. **Upload roster** — Via `POST /api/leagues/[id]/roster`
 6. **Import fixtures** — All 74 matches + gameweeks from season 1689 via `importFixturesAndGameweeks()`
@@ -57,7 +57,7 @@ Browser-based E2E tests running at 393px viewport (mobile-first per PRD). Tests 
 
 | # | Scenario | Flow | PRD Assertions |
 |---|----------|------|----------------|
-| 1 | Admin uploads roster | Login as sim-admin -> admin page -> upload CSV -> verify 10 teams | Teams populated with correct player counts |
+| 1 | Admin uploads roster | Login as sim-admin (email + password) -> admin page -> upload CSV -> verify 10 teams | Teams populated with correct player counts |
 | 2 | User views squad | Login as sim-user-1 -> squad page -> verify 15 players | Player names, roles, images, IPL team badges visible |
 | 3 | User sets lineup | Pick XI (11) + bench (4) -> assign captain & VC -> set bench priorities -> submit | Pitch-style layout, captain badge shows 2x, bench priorities sequential |
 | 4 | User edits lineup | Load existing lineup -> swap player -> change captain -> save -> refresh | Changes persisted correctly after reload |
@@ -67,9 +67,13 @@ Browser-based E2E tests running at 393px viewport (mobile-first per PRD). Tests 
 | 8 | User views standings | Navigate to standings page -> use GW selector | Full season table with GW selector tabs working |
 | 9 | User views player stats | Players page -> click a player | Batting/bowling/fielding stat breakdown, role-specific tables |
 | 10 | User views another manager's lineup | Tap a manager on leaderboard -> view their lineup | Read-only pitch view, correct XI/bench/captain shown |
-| 11 | User joins league with invite code | Login as new user with invite code | Successful join, league visible on dashboard |
-| 12 | Admin switches league | Login as sim-admin -> admin/settings page -> create a second league -> switch active league -> verify dashboard shows new league | League switcher shows both leagues, active league highlighted, dashboard data updates |
-| 13 | League switch persists | After switching league, navigate to lineup/leaderboard/standings -> verify all pages show data from the switched league | All pages respect activeLeagueId from DB |
+| 11 | New user signs up | Go to login -> enter email + invite code + password -> submit | Account created, league visible on dashboard |
+| 12 | Returning user logs in | Go to login -> enter email + password (no invite code) -> submit | Logged in, sees last active league |
+| 13 | User joins second league from admin page | Login -> admin page -> "Join a League" card -> enter invite code -> join | Joined league, auto-switched to new league, league switcher shows both |
+| 14 | Admin switches league | Login as sim-admin -> admin page -> league switcher -> tap different league -> verify dashboard updates | League switcher shows both leagues, active league highlighted, dashboard data updates |
+| 15 | League switch persists | After switching league, navigate to lineup/leaderboard/standings -> verify all pages show data from the switched league | All pages respect activeLeagueId from DB |
+| 16 | Invalid password rejected | Enter correct email + wrong password -> submit | Error message "Invalid password" shown |
+| 17 | Password too short rejected | Enter email + invite code + 3-char password -> submit | Error message "Password must be at least 6 characters" |
 
 ### PRD Design Assertions
 
@@ -88,20 +92,28 @@ Browser-based E2E tests running at 393px viewport (mobile-first per PRD). Tests 
 | League selector in admin/settings | Switcher visible when user has multiple leagues, active league highlighted |
 | Active league persists across pages | All pages (dashboard, lineup, leaderboard, standings) show data from `activeLeagueId` stored in DB |
 | Default league fallback | Single-league users see their league without needing to select (null activeLeagueId = first league) |
+| Login requires password | Password field visible, required on all login modes |
+| Join league from admin page | "Join a League" card with invite code input visible on admin page |
+| Dashboard league switcher | "Your Leagues" card visible on dashboard when user has 2+ leagues |
 
 ### Screenshot Baselines
 
-Playwright's `toHaveScreenshot()` captures baseline screenshots on first run, flags pixel-level regressions on subsequent runs. Covers: login page, dashboard, lineup builder, leaderboard, standings, player detail, view lineup.
+Playwright's `toHaveScreenshot()` captures baseline screenshots on first run, flags pixel-level regressions on subsequent runs. Covers: login page (with password field), dashboard (with league switcher), admin page (with join league card), lineup builder, leaderboard, standings, player detail, view lineup.
 
 ### Additional PRD Flow Tests
 
 | Test | Assertion |
 |---|---|
 | Season start gate | Admin cannot start season until all squads have min 12 players — attempt with incomplete roster, expect rejection |
-| Invite code join | `POST /api/leagues/[id]/join` with valid invite code succeeds, invalid code rejected |
-| Multi-league switching | Admin with 2 leagues can switch active league via settings, all pages reflect the switch |
+| Invite code join (login) | New user signs up with email + invite code + password, account created and league joined |
+| Invite code join (admin page) | Logged-in user joins second league via `POST /api/leagues/join` with invite code |
+| Returning user login | Existing user logs in with email + password only (no invite code), sees last active league |
+| Invalid password rejected | Wrong password returns 401 "Invalid password" |
+| Password too short rejected | Password < 6 chars returns 400 |
+| Multi-league switching | User with 2 leagues can switch active league via dashboard or admin page, all pages reflect the switch |
 | Default league fallback | User with no `activeLeagueId` set sees their first league (backwards compatible) |
 | Auto-set on first join | New user joining via invite code gets `activeLeagueId` auto-set to that league |
+| Join switches active league | Using invite code for League B while in League A switches activeLeagueId to League B |
 
 ---
 
@@ -302,7 +314,7 @@ Each run produces two files in `tests/simulation/results/`:
   "duration": "38m 42s",
   "targetUrl": "http://localhost:3000",
   "layers": {
-    "layer0_ux": { "status": "passed", "tests": 13, "passed": 13, "failed": 0, "screenshots": 20 },
+    "layer0_ux": { "status": "passed", "tests": 17, "passed": 17, "failed": 0, "screenshots": 24 },
     "layer1_roster": { "status": "passed", "tests": 6, "passed": 6, "failed": 0 },
     "layer2_lineups": { "status": "passed", "tests": 22, "passed": 22, "failed": 0 },
     "layer3_scoring": { "status": "passed", "matches": 74, "scored": 71, "abandoned": 3, "golden_players_verified": 9 },
@@ -369,11 +381,11 @@ Deletes all simulation data in FK order:
 | Layer | Estimated Time | What It Validates |
 |---|---|---|
 | Setup | ~2 min | Data seeding, fixture import |
-| Layer 0 | ~8 min | UX flows (13 scenarios), PRD compliance, visual regression, league switching |
+| Layer 0 | ~10 min | UX flows (17 scenarios), PRD compliance, visual regression, auth, league switching |
 | Layer 1 | ~2 min | Roster upload, squad integrity, season start gate |
 | Layer 2 | ~4 min | Lineup rules, carry-forward, lock enforcement, chip constraints |
 | Layer 3 | ~15 min | Scoring accuracy for all 74 matches + golden player verification |
 | Layer 4 | ~10 min | Aggregation, bench subs, multipliers, chip stacking, leaderboard |
 | Layer 5 | ~7 min | Edge cases (13 scenarios) |
 | Teardown | ~1 min | Cleanup |
-| **Total** | **~50 min** (plan for ~55 min worst case with API latency) | |
+| **Total** | **~52 min** (plan for ~60 min worst case with API latency) | |
