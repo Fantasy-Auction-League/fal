@@ -14,3 +14,5 @@ tests/simulation/results/
 tests/simulation/playwright/.auth/
 test-results/
 .vercel
+.env.production.local
+.env.vercel.local
