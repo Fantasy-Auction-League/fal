@@ -244,7 +244,7 @@ export default function StandingsPage() {
             marginBottom: 4,
           }}>
             <div style={{ width: 22 }}>#</div>
-            <div style={{ flex: 1 }}>Manager</div>
+            <div style={{ flex: 1 }}>Team</div>
             <div style={{ width: 24, textAlign: 'center' }}>{'\u0394'}</div>
             <div style={{ width: 36, textAlign: 'right' }}>GW</div>
             <div style={{ width: 46, textAlign: 'right' }}>Total</div>

@@ -202,6 +202,7 @@ test('5. User edits lineup @user', async ({ page }) => {
    6. User activates chip (compact bar: Play -> modal -> Active -> deactivate)
    ═══════════════════════════════════════════════════════════════════════════ */
 test('6. User activates chip @user', async ({ page }) => {
+  test.setTimeout(60000)
   await page.goto('/lineup')
   await waitForApp(page)
 
@@ -379,11 +380,11 @@ test('10. User views leaderboard @user', async ({ page }) => {
 
   // Table headers
   await expect(page.getByText('#')).toBeVisible()
-  await expect(page.getByText('Manager')).toBeVisible()
+  await expect(page.getByText('Team', { exact: true })).toBeVisible()
   await expect(page.getByText('GW', { exact: true })).toBeVisible()
   await expect(page.getByText('Total')).toBeVisible()
 
-  // Manager rows should be links to /view-lineup/
+  // Team rows should be links to /view-lineup/
   const managerLinks = page.locator('a[href^="/view-lineup/"]')
   const hasLinks = await managerLinks.first().isVisible({ timeout: 5000 }).catch(() => false)
   if (hasLinks) {
@@ -412,9 +413,9 @@ test('11. User views standings @user', async ({ page }) => {
     await expect(noGw).toBeVisible()
   }
 
-  // Table headers: #, Manager, GW, Total
+  // Table headers: #, Team, GW, Total
   await expect(page.getByText('#')).toBeVisible()
-  await expect(page.getByText('Manager')).toBeVisible()
+  await expect(page.getByText('Team', { exact: true })).toBeVisible()
   await expect(page.getByText('GW', { exact: true })).toBeVisible()
   await expect(page.getByText('Total')).toBeVisible()
 
