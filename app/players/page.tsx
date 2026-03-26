@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { AppFrame } from '@/app/components/AppFrame'
 
 /* ─── IPL teams ─── */
@@ -207,19 +206,19 @@ export default function PlayersPage() {
   const [activeGwTab, setActiveGwTab] = useState('Season')
   const [activeSeasonTab, setActiveSeasonTab] = useState<number | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const searchParams = useSearchParams()
   const autoOpenRef = useRef(false)
 
   /* Auto-open player profile if ?playerId=xxx in URL */
   useEffect(() => {
-    const pid = searchParams.get('playerId')
-    if (!pid || autoOpenRef.current) return
+    if (autoOpenRef.current) return
+    const params = new URLSearchParams(window.location.search)
+    const pid = params.get('playerId')
+    if (!pid) return
     autoOpenRef.current = true
-    // Open directly by ID — create a minimal player object for the sheet
     const stub: Player = { id: pid, fullname: '', role: '', iplTeamCode: null, iplTeamName: null, imageUrl: null, seasonPoints: 0, matchesPlayed: 0 }
     openPlayerSheet(stub)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+  }, [])
 
   /* Open / close player detail sheet */
   const openPlayerSheet = async (player: Player) => {
