@@ -570,24 +570,36 @@ export default function LineupPage() {
 
   const performSwap = (sourceId: string, targetId: string) => {
     if (!swapSelection) return
-    if (swapSelection.direction === 'toBench') {
-      // source is XI player, target is bench player
-      const xiPlayer = xi.find(p => p.id === sourceId)
-      const benchPlayer = bench.find(p => p.id === targetId)
-      if (!xiPlayer || !benchPlayer) return
+    const sourceInXi = xi.some(p => p.id === sourceId)
+    const targetInXi = xi.some(p => p.id === targetId)
+    const sourceInBench = bench.some(p => p.id === sourceId)
+    const targetInBench = bench.some(p => p.id === targetId)
+
+    if (sourceInXi && targetInBench) {
+      // XI player swapping with bench player
+      const xiPlayer = xi.find(p => p.id === sourceId)!
+      const benchPlayer = bench.find(p => p.id === targetId)!
       setXi(prev => prev.map(p => p.id === sourceId ? benchPlayer : p))
       setBench(prev => prev.map(p => p.id === targetId ? xiPlayer : p))
       if (captainId === sourceId) setCaptainId(benchPlayer.id)
       if (vcId === sourceId) setVcId(benchPlayer.id)
-    } else {
-      // source is bench player, target is XI player
-      const benchPlayer = bench.find(p => p.id === sourceId)
-      const xiPlayer = xi.find(p => p.id === targetId)
-      if (!benchPlayer || !xiPlayer) return
+    } else if (sourceInBench && targetInXi) {
+      // Bench player swapping with XI player
+      const benchPlayer = bench.find(p => p.id === sourceId)!
+      const xiPlayer = xi.find(p => p.id === targetId)!
       setXi(prev => prev.map(p => p.id === targetId ? benchPlayer : p))
       setBench(prev => prev.map(p => p.id === sourceId ? xiPlayer : p))
       if (captainId === targetId) setCaptainId(benchPlayer.id)
       if (vcId === targetId) setVcId(benchPlayer.id)
+    } else if (sourceInBench && targetInBench) {
+      // Bench-to-bench reorder
+      const srcIdx = bench.findIndex(p => p.id === sourceId)
+      const tgtIdx = bench.findIndex(p => p.id === targetId)
+      if (srcIdx !== -1 && tgtIdx !== -1) {
+        const newBench = [...bench]
+        ;[newBench[srcIdx], newBench[tgtIdx]] = [newBench[tgtIdx], newBench[srcIdx]]
+        setBench(newBench)
+      }
     }
     setDirty(true)
     setSwapSelection(null)
@@ -1618,7 +1630,12 @@ export default function LineupPage() {
 
       {/* ── Swap Selection Bottom Sheet ── */}
       {swapSelection && (() => {
-        const candidates = swapSelection.direction === 'toBench' ? bench : xi
+        const sourcePlayer = [...xi, ...bench].find(p => p.id === swapSelection.sourceId)
+        const sourceIsXi = xi.some(p => p.id === swapSelection.sourceId)
+        const sourceIsBench = bench.some(p => p.id === swapSelection.sourceId)
+        // XI player: can only swap with bench. Bench player: can swap with any (XI or other bench).
+        const xiCandidates = sourceIsXi ? [] : xi
+        const benchCandidates = bench.filter(p => p.id !== swapSelection.sourceId)
         return (
           <>
             <div
@@ -1636,53 +1653,146 @@ export default function LineupPage() {
               width: '100%', maxWidth: 480,
               background: '#fff', borderRadius: '20px 20px 0 0',
               zIndex: 210, paddingBottom: 36,
-              maxHeight: '60vh', display: 'flex', flexDirection: 'column',
+              maxHeight: '70vh', display: 'flex', flexDirection: 'column',
             }}>
               {/* Handle */}
               <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 8px' }} />
-              {/* Title */}
+              {/* Header with source player */}
               <div style={{
-                fontSize: 15, fontWeight: 800, color: '#1a1a2e',
                 padding: '4px 20px 12px',
                 borderBottom: '1px solid #f2f3f8',
               }}>
-                Select player to swap with
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#1a1a2e' }}>
+                  Substitute {sourcePlayer?.fullname || 'Player'}
+                </div>
+                <div style={{ fontSize: 11, color: '#888', fontWeight: 500, marginTop: 2 }}>
+                  {sourceIsXi ? 'Select a bench player to swap into XI' : 'Select any player to swap with'}
+                </div>
               </div>
-              {/* Scrollable list */}
+              {/* Scrollable list with sections */}
               <div style={{ overflowY: 'auto', flex: 1 }}>
-                {candidates.map((p) => {
-                  const role = normalizeRole(p.role)
-                  const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => performSwap(swapSelection.sourceId, p.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
-                        cursor: 'pointer', border: 'none', background: 'transparent',
-                        width: '100%', fontFamily: 'inherit',
-                        borderTop: '1px solid #f2f3f8',
-                        transition: 'background 0.12s',
-                      }}
-                    >
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 800,
-                        background: roleStyle.bg, color: roleStyle.color,
-                      }}>
-                        {role}
-                      </div>
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontWeight: 700 }}>{p.fullname}</div>
-                        <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                          {p.iplTeamCode || 'IPL'} &middot; {role}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
+                {/* Playing XI section */}
+                {xiCandidates.length > 0 && (
+                  <>
+                    <div style={{
+                      fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
+                      letterSpacing: 0.8, padding: '10px 20px 4px',
+                      background: '#f8f9fc',
+                    }}>
+                      Playing XI
+                    </div>
+                    {xiCandidates.map((p) => {
+                      const role = normalizeRole(p.role)
+                      const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
+                      const isCap = captainId === p.id
+                      const isVCPlayer = vcId === p.id
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => performSwap(swapSelection.sourceId, p.id)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                            cursor: 'pointer', border: 'none', background: '#fff',
+                            width: '100%', fontFamily: 'inherit',
+                            borderTop: '1px solid #f2f3f8',
+                            transition: 'background 0.12s',
+                          }}
+                        >
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 800,
+                            background: roleStyle.bg, color: roleStyle.color,
+                          }}>
+                            {role}
+                          </div>
+                          <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5,
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>
+                              {p.fullname}
+                              {isCap && <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: '#F9CD05', color: '#1a1a1a', flexShrink: 0 }}>C</span>}
+                              {isVCPlayer && <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: '#C0C7D0', color: '#1a1a1a', flexShrink: 0 }}>VC</span>}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                              {p.iplTeamCode || 'IPL'} &middot; {role}
+                            </div>
+                          </div>
+                          <div style={{
+                            fontSize: 10, fontWeight: 600, color: '#0d9e5f',
+                            flexShrink: 0,
+                          }}>
+                            Swap
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </>
+                )}
+                {/* Bench section */}
+                {benchCandidates.length > 0 && (
+                  <>
+                    <div style={{
+                      fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
+                      letterSpacing: 0.8, padding: '10px 20px 4px',
+                      background: '#f8f9fc',
+                    }}>
+                      Bench {sourceIsBench ? '(reorder)' : ''}
+                    </div>
+                    {benchCandidates.map((p, idx) => {
+                      const role = normalizeRole(p.role)
+                      const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => performSwap(swapSelection.sourceId, p.id)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                            cursor: 'pointer', border: 'none',
+                            background: sourceIsXi ? '#fff' : '#fafbfd',
+                            width: '100%', fontFamily: 'inherit',
+                            borderTop: '1px solid #f2f3f8',
+                            transition: 'background 0.12s',
+                          }}
+                        >
+                          {/* Priority badge for bench */}
+                          <div style={{
+                            width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                            background: '#e8eaf0', color: '#888',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 9, fontWeight: 800,
+                          }}>
+                            {idx + 1}
+                          </div>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 800,
+                            background: roleStyle.bg, color: roleStyle.color,
+                          }}>
+                            {role}
+                          </div>
+                          <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.fullname}</div>
+                            <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                              {p.iplTeamCode || 'IPL'} &middot; {role}
+                            </div>
+                          </div>
+                          <div style={{
+                            fontSize: 10, fontWeight: 600,
+                            color: sourceIsBench ? '#888' : '#0d9e5f',
+                            flexShrink: 0,
+                          }}>
+                            {sourceIsBench ? 'Reorder' : 'Swap'}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </>
+                )}
               </div>
               {/* Cancel */}
               <button
