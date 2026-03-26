@@ -739,151 +739,13 @@ export default function PlayersPage() {
                   </div>
                 )}
 
-                {/* No local performances — show season-tabbed IPL stats or empty state */}
+                {/* No local performances — show batting/bowling tables */}
                 {!detailLoading && detail && detail.performances.length === 0 && activeGwTab === 'Season' && (() => {
                   const apiSeasons = detail.seasonStats?.seasons ?? []
                   const cs = detail.careerStats
-                  const hasBatting = cs?.batting && cs.batting.matches > 0
-                  const hasBowling = cs?.bowling && cs.bowling.wickets > 0
+                  const hasBatting = (cs?.batting && cs.batting.matches > 0) || apiSeasons.some(s => s.batting && s.batting.matches > 0)
+                  const hasBowling = (cs?.bowling && cs.bowling.wickets > 0) || apiSeasons.some(s => s.bowling && s.bowling.wickets > 0)
 
-                  // Add T20 Career as last tab if career stats exist
-                  const t20Tab = (cs?.batting && cs.batting.matches > 0) ? {
-                    seasonId: -1,
-                    seasonName: 'T20 Career',
-                    batting: cs.batting,
-                    bowling: cs.bowling,
-                  } : null
-                  const seasons = t20Tab ? [...apiSeasons, t20Tab as typeof apiSeasons[0]] : apiSeasons
-
-                  // If we have season data, show season tabs
-                  if (seasons.length > 0) {
-                    const currentTab = activeSeasonTab ?? seasons[0].seasonId
-                    const activeSeason = seasons.find(s => s.seasonId === currentTab) ?? seasons[0]
-                    const bat = activeSeason.batting
-                    const bowl = activeSeason.bowling
-
-                    return (
-                      <>
-                        {/* Season tabs */}
-                        <div style={{ display: 'flex', gap: 0, padding: '4px 16px 0', borderBottom: '1px solid #f0f0f4' }}>
-                          {seasons.map((s) => (
-                            <div
-                              key={s.seasonId}
-                              onClick={() => setActiveSeasonTab(s.seasonId)}
-                              style={{
-                                padding: '7px 12px', fontSize: 11,
-                                fontWeight: (activeSeasonTab ?? seasons[0].seasonId) === s.seasonId ? 700 : 600,
-                                cursor: 'pointer',
-                                color: (activeSeasonTab ?? seasons[0].seasonId) === s.seasonId ? '#004BA0' : '#666',
-                                borderBottom: `2px solid ${(activeSeasonTab ?? seasons[0].seasonId) === s.seasonId ? '#004BA0' : 'transparent'}`,
-                              }}
-                            >
-                              {s.seasonName.replace('IPL ', '')}
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Season batting */}
-                        {bat && bat.matches > 0 && (
-                          <div style={{ padding: '8px 16px' }}>
-                            <div style={{
-                              fontSize: 9, fontWeight: 700, color: '#aaa',
-                              textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6,
-                            }}>
-                              Batting
-                            </div>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              {[
-                                { val: String(bat.runs), label: 'Runs' },
-                                { val: String(bat.matches), label: 'Matches' },
-                                { val: bat.strikeRate > 0 ? bat.strikeRate.toFixed(1) : '—', label: 'SR' },
-                                { val: bat.average > 0 ? bat.average.toFixed(1) : '—', label: 'Avg' },
-                                { val: bat.highestScore != null ? String(bat.highestScore) : '—', label: 'HS' },
-                              ].map((s, i) => (
-                                <div key={i} style={{
-                                  flex: 1, textAlign: 'center', padding: '6px 3px',
-                                  background: '#f7f8fb', borderRadius: 8,
-                                }}>
-                                  <div style={{ fontSize: 14, fontWeight: 800, color: '#222', fontVariantNumeric: 'tabular-nums' }}>
-                                    {s.val}
-                                  </div>
-                                  <div style={{ fontSize: 8, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                                    {s.label}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            {/* Additional batting details */}
-                            <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                              {[
-                                { val: String(bat.fours), label: '4s' },
-                                { val: String(bat.sixes), label: '6s' },
-                                { val: String(bat.innings), label: 'Inn' },
-                                { val: String(bat.balls), label: 'Balls' },
-                              ].map((s, i) => (
-                                <div key={i} style={{
-                                  flex: 1, textAlign: 'center', padding: '6px 3px',
-                                  background: '#f7f8fb', borderRadius: 8,
-                                }}>
-                                  <div style={{ fontSize: 14, fontWeight: 800, color: '#222', fontVariantNumeric: 'tabular-nums' }}>
-                                    {s.val}
-                                  </div>
-                                  <div style={{ fontSize: 8, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                                    {s.label}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Season bowling */}
-                        {bowl && bowl.wickets > 0 && (
-                          <div style={{ padding: '8px 16px', borderTop: '1px solid #f5f5f8' }}>
-                            <div style={{
-                              fontSize: 9, fontWeight: 700, color: '#aaa',
-                              textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6,
-                            }}>
-                              Bowling
-                            </div>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              {[
-                                { val: String(bowl.wickets), label: 'Wkts' },
-                                { val: bowl.overs > 0 ? bowl.overs.toFixed(1) : '—', label: 'Overs' },
-                                { val: bowl.economyRate > 0 ? bowl.economyRate.toFixed(1) : '—', label: 'Econ' },
-                                { val: bowl.average > 0 ? bowl.average.toFixed(1) : '—', label: 'Avg' },
-                                { val: String(bowl.matches), label: 'Matches' },
-                              ].map((s, i) => (
-                                <div key={i} style={{
-                                  flex: 1, textAlign: 'center', padding: '6px 3px',
-                                  background: '#f7f8fb', borderRadius: 8,
-                                }}>
-                                  <div style={{ fontSize: 14, fontWeight: 800, color: '#222', fontVariantNumeric: 'tabular-nums' }}>
-                                    {s.val}
-                                  </div>
-                                  <div style={{ fontSize: 8, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                                    {s.label}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Note about data source */}
-                        {detail.performances.length === 0 && (
-                          <div style={{
-                            padding: '12px 16px 4px', textAlign: 'center',
-                            fontSize: 9, color: '#bbb', fontWeight: 500,
-                          }}>
-                            FAL season stats will appear once matches are scored
-                          </div>
-                        )}
-                      </>
-                    )
-                  }
-
-                  // Fallback: no season data but has career stats
                   if (!hasBatting && !hasBowling) {
                     return (
                       <div style={{ textAlign: 'center', padding: '32px 16px', color: '#aaa', fontSize: 12, fontWeight: 500 }}>
@@ -892,111 +754,162 @@ export default function PlayersPage() {
                     )
                   }
 
+                  // Build batting rows: T20 Career first, then seasons descending
+                  type BatRow = { label: string; isCareer: boolean; isMostRecent: boolean; mat: number; runs: number; avg: string; sr: string; fiftyHundred: string; foursSixes: string }
+                  const batRows: BatRow[] = []
+                  if (cs?.batting && cs.batting.matches > 0) {
+                    const b = cs.batting
+                    batRows.push({
+                      label: 'T20 Career', isCareer: true, isMostRecent: false,
+                      mat: b.matches, runs: b.runs,
+                      avg: b.average > 0 ? b.average.toFixed(1) : '—',
+                      sr: b.strikeRate > 0 ? b.strikeRate.toFixed(1) : '—',
+                      fiftyHundred: `${b.fifties}/${b.hundreds}`,
+                      foursSixes: `${b.fours}/${b.sixes}`,
+                    })
+                  }
+                  const sortedBatSeasons = [...apiSeasons].filter(s => s.batting && s.batting.matches > 0).sort((a, b) => b.seasonId - a.seasonId)
+                  sortedBatSeasons.forEach((s, idx) => {
+                    const b = s.batting!
+                    batRows.push({
+                      label: s.seasonName.replace('IPL ', ''), isCareer: false, isMostRecent: idx === 0,
+                      mat: b.matches, runs: b.runs,
+                      avg: b.average > 0 ? b.average.toFixed(1) : '—',
+                      sr: b.strikeRate > 0 ? b.strikeRate.toFixed(1) : '—',
+                      fiftyHundred: '—',
+                      foursSixes: `${b.fours}/${b.sixes}`,
+                    })
+                  })
+
+                  // Build bowling rows: T20 Career first, then seasons descending
+                  type BowlRow = { label: string; isCareer: boolean; isMostRecent: boolean; mat: number; wkts: number; avg: string; econ: string; sr: string; fourFive: string }
+                  const bowlRows: BowlRow[] = []
+                  if (cs?.bowling && cs.bowling.wickets > 0) {
+                    const bw = cs.bowling
+                    const balls = Math.floor(bw.overs) * 6 + Math.round((bw.overs % 1) * 10)
+                    const bowlSR = bw.wickets > 0 ? (balls / bw.wickets).toFixed(1) : '—'
+                    bowlRows.push({
+                      label: 'T20 Career', isCareer: true, isMostRecent: false,
+                      mat: bw.matches, wkts: bw.wickets,
+                      avg: bw.average > 0 ? bw.average.toFixed(1) : '—',
+                      econ: bw.economyRate > 0 ? bw.economyRate.toFixed(1) : '—',
+                      sr: bowlSR,
+                      fourFive: `${bw.fourWickets}/${bw.fiveWickets}`,
+                    })
+                  }
+                  const sortedBowlSeasons = [...apiSeasons].filter(s => s.bowling && s.bowling.wickets > 0).sort((a, b) => b.seasonId - a.seasonId)
+                  sortedBowlSeasons.forEach((s, idx) => {
+                    const bw = s.bowling!
+                    const balls = Math.floor(bw.overs) * 6 + Math.round((bw.overs % 1) * 10)
+                    const bowlSR = bw.wickets > 0 ? (balls / bw.wickets).toFixed(1) : '—'
+                    bowlRows.push({
+                      label: s.seasonName.replace('IPL ', ''), isCareer: false, isMostRecent: idx === 0,
+                      mat: bw.matches, wkts: bw.wickets,
+                      avg: bw.average > 0 ? bw.average.toFixed(1) : '—',
+                      econ: bw.economyRate > 0 ? bw.economyRate.toFixed(1) : '—',
+                      sr: bowlSR,
+                      fourFive: '—',
+                    })
+                  })
+
+                  const thStyle: React.CSSProperties = {
+                    padding: '6px 4px', fontSize: 9, fontWeight: 600, color: '#888',
+                    textTransform: 'uppercase', textAlign: 'right', whiteSpace: 'nowrap',
+                  }
+                  const tdStyle: React.CSSProperties = {
+                    padding: '6px 4px', fontSize: 11, fontVariantNumeric: 'tabular-nums',
+                    color: '#1a1a2e', textAlign: 'right', whiteSpace: 'nowrap',
+                  }
+
                   return (
                     <>
-                      {/* Source label */}
-                      <div style={{
-                        padding: '6px 16px 0', fontSize: 9, fontWeight: 600,
-                        color: '#0d9e5f', letterSpacing: 0.3,
-                      }}>
-                        {cs?.isIplSpecific ? 'IPL Career Stats' : 'Career Stats (T20)'}
-                      </div>
-
-                      {/* Career batting */}
-                      {hasBatting && cs?.batting && (
-                        <div style={{ padding: '8px 16px' }}>
-                          <div style={{
-                            fontSize: 9, fontWeight: 700, color: '#aaa',
-                            textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6,
-                          }}>
+                      {/* Batting table */}
+                      {batRows.length > 0 && (
+                        <div style={{ padding: '10px 16px 4px' }}>
+                          <div style={{ fontSize: 8, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
                             Batting
                           </div>
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            {[
-                              { val: String(cs.batting.runs), label: 'Runs' },
-                              { val: String(cs.batting.matches), label: 'Matches' },
-                              { val: cs.batting.strikeRate > 0 ? cs.batting.strikeRate.toFixed(1) : '—', label: 'SR' },
-                              { val: cs.batting.average > 0 ? cs.batting.average.toFixed(1) : '—', label: 'Avg' },
-                              { val: cs.batting.highestScore != null ? String(cs.batting.highestScore) : '—', label: 'HS' },
-                            ].map((s, i) => (
-                              <div key={i} style={{
-                                flex: 1, textAlign: 'center', padding: '6px 3px',
-                                background: '#f7f8fb', borderRadius: 8,
-                              }}>
-                                <div style={{ fontSize: 14, fontWeight: 800, color: '#222', fontVariantNumeric: 'tabular-nums' }}>
-                                  {s.val}
-                                </div>
-                                <div style={{ fontSize: 8, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                                  {s.label}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          {/* Additional batting details */}
-                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                            {[
-                              { val: String(cs.batting.fours), label: '4s' },
-                              { val: String(cs.batting.sixes), label: '6s' },
-                              { val: String(cs.batting.fifties), label: '50s' },
-                              { val: String(cs.batting.hundreds), label: '100s' },
-                              { val: String(cs.batting.innings), label: 'Inn' },
-                            ].map((s, i) => (
-                              <div key={i} style={{
-                                flex: 1, textAlign: 'center', padding: '6px 3px',
-                                background: '#f7f8fb', borderRadius: 8,
-                              }}>
-                                <div style={{ fontSize: 14, fontWeight: 800, color: '#222', fontVariantNumeric: 'tabular-nums' }}>
-                                  {s.val}
-                                </div>
-                                <div style={{ fontSize: 8, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                                  {s.label}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, border: '1px solid #eef0f5', borderRadius: 10, overflow: 'hidden' }}>
+                            <thead>
+                              <tr style={{ background: '#fafbfd' }}>
+                                <th style={{ ...thStyle, textAlign: 'left', paddingLeft: 8 }}></th>
+                                <th style={thStyle}>Mat</th>
+                                <th style={thStyle}>Runs</th>
+                                <th style={thStyle}>Avg</th>
+                                <th style={thStyle}>SR</th>
+                                <th style={thStyle}>50/100</th>
+                                <th style={thStyle}>4s/6s</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {batRows.map((r, i) => (
+                                <tr key={i} style={{
+                                  background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
+                                }}>
+                                  <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+                                    {r.label}
+                                  </td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.runs}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fiftyHundred}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.foursSixes}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       )}
 
-                      {/* Career bowling */}
-                      {hasBowling && cs?.bowling && (
-                        <div style={{ padding: '8px 16px', borderTop: '1px solid #f5f5f8' }}>
-                          <div style={{
-                            fontSize: 9, fontWeight: 700, color: '#aaa',
-                            textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6,
-                          }}>
+                      {/* Bowling table */}
+                      {bowlRows.length > 0 && (
+                        <div style={{ padding: '10px 16px 4px' }}>
+                          <div style={{ fontSize: 8, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
                             Bowling
                           </div>
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            {[
-                              { val: String(cs.bowling.wickets), label: 'Wkts' },
-                              { val: cs.bowling.overs > 0 ? cs.bowling.overs.toFixed(1) : '—', label: 'Overs' },
-                              { val: cs.bowling.economyRate > 0 ? cs.bowling.economyRate.toFixed(1) : '—', label: 'Econ' },
-                              { val: cs.bowling.average > 0 ? cs.bowling.average.toFixed(1) : '—', label: 'Avg' },
-                              { val: cs.bowling.bestInnings ?? '—', label: 'Best' },
-                            ].map((s, i) => (
-                              <div key={i} style={{
-                                flex: 1, textAlign: 'center', padding: '6px 3px',
-                                background: '#f7f8fb', borderRadius: 8,
-                              }}>
-                                <div style={{ fontSize: 14, fontWeight: 800, color: '#222', fontVariantNumeric: 'tabular-nums' }}>
-                                  {s.val}
-                                </div>
-                                <div style={{ fontSize: 8, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                                  {s.label}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, border: '1px solid #eef0f5', borderRadius: 10, overflow: 'hidden' }}>
+                            <thead>
+                              <tr style={{ background: '#fafbfd' }}>
+                                <th style={{ ...thStyle, textAlign: 'left', paddingLeft: 8 }}></th>
+                                <th style={thStyle}>Mat</th>
+                                <th style={thStyle}>Wkts</th>
+                                <th style={thStyle}>Avg</th>
+                                <th style={thStyle}>Econ</th>
+                                <th style={thStyle}>SR</th>
+                                <th style={thStyle}>4W/5W</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bowlRows.map((r, i) => (
+                                <tr key={i} style={{
+                                  background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
+                                }}>
+                                  <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+                                    {r.label}
+                                  </td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.wkts}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.econ}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fourFive}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       )}
 
                       {/* Note about data source */}
-                      <div style={{
-                        padding: '12px 16px 4px', textAlign: 'center',
-                        fontSize: 9, color: '#bbb', fontWeight: 500,
-                      }}>
-                        FAL season stats will appear once matches are scored
-                      </div>
+                      {detail.performances.length === 0 && (
+                        <div style={{
+                          padding: '12px 16px 4px', textAlign: 'center',
+                          fontSize: 9, color: '#bbb', fontWeight: 500,
+                        }}>
+                          FAL season stats will appear once matches are scored
+                        </div>
+                      )}
                     </>
                   )
                 })()}
