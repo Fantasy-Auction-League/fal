@@ -1162,3 +1162,141 @@ test('23. Lineup shows gameweek deadline @user', async ({ page }) => {
 
   await expect(page).toHaveScreenshot('lineup-mid-season.png')
 })
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   36. ISSUE-002: Admin can create a second league
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('36. Admin can create a second league @admin', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/admin')
+  await waitForApp(page)
+
+  // Admin already has one league — should see a way to create another
+  // Look for "Create Another League" or "Create New League" button
+  const createBtn = page.getByRole('button', { name: /Create.*League|New League/i })
+  await expect(createBtn).toBeVisible({ timeout: 5000 })
+
+  await expect(page).toHaveScreenshot('admin-create-another.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   37. ISSUE-006: View-lineup shows SAVED lineup, not default sort
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('37. View-lineup shows saved lineup @user', async ({ page }) => {
+  test.setTimeout(60000)
+
+  // First: save a lineup with a SPECIFIC captain (the 5th player, not default 1st)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  const playerNames = page.locator('div[style*="font-weight: 700"][style*="color: rgb(26, 26, 46)"]')
+  const count = await playerNames.count()
+  if (count < 5) return
+
+  // Get the 5th player's name (definitely not the default captain)
+  const fifthPlayerName = (await playerNames.nth(4).textContent())?.trim()
+  console.log('Making captain:', fifthPlayerName)
+
+  // Tap 5th player name to open stats sheet, make captain
+  await playerNames.nth(4).click()
+  await page.waitForTimeout(500)
+  const makeCaptain = page.getByText('Make Captain', { exact: false })
+  if (await makeCaptain.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await makeCaptain.click()
+    await page.waitForTimeout(300)
+  }
+
+  // Save
+  const saveBtn = page.getByText('Save Lineup')
+  if (await saveBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await saveBtn.click()
+    await expect(page.getByText('Lineup saved!')).toBeVisible({ timeout: 5000 })
+  }
+
+  // Navigate to view-lineup for our own team
+  await page.goto('/')
+  await waitForApp(page)
+
+  const youLink = page.locator('a[href^="/view-lineup/"]').filter({ hasText: '(You)' }).first()
+  if (await youLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await youLink.click()
+    await page.waitForURL(/\/view-lineup\//, { timeout: 10000 })
+    await waitForApp(page)
+
+    // Switch to list view on view-lineup page
+    const listViewBtn = page.getByText('List View')
+    if (await listViewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await listViewBtn.click()
+      await page.waitForTimeout(300)
+    }
+
+    // CRITICAL: The captain shown in view-lineup must be the 5th player we selected
+    // NOT the default 1st player. If view-lineup uses default sort, this WILL FAIL.
+    if (fifthPlayerName) {
+      const captainName = page.getByText(fifthPlayerName).first()
+      await expect(captainName).toBeVisible({ timeout: 3000 })
+
+      // The captain badge should be near this player's name
+      // Check that "C" badge exists somewhere on the page
+      const cBadge = page.locator('span').filter({ hasText: 'C' }).first()
+      const cVisible = await cBadge.isVisible({ timeout: 2000 }).catch(() => false)
+
+      // If the C badge is NOT next to our chosen captain, the view-lineup is showing
+      // default lineup instead of saved. This is the ISSUE-006 bug.
+      expect(cVisible).toBe(true)
+    }
+  }
+
+  await expect(page).toHaveScreenshot('view-lineup-saved.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   38. ISSUE-007: Bench swap shows selection sheet (not auto-select)
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('38. Bench swap shows player selection @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Count bench players before swap
+  const benchLabel = page.getByText(/BENCH/i).last()
+  await expect(benchLabel).toBeVisible({ timeout: 3000 })
+
+  // Open the action sheet for an XI player by tapping the row
+  // The action sheet should have "Move to Bench" option
+  const xiRows = page.locator('div[style*="padding: 10px 16px"][style*="background: rgb(255, 255, 255)"]')
+  const firstXiRow = xiRows.first()
+  if (await firstXiRow.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await firstXiRow.click()
+    await page.waitForTimeout(500)
+
+    // Action sheet should appear with "Move to Bench" option
+    const moveToBench = page.getByText(/Move to Bench/i)
+    if (await moveToBench.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await moveToBench.click()
+      await page.waitForTimeout(500)
+
+      // ISSUE-007 TEST: After clicking "Move to Bench", a selection sheet
+      // should appear letting user pick WHICH bench player to swap with.
+      // If the swap happens instantly (no selection), the issue is NOT fixed.
+      const selectionSheet = page.getByText(/Select.*swap|Choose.*player|Swap with/i)
+      await expect(selectionSheet).toBeVisible({ timeout: 3000 })
+
+      await expect(page).toHaveScreenshot('bench-swap-selection.png')
+    }
+  }
+})

@@ -135,6 +135,7 @@ export default function AdminPage() {
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
   const [initialLoad, setInitialLoad] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -235,6 +236,7 @@ export default function AdminPage() {
       else setLeague(data)
       setSuccess('League created!')
       setLeagueName('')
+      setShowCreateForm(false)
     } catch { setError('Network error') }
     finally { setLoading(false) }
   }
@@ -627,7 +629,7 @@ export default function AdminPage() {
         )}
 
         {/* ── Create League (no league) ── */}
-        {!initialLoad && !league && (
+        {!initialLoad && (!league || showCreateForm) && (
           <div style={styles.card}>
             <div style={styles.cardTitle}>Create League</div>
             <input
@@ -707,6 +709,26 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {league && !showCreateForm && (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            style={{
+              width: '100%',
+              padding: '10px 0',
+              borderRadius: 10,
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#f8f9fc',
+              color: '#666',
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+          >
+            + Create New League
+          </button>
         )}
 
         {/* ── Managers Card ── */}

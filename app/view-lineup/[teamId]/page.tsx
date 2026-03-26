@@ -266,9 +266,14 @@ export default function ViewLineupPage() {
         fetch('/api/gameweeks/current'),
       ])
 
+      // Parse current gameweek data once
+      let currentGW: { id: string; number: number } | null = null
       if (gwRes.ok) {
         const gwData = await gwRes.json()
-        if (gwData && !gwData.error) setCurrentGWNumber(gwData.number)
+        if (gwData && !gwData.error) {
+          currentGW = { id: gwData.id, number: gwData.number }
+          setCurrentGWNumber(gwData.number)
+        }
       }
 
       if (squadRes.ok) {
@@ -276,18 +281,88 @@ export default function ViewLineupPage() {
         setSquad(data)
 
         const players = data.players || []
-        const rolePriority: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
-        const sorted = [...players].sort((a, b) => {
-          const ra = rolePriority[normalizeRole(a.role)] ?? 1
-          const rb = rolePriority[normalizeRole(b.role)] ?? 1
-          return ra - rb
-        })
-        const starting = sorted.slice(0, 11)
-        const benchPlayers = sorted.slice(11)
-        setXi(starting)
-        setBench(benchPlayers)
-        if (starting.length > 0) setCaptainId(starting[0].id)
-        if (starting.length > 1) setVcId(starting[1].id)
+        const playerMap = new Map(players.map(p => [p.id, p]))
+        let restored = false
+
+        // Determine which gameweek ID to fetch the lineup for:
+        // 1. Current (UPCOMING/ACTIVE) gameweek
+        // 2. Last COMPLETED gameweek as fallback
+        let lineupGWId: string | null = currentGW?.id ?? null
+        if (!lineupGWId) {
+          // No current GW — try to find last completed gameweek
+          try {
+            const allGwRes = await fetch('/api/gameweeks')
+            if (allGwRes.ok) {
+              const allGws = await allGwRes.json()
+              const completed = (allGws as { id: string; status: string; number: number }[])
+                .filter(gw => gw.status === 'COMPLETED')
+                .sort((a, b) => b.number - a.number)
+              if (completed.length > 0) {
+                lineupGWId = completed[0].id
+                setCurrentGWNumber(completed[0].number)
+              }
+            }
+          } catch {
+            // Fall through to default
+          }
+        }
+
+        if (lineupGWId) {
+          try {
+            const lineupRes = await fetch(`/api/teams/${teamId}/lineups/${lineupGWId}`)
+            if (lineupRes.ok) {
+              const lineupData = await lineupRes.json()
+              const slots = lineupData.lineup?.slots
+              if (Array.isArray(slots) && slots.length > 0) {
+                const xiSlots = slots.filter((s: { slotType: string }) => s.slotType === 'XI')
+                const benchSlots = slots
+                  .filter((s: { slotType: string }) => s.slotType === 'BENCH')
+                  .sort((a: { benchPriority: number | null }, b: { benchPriority: number | null }) =>
+                    (a.benchPriority ?? 99) - (b.benchPriority ?? 99)
+                  )
+
+                const xiPlayers = xiSlots
+                  .map((s: { playerId: string }) => playerMap.get(s.playerId))
+                  .filter(Boolean) as SquadPlayer[]
+                const benchPlayers = benchSlots
+                  .map((s: { playerId: string }) => playerMap.get(s.playerId))
+                  .filter(Boolean) as SquadPlayer[]
+
+                if (xiPlayers.length > 0) {
+                  setXi(xiPlayers)
+                  setBench(benchPlayers)
+
+                  const capSlot = slots.find((s: { role: string | null }) => s.role === 'CAPTAIN')
+                  const vcSlot = slots.find((s: { role: string | null }) => s.role === 'VC')
+                  if (capSlot && playerMap.has(capSlot.playerId)) setCaptainId(capSlot.playerId)
+                  else if (xiPlayers.length > 0) setCaptainId(xiPlayers[0].id)
+                  if (vcSlot && playerMap.has(vcSlot.playerId)) setVcId(vcSlot.playerId)
+                  else if (xiPlayers.length > 1) setVcId(xiPlayers[1].id)
+
+                  restored = true
+                }
+              }
+            }
+          } catch {
+            // Fall through to default lineup generation
+          }
+        }
+
+        // Fallback: build initial lineup from squad if no saved lineup
+        if (!restored) {
+          const rolePriority: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
+          const sorted = [...players].sort((a, b) => {
+            const ra = rolePriority[normalizeRole(a.role)] ?? 1
+            const rb = rolePriority[normalizeRole(b.role)] ?? 1
+            return ra - rb
+          })
+          const starting = sorted.slice(0, 11)
+          const benchPlayers = sorted.slice(11)
+          setXi(starting)
+          setBench(benchPlayers)
+          if (starting.length > 0) setCaptainId(starting[0].id)
+          if (starting.length > 1) setVcId(starting[1].id)
+        }
       }
 
       if (teamRes.ok) {

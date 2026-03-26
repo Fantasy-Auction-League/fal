@@ -173,6 +173,7 @@ export default function LineupPage() {
   const [viewMode, setViewMode] = useState<'pitch' | 'list'>('pitch')
   const [actionSheetPlayer, setActionSheetPlayer] = useState<SquadPlayer | null>(null)
   const [actionSheetIsBench, setActionSheetIsBench] = useState(false)
+  const [swapSelection, setSwapSelection] = useState<{ direction: 'toBench' | 'toXI'; sourceId: string } | null>(null)
   const [playerStatsSheet, setPlayerStatsSheet] = useState<SquadPlayer | null>(null)
   const isLocked = currentGW?.lockTime ? new Date() >= new Date(currentGW.lockTime) : false
 
@@ -478,13 +479,7 @@ export default function LineupPage() {
     if (isLocked) return
     const xiPlayer = xi.find(p => p.id === playerId)
     if (!xiPlayer || bench.length === 0) return
-    // Swap with first bench player
-    const benchPlayer = bench[0]
-    setXi(prev => prev.map(p => p.id === playerId ? benchPlayer : p))
-    setBench(prev => [xiPlayer, ...prev.slice(1)])
-    if (captainId === playerId) setCaptainId(benchPlayer.id)
-    if (vcId === playerId) setVcId(benchPlayer.id)
-    setDirty(true)
+    setSwapSelection({ direction: 'toBench', sourceId: playerId })
     closeActionSheet()
   }
 
@@ -492,14 +487,33 @@ export default function LineupPage() {
     if (isLocked) return
     const benchPlayer = bench.find(p => p.id === playerId)
     if (!benchPlayer || xi.length === 0) return
-    // Swap with last XI player
-    const xiPlayer = xi[xi.length - 1]
-    setXi(prev => [...prev.slice(0, -1), benchPlayer])
-    setBench(prev => prev.map(p => p.id === playerId ? xiPlayer : p))
-    if (captainId === xiPlayer.id) setCaptainId(benchPlayer.id)
-    if (vcId === xiPlayer.id) setVcId(benchPlayer.id)
-    setDirty(true)
+    setSwapSelection({ direction: 'toXI', sourceId: playerId })
     closeActionSheet()
+  }
+
+  const performSwap = (sourceId: string, targetId: string) => {
+    if (!swapSelection) return
+    if (swapSelection.direction === 'toBench') {
+      // source is XI player, target is bench player
+      const xiPlayer = xi.find(p => p.id === sourceId)
+      const benchPlayer = bench.find(p => p.id === targetId)
+      if (!xiPlayer || !benchPlayer) return
+      setXi(prev => prev.map(p => p.id === sourceId ? benchPlayer : p))
+      setBench(prev => prev.map(p => p.id === targetId ? xiPlayer : p))
+      if (captainId === sourceId) setCaptainId(benchPlayer.id)
+      if (vcId === sourceId) setVcId(benchPlayer.id)
+    } else {
+      // source is bench player, target is XI player
+      const benchPlayer = bench.find(p => p.id === sourceId)
+      const xiPlayer = xi.find(p => p.id === targetId)
+      if (!benchPlayer || !xiPlayer) return
+      setXi(prev => prev.map(p => p.id === targetId ? benchPlayer : p))
+      setBench(prev => prev.map(p => p.id === sourceId ? xiPlayer : p))
+      if (captainId === targetId) setCaptainId(benchPlayer.id)
+      if (vcId === targetId) setVcId(benchPlayer.id)
+    }
+    setDirty(true)
+    setSwapSelection(null)
   }
 
   /* ─── Arrange XI into fixed 4-3-4 formation, sorted by role priority ─── */
@@ -1510,6 +1524,92 @@ export default function LineupPage() {
               {/* Cancel */}
               <button
                 onClick={closeActionSheet}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '14px 20px', fontSize: 13, fontWeight: 600, color: '#999',
+                  cursor: 'pointer', border: 'none', background: 'transparent',
+                  width: '100%', fontFamily: 'inherit',
+                  borderTop: '1px solid #f2f3f8', marginTop: 4,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )
+      })()}
+
+      {/* ── Swap Selection Bottom Sheet ── */}
+      {swapSelection && (() => {
+        const candidates = swapSelection.direction === 'toBench' ? bench : xi
+        return (
+          <>
+            <div
+              onClick={() => setSwapSelection(null)}
+              style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.4)',
+                backdropFilter: 'blur(3px)',
+                WebkitBackdropFilter: 'blur(3px)',
+                zIndex: 200,
+              }}
+            />
+            <div style={{
+              position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '100%', maxWidth: 480,
+              background: '#fff', borderRadius: '20px 20px 0 0',
+              zIndex: 210, paddingBottom: 36,
+              maxHeight: '60vh', display: 'flex', flexDirection: 'column',
+            }}>
+              {/* Handle */}
+              <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 8px' }} />
+              {/* Title */}
+              <div style={{
+                fontSize: 15, fontWeight: 800, color: '#1a1a2e',
+                padding: '4px 20px 12px',
+                borderBottom: '1px solid #f2f3f8',
+              }}>
+                Select player to swap with
+              </div>
+              {/* Scrollable list */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {candidates.map((p) => {
+                  const role = normalizeRole(p.role)
+                  const roleStyle = listRoleGradients[role] || listRoleGradients.BAT
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => performSwap(swapSelection.sourceId, p.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#1a1a2e',
+                        cursor: 'pointer', border: 'none', background: 'transparent',
+                        width: '100%', fontFamily: 'inherit',
+                        borderTop: '1px solid #f2f3f8',
+                        transition: 'background 0.12s',
+                      }}
+                    >
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 800,
+                        background: roleStyle.bg, color: roleStyle.color,
+                      }}>
+                        {role}
+                      </div>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontWeight: 700 }}>{p.fullname}</div>
+                        <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
+                          {p.iplTeamCode || 'IPL'} &middot; {role}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Cancel */}
+              <button
+                onClick={() => setSwapSelection(null)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '14px 20px', fontSize: 13, fontWeight: 600, color: '#999',

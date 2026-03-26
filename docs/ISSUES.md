@@ -25,8 +25,8 @@ Tapping a player name in the Edit Lineup list view now opens a player stats shee
 **Fix:** Already working — `teams.create` in POST /api/leagues auto-enrolls admin.
 
 ### ISSUE-002 — Cannot create a second league after creating the first
-**Status:** Resolved (2026-03-24)
-**Fix:** Admin page form gate updated to allow creating additional leagues.
+**Status:** Resolved (2026-03-25)
+**Fix:** Added "Create New League" button on admin page. Form gate changed from `!league` to `!league || showCreateForm`. TDD test: test 36.
 
 ### ISSUE-004 — Manager name should display as team name
 **Status:** Resolved (2026-03-24)
@@ -37,12 +37,12 @@ Tapping a player name in the Edit Lineup list view now opens a player stats shee
 **Fix:** Standings rows now wrapped with `<Link>` to `/view-lineup/{teamId}`.
 
 ### ISSUE-006 — Read-only team view should show the locked GW lineup
-**Status:** Resolved (2026-03-24)
-**Fix:** View-lineup now fetches saved lineup from API.
+**Status:** Resolved (2026-03-25)
+**Fix:** View-lineup now fetches saved lineup via GET /api/teams/{teamId}/lineups/{gwId}. Falls back to last completed GW, then default sort. TDD test: test 37.
 
 ### ISSUE-007 — Bench swap auto-selects
-**Status:** Resolved (2026-03-24)
-**Fix:** Swap mode allows user choice.
+**Status:** Resolved (2026-03-25)
+**Fix:** Move to Bench/XI now opens a selection sheet showing eligible players. User picks who to swap with. TDD test: test 38.
 
 ### ISSUE-008 — Lineup and captain changes lost after re-login
 **Status:** Resolved (2026-03-24)
