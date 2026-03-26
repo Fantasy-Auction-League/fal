@@ -43,26 +43,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.lastVerified = Date.now()
       }
 
-      // Periodically re-verify user ID against DB to handle DB resets/re-seeds.
-      // If the DB was wiped and re-seeded, the user may exist with a new ID
-      // while the JWT still holds the old one — causing empty query results.
-      const lastVerified = (token.lastVerified as number) || 0
-      if (token.email && Date.now() - lastVerified > RESYNC_INTERVAL_MS) {
+      // Always re-read activeLeagueId from DB so league switches take
+      // effect immediately on the next request (e.g. after page reload).
+      // Full user resync (id, role) still happens on the 30-min cycle.
+      if (token.email && token.sub) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: token.email as string },
-          })
-          if (dbUser) {
-            if (dbUser.id !== token.sub) {
-              token.sub = dbUser.id
-              token.role = dbUser.role
+          const lastVerified = (token.lastVerified as number) || 0
+          if (Date.now() - lastVerified > RESYNC_INTERVAL_MS) {
+            // Full resync: re-verify user ID and role (handles DB resets)
+            const dbUser = await prisma.user.findUnique({
+              where: { email: token.email as string },
+            })
+            if (dbUser) {
+              if (dbUser.id !== token.sub) {
+                token.sub = dbUser.id
+                token.role = dbUser.role
+              }
+              token.activeLeagueId = dbUser.activeLeagueId || null
+              token.lastVerified = Date.now()
+            } else {
+              token.sub = undefined
+              token.role = 'USER' as const
             }
-            token.activeLeagueId = dbUser.activeLeagueId || null
-            token.lastVerified = Date.now()
           } else {
-            // User no longer exists in DB — invalidate token
-            token.sub = undefined
-            token.role = 'USER' as const
+            // Lightweight resync: only re-read activeLeagueId
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.sub as string },
+              select: { activeLeagueId: true },
+            })
+            if (dbUser) {
+              token.activeLeagueId = dbUser.activeLeagueId || null
+            }
           }
         } catch {
           // DB unreachable — keep existing token, try again next cycle
