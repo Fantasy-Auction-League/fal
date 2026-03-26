@@ -206,43 +206,48 @@ test('6. User activates chip @user', async ({ page }) => {
   await page.goto('/lineup')
   await waitForApp(page)
 
-  // Compact chip bar should show chip names and Play buttons
+  // Compact chip bar should show chip names
   await expect(page.getByText('Bowling Boost')).toBeVisible()
   await expect(page.getByText('Power Play Bat')).toBeVisible()
 
-  // Find the "Play" buttons in the chip bar
-  const playButtons = page.getByRole('button', { name: 'Play', exact: true })
-  const playCount = await playButtons.count()
+  // Check chip state: Play, Active, or Used
+  const playBtn = page.getByRole('button', { name: 'Play', exact: true }).first()
+  const activeBtn = page.getByRole('button', { name: 'Active', exact: true }).first()
 
-  if (playCount > 0) {
-    // Click first "Play" button (Bowling Boost)
-    await playButtons.first().click()
+  const hasPlay = await playBtn.isVisible({ timeout: 2000 }).catch(() => false)
+  const hasActive = await activeBtn.isVisible({ timeout: 2000 }).catch(() => false)
 
-    // Chip confirmation modal should appear with "Play Bowling Boost?" or "Play Power Play Bat?"
-    const bbModal = page.getByText(/Play .* Boost\?|Play .* Bat\?/)
-    if (await bbModal.isVisible({ timeout: 3000 }).catch(() => false)) {
-      // Modal has "Yes, Play" confirm button and "Cancel" button
+  if (hasActive) {
+    // A chip is already active — deactivate it first, then re-activate
+    await activeBtn.click()
+    await page.waitForTimeout(500)
+    // Should now show Play
+    await expect(playBtn).toBeVisible({ timeout: 5000 })
+  }
+
+  if (hasPlay || hasActive) {
+    // Click Play to activate
+    await playBtn.click()
+
+    // Confirmation modal should appear
+    const modal = page.getByText(/Play .* Boost\?|Play .* Bat\?/)
+    if (await modal.isVisible({ timeout: 3000 }).catch(() => false)) {
       await expect(page.getByText('Cancel')).toBeVisible()
       await expect(page).toHaveScreenshot('chip-confirmation-modal.png')
 
-      // Confirm activation
-      const confirmBtn = page.getByText(/Yes, Play/)
-      await confirmBtn.click()
+      // Confirm
+      await page.getByText(/Yes, Play/).click()
 
-      // Button should now show "Active" in green
-      await expect(page.getByRole('button', { name: 'Active', exact: true })).toBeVisible({ timeout: 5000 })
+      // Should show Active
+      await expect(page.getByRole('button', { name: 'Active', exact: true }).first()).toBeVisible({ timeout: 5000 })
       await expect(page).toHaveScreenshot('chip-active.png')
 
-      // Tap "Active" to deactivate
-      await page.getByRole('button', { name: 'Active', exact: true }).click()
-
-      // Should revert to "Play" button
-      await expect(playButtons.first()).toBeVisible({ timeout: 5000 })
-    } else {
-      // Modal didn't appear — chip may already be used
-      await page.getByText('Cancel').click().catch(() => {})
+      // Deactivate
+      await page.getByRole('button', { name: 'Active', exact: true }).first().click()
+      await expect(playBtn).toBeVisible({ timeout: 5000 })
     }
   }
+  // If no Play or Active buttons, chips are all "Used" — that's fine
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
