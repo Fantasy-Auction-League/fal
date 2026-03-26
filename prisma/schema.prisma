@@ -135,7 +135,7 @@ model Player {
   fullname     String
   firstname    String?
   lastname     String?
-  iplTeamId    Int
+  iplTeamId    Int?
   iplTeamName  String?
   iplTeamCode  String?
   role         PlayerRole
