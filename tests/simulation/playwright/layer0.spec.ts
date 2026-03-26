@@ -756,21 +756,32 @@ test('24. Move player from XI to bench via list view @user', async ({ page }) =>
   await expect(benchSection).toBeVisible()
 
   // Find an XI player row that is NOT the captain or VC — look for → Bench buttons
-  // Each XI row has C, VC, → Bench buttons. Pick the third XI row (index 2) to avoid captain/VC.
   const benchButtons = page.getByRole('button', { name: '→ Bench' })
   const benchBtnCount = await benchButtons.count()
   expect(benchBtnCount).toBeGreaterThan(0)
 
-  // Read the player name from the row containing the last → Bench button (least likely to be C/VC)
+  // Click → Bench on the last XI player (least likely to be C/VC)
   const targetBtn = benchButtons.last()
-  const targetRow = targetBtn.locator('..')
-  // Get the XI count from summary before swap
-  const xiCountBefore = page.getByText(/Playing XI/).first()
-  await expect(xiCountBefore).toBeVisible()
-
-  // Click → Bench
   await targetBtn.click()
   await page.waitForTimeout(500)
+
+  // ISSUE-010: Swap selection sheet should appear with "Substitute" header
+  const substituteHeader = page.getByText(/Substitute\s+\w+/i)
+  await expect(substituteHeader).toBeVisible({ timeout: 3000 })
+
+  // Should show only bench players (XI player moving to bench)
+  await expect(page.getByText(/Select a bench player/i)).toBeVisible()
+
+  // Complete the swap by clicking the first bench player in the sheet
+  const swapLabels = page.getByText('Swap')
+  const swapCount = await swapLabels.count()
+  expect(swapCount).toBeGreaterThan(0)
+  await swapLabels.first().click()
+  await page.waitForTimeout(500)
+
+  // Sheet should close, dirty state active
+  await expect(substituteHeader).toBeHidden({ timeout: 3000 })
+  await expect(page.getByText('Save Lineup')).toBeVisible({ timeout: 3000 })
 
   // Verify Playing XI section still visible and bench section still visible
   await expect(page.getByText(/Playing XI/).first()).toBeVisible()
@@ -803,6 +814,27 @@ test('25. Move player from bench to XI via list view @user', async ({ page }) =>
   // Click → XI on the first bench player
   await xiButtons.first().click()
   await page.waitForTimeout(500)
+
+  // ISSUE-010: Swap selection sheet should appear with full squad
+  const substituteHeader = page.getByText(/Substitute\s+\w+/i)
+  await expect(substituteHeader).toBeVisible({ timeout: 3000 })
+
+  // Should show "Select any player to swap with" (bench player can swap with anyone)
+  await expect(page.getByText(/Select any player/i)).toBeVisible()
+
+  // Should show both Playing XI and Bench sections
+  const xiHeader = page.locator('div').filter({ hasText: /^PLAYING XI$/i })
+  await expect(xiHeader.first()).toBeVisible({ timeout: 3000 })
+
+  // Complete the swap by clicking the first XI player
+  const swapLabels = page.getByText('Swap')
+  const swapCount = await swapLabels.count()
+  expect(swapCount).toBeGreaterThan(0)
+  await swapLabels.first().click()
+  await page.waitForTimeout(500)
+
+  // Sheet should close
+  await expect(substituteHeader).toBeHidden({ timeout: 3000 })
 
   // Verify both sections still visible
   await expect(page.getByText(/Playing XI/).first()).toBeVisible()
@@ -1260,9 +1292,9 @@ test('37. View-lineup shows saved lineup @user', async ({ page }) => {
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   38. ISSUE-007: Bench swap shows selection sheet (not auto-select)
+   38. ISSUE-007 + ISSUE-010: XI→Bench swap shows selection sheet with bench only
    ═══════════════════════════════════════════════════════════════════════════ */
-test('38. Bench swap shows player selection @user', async ({ page }) => {
+test('38. XI player substitute shows only bench section @user', async ({ page }) => {
   test.setTimeout(60000)
   await page.goto('/lineup')
   await waitForApp(page)
@@ -1274,12 +1306,7 @@ test('38. Bench swap shows player selection @user', async ({ page }) => {
   await page.getByText('List View').click()
   await page.waitForTimeout(300)
 
-  // Count bench players before swap
-  const benchLabel = page.getByText(/BENCH/i).last()
-  await expect(benchLabel).toBeVisible({ timeout: 3000 })
-
   // Open the action sheet for an XI player by tapping the row
-  // The action sheet should have "Move to Bench" option
   const xiRows = page.locator('div[style*="padding: 10px 16px"][style*="background: rgb(255, 255, 255)"]')
   const firstXiRow = xiRows.first()
   if (await firstXiRow.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -1292,15 +1319,182 @@ test('38. Bench swap shows player selection @user', async ({ page }) => {
       await moveToBench.click()
       await page.waitForTimeout(500)
 
-      // ISSUE-007 TEST: After clicking "Move to Bench", a selection sheet
-      // should appear letting user pick WHICH bench player to swap with.
-      // If the swap happens instantly (no selection), the issue is NOT fixed.
-      const selectionSheet = page.getByText(/Select.*swap|Choose.*player|Swap with/i)
-      await expect(selectionSheet).toBeVisible({ timeout: 3000 })
+      // ISSUE-010: Swap sheet shows "Substitute {name}" header
+      const substituteHeader = page.getByText(/Substitute\s+\w+/i)
+      await expect(substituteHeader).toBeVisible({ timeout: 3000 })
 
-      await expect(page).toHaveScreenshot('bench-swap-selection.png')
+      // Should show "Select a bench player to swap into XI" subtitle
+      await expect(page.getByText(/Select a bench player/i)).toBeVisible()
+
+      // Should show Bench section header
+      const benchHeader = page.locator('div').filter({ hasText: /^BENCH\s*$/i })
+      await expect(benchHeader.first()).toBeVisible()
+
+      // Should NOT show Playing XI section (XI player can only swap with bench)
+      const xiHeader = page.locator('div').filter({ hasText: /^PLAYING XI$/i })
+      await expect(xiHeader).toHaveCount(0)
+
+      // Should show "Swap" action labels on bench players
+      await expect(page.getByText('Swap').first()).toBeVisible()
+
+      await expect(page).toHaveScreenshot('bench-swap-selection-xi-source.png')
     }
   }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   39. ISSUE-010: Bench player substitute shows full squad (XI + bench)
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('39. Bench player substitute shows full squad @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Find a bench player → XI button and open action sheet instead
+  const benchSection = page.getByText(/BENCH.*AUTO-SUB ORDER/i)
+  await expect(benchSection).toBeVisible({ timeout: 3000 })
+
+  // Open action sheet for a bench player by tapping the bench row
+  const benchRows = page.locator('div[style*="padding: 10px 16px"][style*="background: rgb(250, 251, 253)"]')
+  const firstBenchRow = benchRows.first()
+  if (await firstBenchRow.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await firstBenchRow.click()
+    await page.waitForTimeout(500)
+
+    // Action sheet should appear with "Move to Playing XI"
+    const moveToXI = page.getByText(/Move to Playing XI/i)
+    if (await moveToXI.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await moveToXI.click()
+      await page.waitForTimeout(500)
+
+      // ISSUE-010: Swap sheet shows "Substitute {name}" header
+      const substituteHeader = page.getByText(/Substitute\s+\w+/i)
+      await expect(substituteHeader).toBeVisible({ timeout: 3000 })
+
+      // Should show "Select any player to swap with" subtitle
+      await expect(page.getByText(/Select any player/i)).toBeVisible()
+
+      // ISSUE-010 KEY TEST: Should show BOTH Playing XI and Bench sections
+      const xiHeader = page.locator('div').filter({ hasText: /^PLAYING XI$/i })
+      await expect(xiHeader.first()).toBeVisible({ timeout: 3000 })
+
+      const benchHeader = page.locator('div').filter({ hasText: /^BENCH\s*\(REORDER\)$/i })
+      await expect(benchHeader.first()).toBeVisible()
+
+      // XI players should show "Swap" action labels
+      // Bench players should show "Reorder" action labels
+      await expect(page.getByText('Swap').first()).toBeVisible()
+      await expect(page.getByText('Reorder').first()).toBeVisible()
+
+      // XI players should show C/VC badges where applicable
+      // (At least one C or VC badge should be visible in the swap sheet)
+      const badges = page.locator('span').filter({ hasText: /^(C|VC)$/ })
+      await expect(badges.first()).toBeVisible()
+
+      await expect(page).toHaveScreenshot('bench-swap-selection-bench-source.png')
+    }
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   40. ISSUE-010: Substitute via pitch view player detail sheet
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('40. Substitute from pitch view detail sheet shows swap sheet @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Ensure Pitch View is active
+  await expect(page.getByText('Pitch View')).toBeVisible()
+  await expect(page.getByText('Top Order')).toBeVisible()
+
+  // Click an XI player on the pitch to open the stats sheet
+  const allClickable = page.locator('div[style*="cursor: pointer"]')
+  const totalCount = await allClickable.count()
+  // XI players are the first (totalCount - 4)
+  const xiPlayer = allClickable.nth(2) // pick middle player to avoid captain
+  await xiPlayer.click()
+  await page.waitForTimeout(1000)
+
+  // Stats sheet should open with Substitute button
+  const substituteBtn = page.getByText('Substitute', { exact: true })
+  if (await substituteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await substituteBtn.click()
+    await page.waitForTimeout(500)
+
+    // Swap selection sheet should appear with "Substitute {name}" header
+    const substituteHeader = page.getByText(/Substitute\s+\w+/i)
+    await expect(substituteHeader).toBeVisible({ timeout: 3000 })
+
+    // For an XI player, should show only bench section
+    await expect(page.getByText(/Select a bench player/i)).toBeVisible()
+
+    await expect(page).toHaveScreenshot('pitch-substitute-from-detail.png')
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   41. ISSUE-010: Complete a swap from the new substitute sheet
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('41. Complete swap from substitute sheet and save @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Open action sheet for a bench player
+  const benchRows = page.locator('div[style*="padding: 10px 16px"][style*="background: rgb(250, 251, 253)"]')
+  const firstBenchRow = benchRows.first()
+  if (!(await firstBenchRow.isVisible({ timeout: 3000 }).catch(() => false))) return
+
+  // Get the bench player name before swap
+  const benchPlayerName = await firstBenchRow.locator('div[style*="font-weight: 700"]').first().textContent()
+
+  await firstBenchRow.click()
+  await page.waitForTimeout(500)
+
+  // Click "Move to Playing XI"
+  const moveToXI = page.getByText(/Move to Playing XI/i)
+  if (!(await moveToXI.isVisible({ timeout: 3000 }).catch(() => false))) return
+  await moveToXI.click()
+  await page.waitForTimeout(500)
+
+  // Swap sheet should appear — click the first XI player to complete the swap
+  const swapButtons = page.getByText('Swap')
+  const swapCount = await swapButtons.count()
+  expect(swapCount).toBeGreaterThan(0)
+  await swapButtons.first().click()
+  await page.waitForTimeout(500)
+
+  // Swap sheet should close
+  await expect(page.getByText(/Substitute\s+\w+/i)).toBeHidden({ timeout: 3000 })
+
+  // Dirty state — Save Lineup button should appear
+  const saveBtn = page.getByText('Save Lineup')
+  await expect(saveBtn).toBeVisible({ timeout: 3000 })
+
+  // The bench player should now appear in the XI section
+  if (benchPlayerName) {
+    await expect(page.getByText(benchPlayerName.trim()).first()).toBeVisible()
+  }
+
+  await expect(page).toHaveScreenshot('substitute-swap-completed.png')
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
