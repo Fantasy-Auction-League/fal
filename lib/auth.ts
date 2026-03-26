@@ -14,7 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email) return null
-        const email = credentials.email as string
+        const email = (credentials.email as string).trim().toLowerCase()
 
         // Login route already handles creation and password verification
         const user = await prisma.user.findUnique({ where: { email } })
@@ -52,7 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (Date.now() - lastVerified > RESYNC_INTERVAL_MS) {
             // Full resync: re-verify user ID and role (handles DB resets)
             const dbUser = await prisma.user.findUnique({
-              where: { email: token.email as string },
+              where: { email: (token.email as string).toLowerCase() },
             })
             if (dbUser) {
               if (dbUser.id !== token.sub) {

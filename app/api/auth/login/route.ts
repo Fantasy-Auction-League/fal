@@ -3,8 +3,9 @@ import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
-  const { email, name, inviteCode, adminSecret, password } = await req.json()
-  if (!email) return Response.json({ error: 'Email required' }, { status: 400 })
+  const { email: rawEmail, name, inviteCode, adminSecret, password } = await req.json()
+  if (!rawEmail) return Response.json({ error: 'Email required' }, { status: 400 })
+  const email = rawEmail.trim().toLowerCase()
 
   // Case 0: Admin secret provided — bootstrap first admin
   if (adminSecret) {
