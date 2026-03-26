@@ -1776,3 +1776,151 @@ test('35. Players page — bowling table visible for bowlers @user', async ({ pa
     await expect(page).toHaveScreenshot('players-bowler-profile.png')
   }
 })
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   42. ISSUE-011: League switching updates UI immediately
+   Verifies that switching leagues via the league switcher takes effect
+   on the next page load (not cached in JWT for 30 minutes).
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('42. ISSUE-011: League switching updates UI immediately @user', async ({ page }) => {
+  test.setTimeout(90000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Record the current league name from the pill
+  const leaguePill = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(leaguePill).toBeVisible()
+  const originalLeagueName = (await leaguePill.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+
+  // Create a second league via API so the user has multiple leagues
+  const secondLeagueName = `ISSUE-011 Test League ${Date.now()}`
+  const createRes = await page.request.post('/api/leagues', {
+    data: { name: secondLeagueName },
+  })
+  expect(createRes.ok()).toBeTruthy()
+  const createdLeague = await createRes.json()
+  const secondLeagueId = createdLeague.id
+
+  // Reload page so the new league appears in the switcher
+  await page.reload()
+  await waitForApp(page)
+
+  // Open the league switcher
+  const pill = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await pill.click()
+  await expect(page.getByText('YOUR LEAGUES')).toBeVisible({ timeout: 3000 })
+
+  // Verify both leagues are listed
+  await expect(page.getByText(originalLeagueName).first()).toBeVisible()
+  await expect(page.getByText(secondLeagueName).first()).toBeVisible()
+
+  // Click the second league to switch
+  await page.getByText(secondLeagueName).first().click()
+
+  // The page should reload — wait for it
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // After reload, the league pill should show the second league
+  const pillAfterSwitch = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(pillAfterSwitch).toBeVisible({ timeout: 10000 })
+  const nameAfterSwitch = (await pillAfterSwitch.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+  expect(nameAfterSwitch).toBe(secondLeagueName)
+
+  // Now switch back to the original league
+  await pillAfterSwitch.click()
+  await expect(page.getByText('YOUR LEAGUES')).toBeVisible({ timeout: 3000 })
+  await page.getByText(originalLeagueName).first().click()
+
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Verify we're back on the original league
+  const pillAfterReturn = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(pillAfterReturn).toBeVisible({ timeout: 10000 })
+  const nameAfterReturn = (await pillAfterReturn.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+  expect(nameAfterReturn).toBe(originalLeagueName)
+
+  // Cleanup: delete the test league via direct DB manipulation not possible in Playwright,
+  // so switch back to original and leave the test league (harmless)
+  await expect(page).toHaveScreenshot('league-switch-back-original.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   43. ISSUE-011: League switch persists after hard reload
+   Verifies that after switching leagues, a full page reload still shows
+   the new league (JWT re-reads activeLeagueId from DB).
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('43. ISSUE-011: League switch persists after hard reload @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Get current league from pill
+  const leaguePill = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(leaguePill).toBeVisible()
+  const currentLeagueName = (await leaguePill.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+
+  // Check if user has multiple leagues (from test 42 or production)
+  await leaguePill.click()
+  await expect(page.getByText('YOUR LEAGUES')).toBeVisible({ timeout: 3000 })
+
+  // Count league rows in the sheet (each has a gradient icon div)
+  const leagueRows = page.locator('div:has(> div[style*="border-radius: 12px"][style*="background: linear"])').filter({ has: page.locator('div[style*="font-weight: 700"]') })
+  const count = await leagueRows.count()
+
+  if (count < 2) {
+    // Only one league — skip (test 42 should have created a second one)
+    await page.locator('div[style*="position: fixed"][style*="inset: 0"]').first().click({ force: true })
+    return
+  }
+
+  // Find a league that is NOT the current one and click it
+  const allLeagueNames: string[] = []
+  for (let i = 0; i < count; i++) {
+    const text = await leagueRows.nth(i).locator('div[style*="font-weight: 700"]').first().innerText()
+    allLeagueNames.push(text.trim())
+  }
+  const otherLeague = allLeagueNames.find(n => n !== currentLeagueName)
+  if (!otherLeague) return
+
+  await page.getByText(otherLeague).first().click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Verify the switch worked
+  const pillAfterSwitch = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(pillAfterSwitch).toBeVisible({ timeout: 10000 })
+  const nameAfterSwitch = (await pillAfterSwitch.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+  expect(nameAfterSwitch).toBe(otherLeague)
+
+  // Now do a HARD reload (the critical ISSUE-011 test — JWT must re-read from DB)
+  await page.reload()
+  await waitForApp(page)
+
+  // After hard reload, the league should still be the switched one
+  const pillAfterReload = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(pillAfterReload).toBeVisible({ timeout: 10000 })
+  const nameAfterReload = (await pillAfterReload.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+  expect(nameAfterReload).toBe(otherLeague)
+
+  // Navigate to different pages and verify persistence
+  await page.goto('/lineup')
+  await waitForApp(page)
+  await page.goto('/')
+  await waitForApp(page)
+
+  const pillAfterNav = page.locator('button').filter({ hasText: /[\u25BE\u25BC]/ }).first()
+  await expect(pillAfterNav).toBeVisible({ timeout: 10000 })
+  const nameAfterNav = (await pillAfterNav.innerText()).replace(/[\u25BE\u25BC]/g, '').trim()
+  expect(nameAfterNav).toBe(otherLeague)
+
+  // Switch back to original for clean state
+  await pillAfterNav.click()
+  await expect(page.getByText('YOUR LEAGUES')).toBeVisible({ timeout: 3000 })
+  await page.getByText(currentLeagueName).first().click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  await expect(page).toHaveScreenshot('league-switch-persists-reload.png')
+})
