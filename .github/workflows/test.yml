@@ -42,11 +42,20 @@ jobs:
         run: |
           npm i -g vercel
 
-          URL=$(vercel deploy \
+          OUTPUT=$(vercel deploy \
             --yes \
             --token $VERCEL_TOKEN \
             --public \
-            2>&1 | grep -o 'https://[^ ]*\.vercel\.app' | head -1)
+            2>&1) || true
+
+          echo "$OUTPUT"
+
+          URL=$(echo "$OUTPUT" | grep -o 'https://[^ ]*\.vercel\.app' | head -1)
+
+          if [ -z "$URL" ]; then
+            echo "ERROR: No preview URL captured from Vercel deploy"
+            exit 1
+          fi
 
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "Preview deployed: $URL"

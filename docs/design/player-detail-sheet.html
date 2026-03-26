@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0">
+<title>FAL — Player Detail Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #004BA0;
+    --blue-light: #1a7fe0;
+    --gold: #F9CD05;
+    --gold-dark: #b58800;
+    --silver: #C0C7D0;
+    --green: #0d9e5f;
+    --green-light: #07c472;
+    --ink: #1a1a2e;
+    --muted: #8a8a9a;
+    --faint: #f2f3f8;
+    --card: #ffffff;
+    --danger: #e8222b;
+
+    /* Team accent — changes per player */
+    --team-primary: #004BA0;
+    --team-secondary: #1a7fe0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #e8eaef;
+    color: var(--ink);
+    min-height: 100vh;
+    max-width: 393px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── Simulated pitch background ─── */
+  .pitch-bg {
+    height: 100vh;
+    background: linear-gradient(175deg, #2d8a45 0%, #35a254 40%, #3aad5c 60%, #267f3e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+  .pitch-bg.dimmed { opacity: 0.15; }
+  .pitch-bg .tap-hint {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  /* ─── Overlay ─── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 20, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  /* ─── Bottom Sheet ─── */
+  .sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    max-width: 393px;
+    margin: 0 auto;
+    z-index: 60;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+  .sheet.open { transform: translateY(0); }
+
+  /* ─── Sheet Card ─── */
+  .sheet-card {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    overflow: hidden;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+  }
+
+  /* Handle */
+  .handle {
+    width: 36px; height: 4px;
+    background: #d0d2da;
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+
+  /* ─── Player Hero Banner ─── */
+  .hero {
+    position: relative;
+    padding: 18px 20px 16px;
+    background: linear-gradient(135deg, var(--team-primary) 0%, var(--team-secondary) 100%);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40%; right: -20%;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(to top, rgba(255,255,255,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .hero-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Role badge */
+  .role-badge {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(4px);
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .hero-info { flex: 1; }
+  .hero-role {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.65);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 2px;
+  }
+  .hero-name {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 28px;
+    font-weight: 400;
+    font-style: italic;
+    color: #fff;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .hero-team {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hero-team .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+  }
+
+  /* ─── Stats Grid ─── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 14px 16px;
+    gap: 0;
+    border-bottom: 1px solid var(--faint);
+  }
+  .stat {
+    text-align: center;
+    position: relative;
+  }
+  .stat:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 4px; bottom: 4px;
+    width: 1px;
+    background: #e8e9f0;
+  }
+  .stat-val {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-val.highlight { color: var(--blue); }
+  .stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 2px;
+  }
+  .stat-rank {
+    font-size: 8px;
+    color: #bbb;
+    font-weight: 500;
+    margin-top: 1px;
+  }
+
+  /* ─── Form Chart ─── */
+  .form-section {
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--faint);
+  }
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .form-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .form-avg {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .form-chart {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .form-gw {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .form-bar {
+    width: 100%;
+    border-radius: 6px;
+    min-height: 8px;
+    transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .form-pts {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .form-label {
+    font-size: 8px;
+    font-weight: 600;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  /* Form bar colors */
+  .bar-great { background: linear-gradient(180deg, #07c472, #0d9e5f); }
+  .bar-good { background: linear-gradient(180deg, #34d399, #10b981); }
+  .bar-ok { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+  .bar-bad { background: linear-gradient(180deg, #f87171, #ef4444); }
+  .bar-miss { background: #e5e7eb; }
+
+  /* ─── Fixtures Preview ─── */
+  .fixtures-section {
+    padding: 12px 20px 10px;
+    border-bottom: 1px solid var(--faint);
+  }
+  .fixtures-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .fixtures-row::-webkit-scrollbar { display: none; }
+  .fixture-chip {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: 1px solid #e8e9f0;
+    background: #fff;
+    color: var(--ink);
+    min-width: 54px;
+  }
+  .fixture-chip .opp { font-weight: 800; }
+  .fixture-chip .venue { font-size: 8px; color: #999; font-weight: 500; display: block; margin-top: 1px; }
+  .fixture-chip.hard { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .fixture-chip.hard .venue { color: rgba(255,255,255,0.7); }
+  .fixture-chip.medium { background: #fef3c7; border-color: #fcd34d; }
+
+  /* ─── Captain / VC Section ─── */
+  .captain-section {
+    padding: 14px 20px;
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid var(--faint);
+  }
+  .captain-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--faint);
+    transition: all 0.2s ease;
+  }
+  .captain-btn:active { transform: scale(0.97); }
+  .captain-btn.active-c {
+    background: rgba(249, 205, 5, 0.10);
+    border-color: var(--gold);
+  }
+  .captain-btn.active-vc {
+    background: rgba(192, 199, 208, 0.12);
+    border-color: var(--silver);
+  }
+
+  .cap-check {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    border: 2px solid #d0d2da;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: transparent;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+  .active-c .cap-check {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(249, 205, 5, 0.35);
+  }
+  .active-vc .cap-check {
+    background: var(--silver);
+    border-color: var(--silver);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(192, 199, 208, 0.4);
+  }
+
+  .cap-info .cap-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .cap-info .cap-desc {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 1px;
+  }
+
+  /* ─── Action Buttons ─── */
+  .actions {
+    padding: 14px 20px 32px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+    border: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-outline {
+    background: #fff;
+    color: var(--ink);
+    border: 2px solid #e0e2ea;
+  }
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+  .btn-sub {
+    background: linear-gradient(135deg, var(--green), var(--green-light));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(13, 158, 95, 0.3);
+  }
+  .btn-sub::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .btn-sub:hover {
+    box-shadow: 0 6px 20px rgba(13, 158, 95, 0.4);
+  }
+
+  /* ─── Swap Mode Banner ─── */
+  .swap-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    max-width: 393px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, var(--green), var(--green-light));
+    color: #fff;
+    padding: 50px 20px 14px;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transform: translateY(-100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 4px 20px rgba(13, 158, 95, 0.3);
+  }
+  .swap-banner.visible { transform: translateY(0); }
+  .swap-text {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .swap-cancel {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ─── Animations ─── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .sheet.open .stats { animation: fadeInUp 0.3s ease 0.1s both; }
+  .sheet.open .form-section { animation: fadeInUp 0.3s ease 0.15s both; }
+  .sheet.open .fixtures-section { animation: fadeInUp 0.3s ease 0.2s both; }
+  .sheet.open .captain-section { animation: fadeInUp 0.3s ease 0.25s both; }
+  .sheet.open .actions { animation: fadeInUp 0.3s ease 0.3s both; }
+
+  /* Form bars animate in */
+  .sheet.open .form-bar {
+    animation: growBar 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes growBar {
+    from { transform: scaleY(0); transform-origin: bottom; }
+    to { transform: scaleY(1); transform-origin: bottom; }
+  }
+  .form-gw:nth-child(1) .form-bar { animation-delay: 0.2s; }
+  .form-gw:nth-child(2) .form-bar { animation-delay: 0.25s; }
+  .form-gw:nth-child(3) .form-bar { animation-delay: 0.3s; }
+  .form-gw:nth-child(4) .form-bar { animation-delay: 0.35s; }
+  .form-gw:nth-child(5) .form-bar { animation-delay: 0.4s; }
+</style>
+</head>
+<body>
+
+<!-- Simulated pitch background -->
+<div class="pitch-bg" id="pitchBg" onclick="openSheet()">
+  <div class="tap-hint">Tap a player to open detail</div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+
+<!-- Swap Mode Banner -->
+<div class="swap-banner" id="swapBanner">
+  <span class="swap-text">Select a player to swap with</span>
+  <button class="swap-cancel" onclick="exitSwapMode()">Cancel</button>
+</div>
+
+<!-- Bottom Sheet -->
+<div class="sheet" id="sheet">
+  <div class="sheet-card">
+    <div class="handle"></div>
+
+    <!-- Player Hero -->
+    <div class="hero" id="heroSection">
+      <div class="hero-top">
+        <div class="role-badge" id="roleBadge">BAT</div>
+        <div class="hero-info">
+          <div class="hero-role" id="heroRole">Batsman</div>
+          <div class="hero-name" id="heroName">Virat Kohli</div>
+          <div class="hero-team">
+            <span id="heroTeam">Royal Challengers Bengaluru</span>
+            <span class="dot"></span>
+            <span id="heroCode">RCB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val">&#8377;14.5</div>
+        <div class="stat-label">Price</div>
+        <div class="stat-rank">3 of 248</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val highlight">8.2</div>
+        <div class="stat-label">Pts/Match</div>
+        <div class="stat-rank">7 of 248</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">6.4</div>
+        <div class="stat-label">Form</div>
+        <div class="stat-rank">12 of 248</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val highlight">312</div>
+        <div class="stat-label">Season Pts</div>
+        <div class="stat-rank">5 of 248</div>
+      </div>
+    </div>
+
+    <!-- Form Chart -->
+    <div class="form-section">
+      <div class="form-header">
+        <span class="form-title">Recent Form</span>
+        <span class="form-avg">Avg: 6.4 pts</span>
+      </div>
+      <div class="form-chart">
+        <div class="form-gw">
+          <div class="form-pts">2</div>
+          <div class="form-bar bar-bad" style="height: 16px;"></div>
+          <div class="form-label">GW1</div>
+        </div>
+        <div class="form-gw">
+          <div class="form-pts">8</div>
+          <div class="form-bar bar-good" style="height: 44px;"></div>
+          <div class="form-label">GW2</div>
+        </div>
+        <div class="form-gw">
+          <div class="form-pts">4</div>
+          <div class="form-bar bar-ok" style="height: 26px;"></div>
+          <div class="form-label">GW3</div>
+        </div>
+        <div class="form-gw">
+          <div class="form-pts">12</div>
+          <div class="form-bar bar-great" style="height: 60px;"></div>
+          <div class="form-label">GW4</div>
+        </div>
+        <div class="form-gw">
+          <div class="form-pts">6</div>
+          <div class="form-bar bar-good" style="height: 36px;"></div>
+          <div class="form-label">GW5</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fixtures Preview -->
+    <div class="fixtures-section">
+      <div class="form-header">
+        <span class="form-title">Next Fixtures</span>
+      </div>
+      <div class="fixtures-row">
+        <div class="fixture-chip">
+          <div class="opp">MI</div>
+          <span class="venue">Home</span>
+        </div>
+        <div class="fixture-chip hard">
+          <div class="opp">CSK</div>
+          <span class="venue">Away</span>
+        </div>
+        <div class="fixture-chip medium">
+          <div class="opp">DC</div>
+          <span class="venue">Home</span>
+        </div>
+        <div class="fixture-chip">
+          <div class="opp">RR</div>
+          <span class="venue">Away</span>
+        </div>
+        <div class="fixture-chip hard">
+          <div class="opp">KKR</div>
+          <span class="venue">Away</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Captain / Vice Captain -->
+    <div class="captain-section">
+      <button class="captain-btn active-c" id="capBtn" onclick="toggleCaptain()">
+        <div class="cap-check">C</div>
+        <div class="cap-info">
+          <div class="cap-label">Captain</div>
+          <div class="cap-desc">2&times; points this GW</div>
+        </div>
+      </button>
+      <button class="captain-btn" id="vcBtn" onclick="toggleVC()">
+        <div class="cap-check">V</div>
+        <div class="cap-info">
+          <div class="cap-label">Vice Captain</div>
+          <div class="cap-desc">2&times; if C absent</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="btn btn-outline" onclick="closeSheet()">Full Profile</button>
+      <button class="btn btn-sub" onclick="enterSwapMode()">Substitute</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const overlay = document.getElementById('overlay');
+  const sheet = document.getElementById('sheet');
+  const pitchBg = document.getElementById('pitchBg');
+  const swapBanner = document.getElementById('swapBanner');
+  const capBtn = document.getElementById('capBtn');
+  const vcBtn = document.getElementById('vcBtn');
+
+  // Team color map
+  const teamColors = {
+    RCB: ['#e8222b', '#b81820'],
+    MI:  ['#004BA0', '#0066cc'],
+    CSK: ['#F9CD05', '#e0b800'],
+    KKR: ['#3A225D', '#6B4F9E'],
+    DC:  ['#004C93', '#1A7FE0'],
+    RR:  ['#EA1A85', '#F03C96'],
+    SRH: ['#FF822A', '#FF9A44'],
+    GT:  ['#0EB1A2', '#1AD4BF'],
+    LSG: ['#00AEEF', '#00C4FF'],
+    PBKS:['#ED1B24', '#F44040'],
+  };
+
+  function setTeamColors(code) {
+    const [primary, secondary] = teamColors[code] || ['#004BA0', '#1a7fe0'];
+    document.documentElement.style.setProperty('--team-primary', primary);
+    document.documentElement.style.setProperty('--team-secondary', secondary);
+  }
+
+  // Simulate different players on each open
+  const players = [
+    { name: 'Virat Kohli', team: 'Royal Challengers Bengaluru', code: 'RCB', role: 'BAT', roleFull: 'Batsman' },
+    { name: 'Jasprit Bumrah', team: 'Mumbai Indians', code: 'MI', role: 'BOWL', roleFull: 'Bowler' },
+    { name: 'MS Dhoni', team: 'Chennai Super Kings', code: 'CSK', role: 'WK', roleFull: 'Wicket-keeper' },
+    { name: 'Hardik Pandya', team: 'Gujarat Titans', code: 'GT', role: 'ALL', roleFull: 'All-rounder' },
+    { name: 'Rashid Khan', team: 'Rajasthan Royals', code: 'RR', role: 'BOWL', roleFull: 'Bowler' },
+  ];
+  let playerIdx = 0;
+
+  function openSheet() {
+    const p = players[playerIdx % players.length];
+    playerIdx++;
+
+    setTeamColors(p.code);
+    document.getElementById('heroName').textContent = p.name;
+    document.getElementById('heroTeam').textContent = p.team;
+    document.getElementById('heroCode').textContent = p.code;
+    document.getElementById('heroRole').textContent = p.roleFull;
+    document.getElementById('roleBadge').textContent = p.role;
+
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+    pitchBg.classList.add('dimmed');
+  }
+
+  function closeSheet() {
+    overlay.classList.remove('open');
+    sheet.classList.remove('open');
+    pitchBg.classList.remove('dimmed');
+  }
+
+  function toggleCaptain() {
+    capBtn.classList.toggle('active-c');
+    if (capBtn.classList.contains('active-c')) {
+      vcBtn.classList.remove('active-vc');
+    }
+  }
+
+  function toggleVC() {
+    vcBtn.classList.toggle('active-vc');
+    if (vcBtn.classList.contains('active-vc')) {
+      capBtn.classList.remove('active-c');
+    }
+  }
+
+  function enterSwapMode() {
+    closeSheet();
+    setTimeout(() => {
+      swapBanner.classList.add('visible');
+      pitchBg.classList.add('dimmed');
+      pitchBg.querySelector('.tap-hint').textContent = 'Tap a player to complete the swap';
+    }, 300);
+  }
+
+  function exitSwapMode() {
+    swapBanner.classList.remove('visible');
+    pitchBg.classList.remove('dimmed');
+    pitchBg.querySelector('.tap-hint').textContent = 'Tap a player to open detail';
+  }
+</script>
+
+</body>
+</html>
