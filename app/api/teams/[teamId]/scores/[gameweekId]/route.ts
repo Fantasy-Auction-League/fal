@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { computeLiveTeamScore } from '@/lib/scoring/live'
+import { getCacheHeaders } from '@/lib/cache-headers'
 
 // GET /api/teams/[teamId]/scores/[gameweekId] — Per-team and per-player breakdown for a team in a GW
 // Returns either LIVE (running total) or FINAL (stored) score depending on GameweekScore existence
@@ -135,9 +136,7 @@ export async function GET(
         players,
       }
 
-      const headers = new Headers({
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      })
+      const headers = getCacheHeaders('FINAL')
 
       return Response.json(response, { headers })
     } else {
@@ -183,9 +182,7 @@ export async function GET(
         players: enrichedPlayers,
       }
 
-      const headers = new Headers({
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      })
+      const headers = getCacheHeaders('LIVE')
 
       return Response.json(enrichedResponse, { headers })
     }
