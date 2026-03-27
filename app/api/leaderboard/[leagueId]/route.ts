@@ -46,8 +46,11 @@ export async function GET(
     })
 
     // Detect active gameweek (status ACTIVE, aggregationStatus not DONE)
+    // ASSUMPTION: Only one gameweek is active at a time per season.
+    // orderBy: { number: 'desc' } ensures determinism if multiple exist.
     const activeGw = await prisma.gameweek.findFirst({
       where: { status: 'ACTIVE', aggregationStatus: { not: 'DONE' } },
+      orderBy: { number: 'desc' },
     })
 
     let liveResult: Awaited<ReturnType<typeof computeLeagueLiveScores>> | null = null
@@ -60,8 +63,17 @@ export async function GET(
     }
 
     // Compute previous rank (by stored season total only)
+    // Tiebreaker: totalPoints desc, then bestGwScore desc, then team.id for determinism
     const previousRankMap = new Map<string, number>()
-    const sortedByStoredTotal = [...teams].sort((a, b) => b.totalPoints - a.totalPoints)
+    const sortedByStoredTotal = [...teams].sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) {
+        return b.totalPoints - a.totalPoints
+      }
+      if (b.bestGwScore !== a.bestGwScore) {
+        return b.bestGwScore - a.bestGwScore
+      }
+      return a.id.localeCompare(b.id)
+    })
     sortedByStoredTotal.forEach((team, index) => {
       previousRankMap.set(team.id, index + 1)
     })
@@ -77,7 +89,16 @@ export async function GET(
     }
 
     // Sort by merged total points for current ranking
-    const sortedByCurrentTotal = [...teamsForRanking].sort((a, b) => b.totalPoints - a.totalPoints)
+    // Tiebreaker: totalPoints desc, then bestGwScore desc, then team.id for determinism
+    const sortedByCurrentTotal = [...teamsForRanking].sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) {
+        return b.totalPoints - a.totalPoints
+      }
+      if (b.bestGwScore !== a.bestGwScore) {
+        return b.bestGwScore - a.bestGwScore
+      }
+      return a.id.localeCompare(b.id)
+    })
     const currentRankMap = new Map<string, number>()
     sortedByCurrentTotal.forEach((team, index) => {
       currentRankMap.set(team.id, index + 1)

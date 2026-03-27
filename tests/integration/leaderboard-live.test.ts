@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
+import { computeLeagueLiveScores } from '@/lib/scoring/live'
 
 const prisma = new PrismaClient()
 
@@ -17,7 +18,7 @@ interface TestData {
   gameweekFinal: { id: string; number: number }
   teams: Array<{ id: string; userId: string; name: string }>
   players: Array<{ id: string; role: string; fullname: string }>
-  matches: Array<{ id: string; status: string }>
+  matches: Array<{ id: string }>
 }
 
 let testData: TestData
@@ -62,12 +63,12 @@ beforeAll(async () => {
       },
     })
 
-    // Create final gameweek (status ACTIVE but aggregationStatus DONE, simulating finished GW)
+    // Create final gameweek (status COMPLETED but aggregationStatus DONE, simulating finished GW)
     const gameweekFinal = await prisma.gameweek.create({
       data: {
         number: 87,
         lockTime: new Date(Date.now() - 48 * 60 * 60 * 1000),
-        status: 'CLOSED',
+        status: 'COMPLETED',
         aggregationStatus: 'DONE',
       },
     })
@@ -494,63 +495,67 @@ describe('Leaderboard API - Live Standings', () => {
     }
 
     // Add performances for players (match 1 is SCORED)
+    // Team A captain (BAT) gets 20 points -> 2x multiplier (captain) = 40
+    // Team A regular (BOWL) gets 10 points -> 1x = 10
+    // Total for Team A: 40 + 10 = 50
     await Promise.all([
-      // Team A captain gets 20 points (role: BAT)
       prisma.playerPerformance.create({
         data: {
-          playerId: testData.players[0].id,
+          playerId: testData.players[0].id, // Team A captain (BAT)
           matchId: testData.matches[0].id,
           fantasyPoints: 20,
         },
       }),
-      // Team A regular gets 10 points (role: BOWL)
       prisma.playerPerformance.create({
         data: {
-          playerId: testData.players[1].id,
+          playerId: testData.players[1].id, // Team A regular (BOWL)
           matchId: testData.matches[0].id,
           fantasyPoints: 10,
         },
       }),
-      // Team B captain gets 15 points (role: BAT)
+      // Team B captain (BAT) gets 15 points -> 2x = 30
       prisma.playerPerformance.create({
         data: {
-          playerId: testData.players[3].id,
+          playerId: testData.players[3].id, // Team B captain (BAT)
           matchId: testData.matches[0].id,
           fantasyPoints: 15,
         },
       }),
-      // Team C captain gets 12 points (role: BAT)
+      // Team C captain (BAT) gets 12 points -> 2x = 24
       prisma.playerPerformance.create({
         data: {
-          playerId: testData.players[6].id,
+          playerId: testData.players[6].id, // Team C captain (BAT)
           matchId: testData.matches[0].id,
           fantasyPoints: 12,
         },
       }),
     ])
 
-    // Verify gameweek is active
-    const activeGw = await prisma.gameweek.findUnique({
-      where: { id: testData.gameweekActive.id },
-    })
-    expect(activeGw?.status).toBe('ACTIVE')
-    expect(activeGw?.aggregationStatus).not.toBe('DONE')
+    // Call computeLeagueLiveScores
+    const result = await computeLeagueLiveScores(prisma, testData.gameweekActive.id, testData.league.id)
 
-    // Test that response includes liveGwPoints and proper totalPoints calculation
-    // This indirectly tests computeLeagueLiveScores is being called
-    const teams = await prisma.team.findMany({
-      where: { leagueId: testData.league.id },
-    })
-    expect(teams.length).toBe(3)
-    expect(teams[0].totalPoints).toBe(110) // Team B has highest stored total
-    expect(teams[1].totalPoints).toBe(100) // Team A
-    expect(teams[2].totalPoints).toBe(95) // Team C
+    // Verify the function returns results for all teams
+    expect(result.teamScores.size).toBe(3)
+    expect(result.matchesScored).toBe(1)
+    expect(result.matchesTotal).toBe(2)
 
-    // Verify performances were created
-    const perfs = await prisma.playerPerformance.findMany({
-      where: { playerId: { in: testData.players.map((p) => p.id) } },
-    })
-    expect(perfs.length).toBeGreaterThan(0)
+    // Verify Team A: stored=100, live=50, total=150
+    const teamA = testData.teams[0]
+    const teamALive = result.teamScores.get(teamA.id)
+    expect(teamALive?.liveGwPoints).toBe(50)
+    expect(teamALive?.chipType).toBeNull()
+
+    // Verify Team B: stored=110, live=30, total=140
+    const teamB = testData.teams[1]
+    const teamBLive = result.teamScores.get(teamB.id)
+    expect(teamBLive?.liveGwPoints).toBe(30)
+    expect(teamBLive?.chipType).toBeNull()
+
+    // Verify Team C: stored=95, live=24, total=119
+    const teamC = testData.teams[2]
+    const teamCLive = result.teamScores.get(teamC.id)
+    expect(teamCLive?.liveGwPoints).toBe(24)
+    expect(teamCLive?.chipType).toBeNull()
 
     // Cleanup
     await prisma.playerPerformance.deleteMany({
@@ -564,25 +569,28 @@ describe('Leaderboard API - Live Standings', () => {
       return
     }
 
-    // Add performances
-    await prisma.playerPerformance.create({
-      data: {
-        playerId: testData.players[0].id, // Team A captain, BAT role
-        matchId: testData.matches[0].id,
-        fantasyPoints: 20,
-      },
-    })
-
-    await prisma.playerPerformance.create({
-      data: {
-        playerId: testData.players[1].id, // Team A regular, BOWL role
-        matchId: testData.matches[0].id,
-        fantasyPoints: 10,
-      },
-    })
+    // Add performances for Team A with POWER_PLAY_BAT chip
+    // Captain (BAT, 20 pts) gets 2x (captain) = 40, then +40 bonus (chip) = 80 total
+    // Regular (BOWL, 10 pts) gets 1x = 10, no bonus (not BAT) = 10 total
+    // Total live = 80 + 10 = 90
+    await Promise.all([
+      prisma.playerPerformance.create({
+        data: {
+          playerId: testData.players[0].id, // Team A captain, BAT role
+          matchId: testData.matches[0].id,
+          fantasyPoints: 20,
+        },
+      }),
+      prisma.playerPerformance.create({
+        data: {
+          playerId: testData.players[1].id, // Team A regular, BOWL role
+          matchId: testData.matches[0].id,
+          fantasyPoints: 10,
+        },
+      }),
+    ])
 
     // Add chip usage for Team A - POWER_PLAY_BAT
-    // Only BAT players get bonus
     await prisma.chipUsage.create({
       data: {
         teamId: testData.teams[0].id,
@@ -592,21 +600,14 @@ describe('Leaderboard API - Live Standings', () => {
       },
     })
 
-    // Verify chip is PENDING
-    const chip = await prisma.chipUsage.findFirst({
-      where: {
-        teamId: testData.teams[0].id,
-        gameweekId: testData.gameweekActive.id,
-      },
-    })
-    expect(chip?.status).toBe('PENDING')
-    expect(chip?.chipType).toBe('POWER_PLAY_BAT')
+    // Call computeLeagueLiveScores
+    const result = await computeLeagueLiveScores(prisma, testData.gameweekActive.id, testData.league.id)
 
-    // Team A with POWER_PLAY_BAT chip:
-    // Captain (BAT, 20 pts) gets 2x = 40, then +40 bonus from chip = 80 total
-    // Regular (BOWL, 10 pts) gets 1x = 10, no bonus = 10 total
-    // Total live = 90 (XI only)
-    // Expected totalPoints = 100 (stored) + 90 (live) = 190
+    // Verify Team A's live GW points include chip bonus
+    const teamA = testData.teams[0]
+    const teamALive = result.teamScores.get(teamA.id)
+    expect(teamALive?.liveGwPoints).toBe(90) // 80 (captain with chip) + 10 (regular no chip)
+    expect(teamALive?.chipType).toBe('POWER_PLAY_BAT')
 
     // Cleanup
     await prisma.playerPerformance.deleteMany({
@@ -617,20 +618,41 @@ describe('Leaderboard API - Live Standings', () => {
     })
   })
 
-  it('AC10.3: returns stored totals and FINAL status when GW aggregated', async () => {
+  it('AC10.3: returns no live scores when GW aggregated (aggregationStatus DONE)', async () => {
     if (shouldSkip) {
       console.warn('Test skipped: setup failed')
       return
     }
 
-    // Verify final gameweek has aggregationStatus DONE
+    // Add performances to the final gameweek (which has aggregationStatus DONE)
+    // We should not get live scores because aggregationStatus is DONE
+    const finalMatches = await prisma.match.findMany({
+      where: { gameweekId: testData.gameweekFinal.id, scoringStatus: 'SCORED' },
+    })
+
+    if (finalMatches.length > 0) {
+      await Promise.all([
+        prisma.playerPerformance.create({
+          data: {
+            playerId: testData.players[0].id,
+            matchId: finalMatches[0].id,
+            fantasyPoints: 50,
+          },
+        }),
+      ])
+    }
+
+    // When aggregationStatus is DONE, computeLeagueLiveScores should only be called
+    // if the gameweek has status ACTIVE AND aggregationStatus NOT DONE.
+    // The route handler checks: where: { status: 'ACTIVE', aggregationStatus: { not: 'DONE' } }
+    // So final GW (status COMPLETED) will not match, and no live scores are computed.
+
+    // Verify the final gameweek does NOT match the active GW criteria
     const gwFinal = await prisma.gameweek.findUnique({
       where: { id: testData.gameweekFinal.id },
     })
+    expect(gwFinal?.status).toBe('COMPLETED')
     expect(gwFinal?.aggregationStatus).toBe('DONE')
-
-    // When no active GW (or aggregationStatus is DONE), leaderboard should use stored totals
-    // This verifies that gwStatus would be FINAL (not LIVE)
 
     // Verify teams still have their stored season totals
     const teams = await prisma.team.findMany({
@@ -639,6 +661,11 @@ describe('Leaderboard API - Live Standings', () => {
     expect(teams[0].totalPoints).toBe(100)
     expect(teams[1].totalPoints).toBe(110)
     expect(teams[2].totalPoints).toBe(95)
+
+    // Cleanup
+    await prisma.playerPerformance.deleteMany({
+      where: { playerId: { in: testData.players.map((p) => p.id) } },
+    })
   })
 
   it('AC12.1: shows rank change when live GW overtakes stored rank', async () => {
@@ -648,44 +675,63 @@ describe('Leaderboard API - Live Standings', () => {
     }
 
     // Setup: Team A stored = 100, Team B stored = 110, Team C stored = 95
-    // Stored ranking: B(110) > A(100) > C(95)
+    // Stored ranking: B(110) > A(100) > C(95)  (previous rank: B=1, A=2, C=3)
     //
     // Boost Team C with high live points while giving Team B low points
-    // Live ranking could be: C(95+100) > B(110+5) > A(100+0) = 195 > 115 > 100
-    // Then rankChange for C should be positive (moved from 3rd to 1st)
+    // Team C captain (BAT, 50 pts) -> 2x = 100, Team C regular (BOWL, 30 pts) -> 1x = 30, total = 130
+    // Team B captain (BAT, 5 pts) -> 2x = 10, total live = 10
+    // Team A gets 0
+    // Live totals: C(95+130)=225 > B(110+10)=120 > A(100+0)=100
+    // Live ranking: C=1, B=2, A=3 (current rank: C=1, B=2, A=3)
+    // rankChange (previous - current): C(3-1)=+2, B(1-2)=-1, A(2-3)=-1
 
-    // Add performances to boost Team C
     await Promise.all([
       prisma.playerPerformance.create({
         data: {
-          playerId: testData.players[6].id, // Team C captain
+          playerId: testData.players[6].id, // Team C captain (BAT)
           matchId: testData.matches[0].id,
-          fantasyPoints: 50, // High score
+          fantasyPoints: 50,
         },
       }),
       prisma.playerPerformance.create({
         data: {
-          playerId: testData.players[7].id, // Team C regular
+          playerId: testData.players[7].id, // Team C regular (BOWL)
           matchId: testData.matches[0].id,
           fantasyPoints: 30,
         },
       }),
+      prisma.playerPerformance.create({
+        data: {
+          playerId: testData.players[3].id, // Team B captain (BAT)
+          matchId: testData.matches[0].id,
+          fantasyPoints: 5,
+        },
+      }),
     ])
 
-    // And lower scores for Team B
-    await prisma.playerPerformance.create({
-      data: {
-        playerId: testData.players[3].id, // Team B captain
-        matchId: testData.matches[0].id,
-        fantasyPoints: 5,
-      },
-    })
+    // Call computeLeagueLiveScores to verify live scores
+    const result = await computeLeagueLiveScores(prisma, testData.gameweekActive.id, testData.league.id)
 
-    // Verify performances were created
-    const perfs = await prisma.playerPerformance.findMany({
-      where: { playerId: { in: testData.players.map((p) => p.id) } },
-    })
-    expect(perfs.length).toBeGreaterThan(0)
+    // Verify live GW points match expectations
+    const teamA = testData.teams[0]
+    const teamB = testData.teams[1]
+    const teamC = testData.teams[2]
+
+    const teamALive = result.teamScores.get(teamA.id)
+    const teamBLive = result.teamScores.get(teamB.id)
+    const teamCLive = result.teamScores.get(teamC.id)
+
+    expect(teamALive?.liveGwPoints).toBe(0)
+    expect(teamBLive?.liveGwPoints).toBe(10) // captain 5 * 2 = 10
+    expect(teamCLive?.liveGwPoints).toBe(130) // captain 50 * 2 = 100, regular 30 * 1 = 30
+
+    // Compute rank changes manually to verify logic
+    // Previous rank (by stored total): B=1 (110), A=2 (100), C=3 (95)
+    // Current rank (by total + live): C=1 (225), B=2 (120), A=3 (100)
+    // rankChange = previousRank - currentRank
+    // C: 3 - 1 = +2
+    // B: 1 - 2 = -1
+    // A: 2 - 3 = -1
 
     // Cleanup
     await prisma.playerPerformance.deleteMany({

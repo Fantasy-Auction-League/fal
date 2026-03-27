@@ -196,12 +196,17 @@ export async function computeLiveTeamScore(
   const basePointsMap = aggregateBasePoints(performances)
 
   // Build matchesPlayedMap: count distinct matches per player
+  // Single pass using Map<playerId, Set<matchId>> to avoid O(N*M) filtering
+  const matchesPlayedMapTemp = new Map<string, Set<string>>()
+  for (const perf of performances) {
+    if (!matchesPlayedMapTemp.has(perf.playerId)) {
+      matchesPlayedMapTemp.set(perf.playerId, new Set())
+    }
+    matchesPlayedMapTemp.get(perf.playerId)!.add(perf.matchId)
+  }
   const matchesPlayedMap = new Map<string, number>()
-  for (const playerId of new Set(performances.map((p) => p.playerId))) {
-    const distinctMatches = new Set(
-      performances.filter((p) => p.playerId === playerId).map((p) => p.matchId)
-    )
-    matchesPlayedMap.set(playerId, distinctMatches.size)
+  for (const [playerId, matchIds] of matchesPlayedMapTemp) {
+    matchesPlayedMap.set(playerId, matchIds.size)
   }
 
   // Build slots with role information
@@ -326,12 +331,17 @@ export async function computeLeagueLiveScores(
   const basePointsMap = aggregateBasePoints(performances)
 
   // Build global matchesPlayedMap: count distinct matches per player
+  // Single pass using Map<playerId, Set<matchId>> to avoid O(N*M) filtering
+  const matchesPlayedMapTemp = new Map<string, Set<string>>()
+  for (const perf of performances) {
+    if (!matchesPlayedMapTemp.has(perf.playerId)) {
+      matchesPlayedMapTemp.set(perf.playerId, new Set())
+    }
+    matchesPlayedMapTemp.get(perf.playerId)!.add(perf.matchId)
+  }
   const matchesPlayedMap = new Map<string, number>()
-  for (const playerId of new Set(performances.map((p) => p.playerId))) {
-    const distinctMatches = new Set(
-      performances.filter((p) => p.playerId === playerId).map((p) => p.matchId)
-    )
-    matchesPlayedMap.set(playerId, distinctMatches.size)
+  for (const [playerId, matchIds] of matchesPlayedMapTemp) {
+    matchesPlayedMap.set(playerId, matchIds.size)
   }
 
   // Compute live scores for each team
