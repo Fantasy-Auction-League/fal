@@ -82,4 +82,54 @@ describe('Scoring Import API - Access Control (AC1.3)', () => {
     // Verify it doesn't return 403 (it may return 5xx due to mocked dependencies, but not 403)
     expect(response.status).not.toBe(403)
   })
+
+  it('AC1.3 partial: Non-app-admin user receives 403 on recalculate POST', async () => {
+    // Mock auth() to return a non-admin session
+    const { auth } = await import('@/lib/auth')
+    vi.mocked(auth).mockImplementation(mockAuthNonAdmin as any)
+
+    const { POST } = await import(
+      '@/app/api/scoring/recalculate/[matchId]/route'
+    )
+
+    // Call POST handler with params
+    const response = await POST(
+      new Request('http://localhost:3000/api/scoring/recalculate/match-123', {
+        method: 'POST',
+      }),
+      {
+        params: Promise.resolve({ matchId: 'match-123' }),
+      }
+    )
+
+    // Verify 403 status
+    expect(response.status).toBe(403)
+
+    const json = await response.json()
+    expect(json.error).toBe('Forbidden')
+  })
+
+  it('AC1.3 partial: Non-app-admin user receives 403 on cancel POST', async () => {
+    // Mock auth() to return a non-admin session
+    const { auth } = await import('@/lib/auth')
+    vi.mocked(auth).mockImplementation(mockAuthNonAdmin as any)
+
+    const { POST } = await import('@/app/api/scoring/cancel/[matchId]/route')
+
+    // Call POST handler with params
+    const response = await POST(
+      new Request('http://localhost:3000/api/scoring/cancel/match-123', {
+        method: 'POST',
+      }),
+      {
+        params: Promise.resolve({ matchId: 'match-123' }),
+      }
+    )
+
+    // Verify 403 status
+    expect(response.status).toBe(403)
+
+    const json = await response.json()
+    expect(json.error).toBe('Forbidden')
+  })
 })

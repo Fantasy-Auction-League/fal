@@ -22,6 +22,9 @@ vi.mock('@/lib/scoring/pipeline', () => ({
   runScoringPipeline: vi.fn(),
 }))
 
+// Mock environment variable for cron secret
+vi.stubEnv('CRON_SECRET', 'test-cron-secret')
+
 describe('Scoring Import API Response (AC2.3)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -126,5 +129,70 @@ describe('Scoring Import API Response (AC2.3)', () => {
     expect(json.errors).toEqual(['Match 456: some error'])
     expect(json.matchesTransitioned).toBe(0)
     expect(json.statusChanges).toEqual([])
+  })
+})
+
+describe('Scoring Cron API Response (AC2.3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('AC2.3 partial: Cron route response includes matchesTransitioned', async () => {
+    // Mock syncMatchStatuses
+    const { syncMatchStatuses } = await import(
+      '@/lib/sportmonks/match-sync'
+    )
+    vi.mocked(syncMatchStatuses).mockResolvedValueOnce({
+      checked: 10,
+      transitioned: 4,
+      changes: [
+        {
+          apiMatchId: 123,
+          oldStatus: 'SCHEDULED',
+          newStatus: 'COMPLETED',
+          teams: 'Team A vs Team B',
+        },
+      ],
+    })
+
+    // Mock runScoringPipeline
+    const { runScoringPipeline } = await import('@/lib/scoring/pipeline')
+    vi.mocked(runScoringPipeline).mockResolvedValueOnce({
+      matchesScored: 2,
+      matchesFailed: 0,
+      gwAggregated: false,
+      errors: [],
+    })
+
+    const { GET } = await import('@/app/api/scoring/cron/route')
+
+    // Call GET handler with proper authorization header
+    const response = await GET(
+      new Request('http://localhost:3000/api/scoring/cron', {
+        method: 'GET',
+        headers: {
+          authorization: `Bearer test-cron-secret`,
+        },
+      })
+    )
+
+    // Verify 200 status
+    expect(response.status).toBe(200)
+
+    const json = await response.json()
+
+    // Verify matchesTransitioned field is present and correct
+    expect(json).toHaveProperty('matchesTransitioned')
+    expect(json.matchesTransitioned).toBe(4)
+
+    // Verify pipeline results are also included
+    expect(json).toHaveProperty('matchesScored')
+    expect(json.matchesScored).toBe(2)
+
+    expect(json).toHaveProperty('matchesFailed')
+    expect(json.matchesFailed).toBe(0)
+
+    expect(json).toHaveProperty('gwAggregated')
+    expect(json.gwAggregated).toBe(false)
   })
 })
