@@ -276,6 +276,11 @@ export default function DashboardPage() {
   const [liveScoreResponse, setLiveScoreResponse] = useState<LiveScoreResponse | null>(null)
   const [gwStatus, setGwStatus] = useState<'LIVE' | 'FINAL'>('FINAL')
 
+  // Live GW state from leaderboard response
+  const [activeGwNumber, setActiveGwNumber] = useState<number | null>(null)
+  const [matchesScored, setMatchesScored] = useState<number | null>(null)
+  const [matchesTotal, setMatchesTotal] = useState<number | null>(null)
+
   // Join league
   const [joinFormOpen, setJoinFormOpen] = useState(false)
   const [joinCode, setJoinCode] = useState('')
@@ -324,12 +329,36 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/leaderboard/${leagueId}`)
       if (!res.ok) return
-      const data = await res.json()
+      const data: LeaderboardResponse = await res.json()
       setStandings(data.standings || [])
+      setGwStatus(data.gwStatus)
+      setActiveGwNumber(data.activeGwNumber)
+      setMatchesScored(data.matchesScored)
+      setMatchesTotal(data.matchesTotal)
     } catch {
       // silent
     }
   }, [])
+
+  /* ─── Eager fetch live score on page load ─── */
+  const eagerFetchLiveScore = useCallback(async () => {
+    if (!league || !currentGw) return
+
+    // Find user's team in this league
+    const userId = session?.user?.id
+    const myTeam = league.teams?.find(t => t.userId === userId)
+    if (!myTeam) return
+
+    try {
+      const res = await fetch(`/api/teams/${myTeam.id}/scores/${currentGw.id}`)
+      if (res.ok) {
+        const data: LiveScoreResponse = await res.json()
+        setLiveScoreResponse(data)
+      }
+    } catch {
+      // silent
+    }
+  }, [league, currentGw, session?.user?.id])
 
   useEffect(() => {
     if (sessionStatus === 'authenticated') {
@@ -343,6 +372,13 @@ export default function DashboardPage() {
       }).finally(() => setInitialLoad(false))
     }
   }, [sessionStatus, fetchLeague, fetchCurrentGw, fetchStandings])
+
+  // Eager fetch live score when gwStatus becomes LIVE
+  useEffect(() => {
+    if (gwStatus === 'LIVE' && !liveScoreResponse) {
+      eagerFetchLiveScore()
+    }
+  }, [gwStatus, liveScoreResponse, eagerFetchLiveScore])
 
   /* ─── GW Score Detail fetch ─── */
   const openGwSheet = useCallback(async () => {
@@ -359,8 +395,10 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/teams/${myTeam.id}/scores/${currentGw.id}`)
       if (res.ok) {
-        const data = await res.json()
-        setGwPlayerScores(data.playerScores || [])
+        const data: LiveScoreResponse = await res.json()
+        setLiveScoreResponse(data)
+        setGwStatus(data.status)
+        setGwPlayerScores([]) // Clear legacy playerScores
       }
     } catch {
       // silent
@@ -458,6 +496,9 @@ export default function DashboardPage() {
   const highestPoints = topGwStanding?.lastGwPoints ?? 0
   const hasScores = standings.some(s => s.totalPoints > 0)
 
+  // GW score total from live response or legacy playerScores
+  const gwScoreTotal = liveScoreResponse?.totalPoints ?? gwPlayerScores.reduce((sum, s) => sum + s.totalPoints, 0)
+
   // Deadline
   const nextGwNumber = currentGw ? currentGw.number + 1 : null
   const deadline = currentGw
@@ -470,9 +511,6 @@ export default function DashboardPage() {
 
   // Standings for display
   const visibleStandings = showAllStandings ? standings : standings.slice(0, 7)
-
-  // GW score total from player scores
-  const gwScoreTotal = gwPlayerScores.reduce((sum, s) => sum + s.totalPoints, 0)
 
   return (
     <AppFrame>
