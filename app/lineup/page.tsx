@@ -149,6 +149,11 @@ const IconLeague = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
   </svg>
 )
+const IconShield = () => (
+  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+)
 
 /* ─── Bowling Boost SVG ─── */
 const BowlingBoostIcon = ({ color }: { color: string }) => (
@@ -2321,6 +2326,7 @@ export default function LineupPage() {
           { href: '/lineup', label: 'Lineup', Icon: IconLineup, active: true },
           { href: '/players', label: 'Players', Icon: IconPlayers, active: false },
           { href: '/admin', label: 'League', Icon: IconLeague, active: false },
+          ...(session?.user?.isAppAdmin ? [{ href: '/app-admin', label: 'Admin', Icon: IconShield, active: false }] : []),
         ].map(({ href, label, Icon, active }) => (
           <a key={label} href={href} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,

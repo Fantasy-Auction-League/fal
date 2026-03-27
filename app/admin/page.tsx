@@ -104,6 +104,11 @@ const IconLeague = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
   </svg>
 )
+const IconShield = () => (
+  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+)
 const IconCopy = () => (
   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <rect x="9" y="9" width="13" height="13" rx="2" />
@@ -1070,6 +1075,12 @@ export default function AdminPage() {
           <IconLeague />
           <span>League</span>
         </a>
+        {session?.user?.isAppAdmin && (
+          <a href="/app-admin" style={{ ...styles.navItem(false), textDecoration: 'none' }}>
+            <IconShield />
+            <span>Admin</span>
+          </a>
+        )}
       </nav>
     </div>
     </AppFrame>
