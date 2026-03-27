@@ -37,7 +37,7 @@ export async function runScoringPipeline(): Promise<PipelineResult> {
       SELECT id FROM "Match"
       WHERE "scoringStatus" = 'COMPLETED'
       ORDER BY "startingAt" ASC
-      LIMIT 4
+      LIMIT 6
     )
     RETURNING id, "apiMatchId", "gameweekId", "superOver"
   `)
