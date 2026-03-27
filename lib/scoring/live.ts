@@ -238,3 +238,146 @@ export async function computeLiveTeamScore(
     players: playerScores,
   }
 }
+
+// ─── computeLeagueLiveScores ────────────────────────────────────────
+
+export interface LeagueLiveScoreResult {
+  teamScores: Map<
+    string,
+    {
+      liveGwPoints: number
+      chipType: 'POWER_PLAY_BAT' | 'BOWLING_BOOST' | null
+    }
+  >
+  matchesScored: number
+  matchesTotal: number
+}
+
+/**
+ * Computes live GW scores for ALL teams in a league with batch queries.
+ * Uses 3 queries total (lineups, performances, chips) instead of N+1.
+ *
+ * Query 1: Fetch all lineups for the league's teams in this gameweek
+ * Query 2: Fetch all player performances for scored matches
+ * Query 3: Fetch all chip usages for these teams
+ *
+ * Then computes scores in-memory using pure functions (aggregateBasePoints,
+ * computeLivePlayerScores) to avoid logic drift between single-team and
+ * batch paths.
+ */
+export async function computeLeagueLiveScores(
+  prisma: PrismaClient,
+  gameweekId: string,
+  leagueId: string
+): Promise<LeagueLiveScoreResult> {
+  // Query 1: Fetch all lineups for the league's teams in this gameweek
+  const lineups = await prisma.lineup.findMany({
+    where: {
+      gameweekId,
+      team: { leagueId },
+    },
+    include: {
+      slots: {
+        include: {
+          player: {
+            select: {
+              id: true,
+              role: true,
+            },
+          },
+        },
+      },
+      team: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  })
+
+  // Query 2: Fetch all matches and determine which are scored
+  const allMatches = await prisma.match.findMany({
+    where: { gameweekId },
+    select: { id: true, scoringStatus: true },
+  })
+
+  const scoredMatches = allMatches.filter((m) => m.scoringStatus === 'SCORED')
+  const matchesScored = scoredMatches.length
+  const matchesTotal = allMatches.length
+
+  // Fetch all performances for scored matches in this gameweek
+  const performances = await prisma.playerPerformance.findMany({
+    where: { matchId: { in: scoredMatches.map((m) => m.id) } },
+    select: { playerId: true, fantasyPoints: true, matchId: true },
+  })
+
+  // Query 3: Fetch all chip usages for teams in this league in this gameweek
+  const teamIds = lineups.map((l) => l.team.id)
+  const chipUsages = await prisma.chipUsage.findMany({
+    where: { teamId: { in: teamIds }, gameweekId, status: 'PENDING' },
+  })
+
+  // Build a map: teamId -> chipType for quick lookup
+  const chipByTeam = new Map<string, 'POWER_PLAY_BAT' | 'BOWLING_BOOST'>(
+    chipUsages.map((c) => [c.teamId, c.chipType as 'POWER_PLAY_BAT' | 'BOWLING_BOOST'])
+  )
+
+  // Build global basePointsMap from all performances
+  const basePointsMap = aggregateBasePoints(performances)
+
+  // Build global matchesPlayedMap: count distinct matches per player
+  const matchesPlayedMap = new Map<string, number>()
+  for (const playerId of new Set(performances.map((p) => p.playerId))) {
+    const distinctMatches = new Set(
+      performances.filter((p) => p.playerId === playerId).map((p) => p.matchId)
+    )
+    matchesPlayedMap.set(playerId, distinctMatches.size)
+  }
+
+  // Compute live scores for each team
+  const teamScores = new Map<
+    string,
+    {
+      liveGwPoints: number
+      chipType: 'POWER_PLAY_BAT' | 'BOWLING_BOOST' | null
+    }
+  >()
+
+  for (const lineup of lineups) {
+    const teamId = lineup.team.id
+
+    // Build slots with role information for this team's lineup
+    const slots: LiveScoreSlot[] = lineup.slots.map((slot) => ({
+      playerId: slot.playerId,
+      slotType: slot.slotType as 'XI' | 'BENCH',
+      role: slot.player?.role ?? 'ALL',
+      isCaptain: slot.role === 'CAPTAIN',
+      isVC: slot.role === 'VC',
+    }))
+
+    // Delegate to computeLivePlayerScores with shared data
+    // This ensures scoring logic is identical between single-team and batch paths
+    const chipType = chipByTeam.get(teamId) || null
+    const playerScores = computeLivePlayerScores({
+      slots,
+      basePointsMap,
+      chipType,
+      matchesPlayedMap,
+    })
+
+    // Calculate live GW total (XI only)
+    const xiScores = playerScores.filter((p) => p.slotType === 'XI')
+    const liveGwPoints = xiScores.reduce((sum, p) => sum + p.multipliedPoints + p.chipBonus, 0)
+
+    teamScores.set(teamId, {
+      liveGwPoints,
+      chipType,
+    })
+  }
+
+  return {
+    teamScores,
+    matchesScored,
+    matchesTotal,
+  }
+}
