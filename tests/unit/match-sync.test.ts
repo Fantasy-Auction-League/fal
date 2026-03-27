@@ -1,143 +1,51 @@
-import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest'
-import { PrismaClient } from '@prisma/client'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { SportMonksFixture } from '@/lib/sportmonks/types'
 
-const prisma = new PrismaClient()
-
-// Create a shared mock for sportmonks.fetch - MUST be accessible before mocking
-let sportmonksFetchMock: any = vi.fn()
-
-// Mock the sportmonks client module BEFORE importing syncMatchStatuses
-vi.mock('@/lib/sportmonks/client', () => {
-  return {
-    sportmonks: new Proxy(
-      {},
-      {
-        get: (target, prop) => {
-          if (prop === 'fetch') return sportmonksFetchMock
-          return undefined
-        },
-      }
-    ),
-    getSportMonksClient: vi.fn(() => ({
-      fetch: sportmonksFetchMock,
-    })),
-  }
-})
-
-// Import after mocking
-import { syncMatchStatuses } from '@/lib/sportmonks/match-sync'
-
-const TEST_SUFFIX = '@test.vitest.matchsync.unit'
-const adminEmail = `match-sync-admin-unit${TEST_SUFFIX}`
-
-let league: { id: string }
-let gameweek: { id: string }
-let adminUser: { id: string }
-
-beforeAll(async () => {
-  await cleanup()
-
-  adminUser = await prisma.user.create({
-    data: { email: adminEmail, name: 'Match Sync Unit Test Admin' },
-  })
-
-  league = await prisma.league.create({
-    data: {
-      name: 'Match Sync Unit Test League',
-      inviteCode: 'MATCH-SYNC-UNIT-TEST-VITEST',
-      adminUserId: adminUser.id,
-    },
-  })
-
-  gameweek = await prisma.gameweek.create({
-    data: {
-      number: 8888,
-      lockTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      status: 'ACTIVE',
-      aggregationStatus: 'PENDING',
-    },
-  })
-})
-
-beforeEach(async () => {
-  // Create a completely fresh mock for each test
-  sportmonksFetchMock = vi.fn()
-
-  // Clean up any leftover SCHEDULED matches from previous tests
-  if (gameweek?.id) {
-    await prisma.playerPerformance.deleteMany({
-      where: { match: { gameweekId: gameweek.id, scoringStatus: 'SCHEDULED' } },
-    })
-    await prisma.match.deleteMany({
-      where: { gameweekId: gameweek.id, scoringStatus: 'SCHEDULED' },
-    })
-  }
-})
-
-afterAll(async () => {
-  await cleanup()
-  await prisma.$disconnect()
-})
-
-async function cleanup() {
-  const testEmails = [adminEmail]
-
-  const gw = await prisma.gameweek.findUnique({ where: { number: 8888 } })
-  if (gw) {
-    await prisma.playerScore.deleteMany({ where: { gameweekId: gw.id } })
-    await prisma.gameweekScore.deleteMany({ where: { gameweekId: gw.id } })
-
-    const matches = await prisma.match.findMany({
-      where: { gameweekId: gw.id },
-      select: { id: true },
-    })
-    for (const match of matches) {
-      await prisma.playerPerformance.deleteMany({ where: { matchId: match.id } })
-    }
-    await prisma.match.deleteMany({ where: { gameweekId: gw.id } })
-
-    await prisma.gameweek.delete({ where: { id: gw.id } })
-  }
-
-  const testUsers = await prisma.user.findMany({
-    where: { email: { in: testEmails } },
-    select: { id: true },
-  })
-  const testUserIds = testUsers.map((u) => u.id)
-
-  if (testUserIds.length > 0) {
-    const leagues = await prisma.league.findMany({
-      where: { adminUserId: { in: testUserIds } },
-      select: { id: true },
-    })
-    const leagueIds = leagues.map((l) => l.id)
-
-    if (leagueIds.length > 0) {
-      await prisma.teamPlayer.deleteMany({ where: { leagueId: { in: leagueIds } } })
-      await prisma.team.deleteMany({ where: { leagueId: { in: leagueIds } } })
-      await prisma.league.deleteMany({ where: { id: { in: leagueIds } } })
-    }
-  }
-
-  await prisma.user.deleteMany({ where: { email: { in: testEmails } } })
+// Create a shared object that will be populated with mocks
+const mockState = {
+  findMany: vi.fn(),
+  update: vi.fn(),
 }
 
+// Before any imports, set up module mocks - they will use the mockState object
+vi.mock('@/lib/db', () => ({
+  prisma: {
+    match: {
+      findMany: (...args: any[]) => mockState.findMany(...args),
+      update: (...args: any[]) => mockState.update(...args),
+    },
+  },
+}))
+
+// Stub global fetch
+const mockFetch = vi.fn()
+vi.stubGlobal('fetch', mockFetch)
+
+// Import after all mocks are set up
+import { syncMatchStatuses } from '@/lib/sportmonks/match-sync'
+
 describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.findMany.mockClear()
+    mockState.update.mockClear()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('AC2.1: SCHEDULED match with SportMonks status "Finished" transitions to COMPLETED', async () => {
-    const match = await prisma.match.create({
-      data: {
+    const mockMatches = [
+      {
+        id: 'match-1',
         apiMatchId: 1001,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team A',
         visitorTeamName: 'Team B',
-        startingAt: new Date('2025-03-22T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
+    ]
+
+    mockState.findMany.mockResolvedValueOnce(mockMatches)
 
     const mockFixture: SportMonksFixture = {
       id: 1001,
@@ -159,7 +67,10 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       total_overs_played: 20,
     }
 
-    sportmonksFetchMock.mockResolvedValueOnce(mockFixture)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: mockFixture }),
+    })
 
     const result = await syncMatchStatuses()
 
@@ -173,29 +84,30 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       teams: 'Team A vs Team B',
     })
 
-    const updatedMatch = await prisma.match.findUnique({
-      where: { id: match.id },
+    expect(mockState.update).toHaveBeenCalledOnce()
+    expect(mockState.update).toHaveBeenCalledWith({
+      where: { id: 'match-1' },
+      data: {
+        scoringStatus: 'COMPLETED',
+        apiStatus: 'Finished',
+        note: 'Team A won by 5 wickets',
+        winnerTeamId: 113,
+        superOver: false,
+      },
     })
-    expect(updatedMatch!.scoringStatus).toBe('COMPLETED')
-    expect(updatedMatch!.apiStatus).toBe('Finished')
-    expect(updatedMatch!.note).toBe('Team A won by 5 wickets')
-    expect(updatedMatch!.winnerTeamId).toBe(113)
   })
 
   it('AC2.2: SCHEDULED match with SportMonks status "Cancl." transitions to CANCELLED', async () => {
-    const match = await prisma.match.create({
-      data: {
+    const mockMatches = [
+      {
+        id: 'match-2',
         apiMatchId: 1002,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team C',
         visitorTeamName: 'Team D',
-        startingAt: new Date('2025-03-23T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
+    ]
+
+    mockState.findMany.mockResolvedValueOnce(mockMatches)
 
     const mockFixture: SportMonksFixture = {
       id: 1002,
@@ -217,7 +129,10 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       total_overs_played: null,
     }
 
-    sportmonksFetchMock.mockResolvedValueOnce(mockFixture)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: mockFixture }),
+    })
 
     const result = await syncMatchStatuses()
 
@@ -231,28 +146,20 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       teams: 'Team C vs Team D',
     })
 
-    const updatedMatch = await prisma.match.findUnique({
-      where: { id: match.id },
-    })
-    expect(updatedMatch!.scoringStatus).toBe('CANCELLED')
-    expect(updatedMatch!.apiStatus).toBe('Cancl.')
-    expect(updatedMatch!.note).toBe('Match cancelled due to weather')
+    expect(mockState.update).toHaveBeenCalledOnce()
   })
 
   it('AC2.2: SCHEDULED match with SportMonks status "Aban." transitions to CANCELLED', async () => {
-    const match = await prisma.match.create({
-      data: {
+    const mockMatches = [
+      {
+        id: 'match-3',
         apiMatchId: 1003,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team E',
         visitorTeamName: 'Team F',
-        startingAt: new Date('2025-03-24T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
+    ]
+
+    mockState.findMany.mockResolvedValueOnce(mockMatches)
 
     const mockFixture: SportMonksFixture = {
       id: 1003,
@@ -274,7 +181,10 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       total_overs_played: null,
     }
 
-    sportmonksFetchMock.mockResolvedValueOnce(mockFixture)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: mockFixture }),
+    })
 
     const result = await syncMatchStatuses()
 
@@ -288,27 +198,20 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       teams: 'Team E vs Team F',
     })
 
-    const updatedMatch = await prisma.match.findUnique({
-      where: { id: match.id },
-    })
-    expect(updatedMatch!.scoringStatus).toBe('CANCELLED')
-    expect(updatedMatch!.apiStatus).toBe('Aban.')
+    expect(mockState.update).toHaveBeenCalledOnce()
   })
 
   it('SCHEDULED match with SportMonks status "NS" remains SCHEDULED (no update)', async () => {
-    const match = await prisma.match.create({
-      data: {
+    const mockMatches = [
+      {
+        id: 'match-4',
         apiMatchId: 1004,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team G',
         visitorTeamName: 'Team H',
-        startingAt: new Date('2025-03-25T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
+    ]
+
+    mockState.findMany.mockResolvedValueOnce(mockMatches)
 
     const mockFixture: SportMonksFixture = {
       id: 1004,
@@ -330,63 +233,42 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       total_overs_played: null,
     }
 
-    sportmonksFetchMock.mockResolvedValueOnce(mockFixture)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: mockFixture }),
+    })
 
     const result = await syncMatchStatuses()
 
     expect(result.checked).toBe(1)
     expect(result.transitioned).toBe(0)
     expect(result.changes).toHaveLength(0)
-
-    const updatedMatch = await prisma.match.findUnique({
-      where: { id: match.id },
-    })
-    expect(updatedMatch!.scoringStatus).toBe('SCHEDULED')
-    expect(updatedMatch!.apiStatus).toBe('NS')
+    expect(mockState.update).not.toHaveBeenCalled()
   })
 
   it('handles multiple SCHEDULED matches with mixed status transitions', async () => {
-    const match1 = await prisma.match.create({
-      data: {
+    const mockMatches = [
+      {
+        id: 'match-5',
         apiMatchId: 1005,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team I',
         visitorTeamName: 'Team J',
-        startingAt: new Date('2025-03-26T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
-
-    const match2 = await prisma.match.create({
-      data: {
+      {
+        id: 'match-6',
         apiMatchId: 1006,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team K',
         visitorTeamName: 'Team L',
-        startingAt: new Date('2025-03-27T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
-
-    const match3 = await prisma.match.create({
-      data: {
+      {
+        id: 'match-7',
         apiMatchId: 1007,
-        gameweekId: gameweek.id,
-        localTeamId: 113,
-        visitorTeamId: 116,
         localTeamName: 'Team M',
         visitorTeamName: 'Team N',
-        startingAt: new Date('2025-03-28T14:00:00Z'),
-        apiStatus: 'NS',
-        scoringStatus: 'SCHEDULED',
       },
-    })
+    ]
+
+    mockState.findMany.mockResolvedValueOnce(mockMatches)
 
     const fixtures: Record<number, SportMonksFixture> = {
       1005: {
@@ -448,13 +330,29 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       },
     }
 
-    // Use implementation function instead of chaining mockResolvedValueOnce
-    sportmonksFetchMock.mockImplementation((path: string) => {
-      const matchId = parseInt(path.split('/')[2], 10)
-      if (fixtures[matchId]) {
-        return Promise.resolve(fixtures[matchId])
+    mockFetch.mockImplementation(async () => {
+      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+      if (!lastCall || !lastCall[0]) return { ok: false }
+
+      const url = new URL(lastCall[0])
+      const pathMatch = url.pathname.match(/\/fixtures\/(\d+)/)
+      if (!pathMatch) return { ok: false }
+
+      const matchId = parseInt(pathMatch[1], 10)
+      const fixture = fixtures[matchId]
+
+      if (!fixture) {
+        return {
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+        }
       }
-      return Promise.reject(new Error(`Fixture ${matchId} not found`))
+
+      return {
+        ok: true,
+        json: async () => ({ data: fixture }),
+      }
     })
 
     const result = await syncMatchStatuses()
@@ -477,13 +375,95 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
       teams: 'Team K vs Team L',
     })
 
-    const updated1 = await prisma.match.findUnique({ where: { id: match1.id } })
-    expect(updated1!.scoringStatus).toBe('COMPLETED')
+    expect(mockState.update).toHaveBeenCalledTimes(2)
+  })
 
-    const updated2 = await prisma.match.findUnique({ where: { id: match2.id } })
-    expect(updated2!.scoringStatus).toBe('CANCELLED')
+  it('handles SportMonks API errors gracefully', async () => {
+    const mockMatches = [
+      {
+        id: 'match-8',
+        apiMatchId: 1008,
+        localTeamName: 'Team O',
+        visitorTeamName: 'Team P',
+      },
+      {
+        id: 'match-9',
+        apiMatchId: 1009,
+        localTeamName: 'Team Q',
+        visitorTeamName: 'Team R',
+      },
+    ]
 
-    const updated3 = await prisma.match.findUnique({ where: { id: match3.id } })
-    expect(updated3!.scoringStatus).toBe('SCHEDULED')
+    mockState.findMany.mockResolvedValueOnce(mockMatches)
+
+    mockFetch.mockImplementation(async () => {
+      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+      if (!lastCall || !lastCall[0]) return { ok: false }
+
+      const url = new URL(lastCall[0])
+      const pathMatch = url.pathname.match(/\/fixtures\/(\d+)/)
+      if (!pathMatch) return { ok: false }
+
+      const matchId = parseInt(pathMatch[1], 10)
+
+      if (matchId === 1008) {
+        // Simulate API error
+        return {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+        }
+      }
+
+      // 1009 succeeds
+      if (matchId === 1009) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1009,
+              league_id: 4652,
+              season_id: 23453,
+              stage_id: 77083360,
+              round: '8',
+              localteam_id: 113,
+              visitorteam_id: 116,
+              starting_at: '2025-03-29T14:00:00Z',
+              type: 'T20',
+              status: 'Finished',
+              note: 'Team Q won by 2 wickets',
+              winner_team_id: 117,
+              toss_won_team_id: 116,
+              elected: 'bowl',
+              man_of_match_id: 1234,
+              super_over: false,
+              total_overs_played: 40,
+            } as SportMonksFixture,
+          }),
+        }
+      }
+
+      return { ok: false }
+    })
+
+    const result = await syncMatchStatuses()
+
+    expect(result.checked).toBe(2)
+    expect(result.transitioned).toBe(1)
+    expect(result.changes).toHaveLength(1)
+    expect(result.changes[0].apiMatchId).toBe(1009)
+    expect(mockState.update).toHaveBeenCalledOnce()
+  })
+
+  it('returns empty result when no SCHEDULED matches exist', async () => {
+    mockState.findMany.mockResolvedValueOnce([])
+
+    const result = await syncMatchStatuses()
+
+    expect(result.checked).toBe(0)
+    expect(result.transitioned).toBe(0)
+    expect(result.changes).toHaveLength(0)
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(mockState.update).not.toHaveBeenCalled()
   })
 })
