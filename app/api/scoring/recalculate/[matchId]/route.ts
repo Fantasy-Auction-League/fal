@@ -11,7 +11,7 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if ((session.user as any).role !== 'ADMIN') {
+  if (!session.user.isAppAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

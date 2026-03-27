@@ -8,8 +8,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Only admins can trigger scoring
-  if ((session.user as any).role !== 'ADMIN') {
+  // Only app admins can trigger scoring
+  if (!session.user.isAppAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
