@@ -310,3 +310,73 @@ This means live scores will differ from final scores. The UI makes this clear wi
 5. **Live leaderboard**: During active GW → shows "Live Standings" label with provisional rankings
 6. **Live — chip pending**: Active chip shown with explanation text, not applied to running total
 7. **Live — bench player scored**: Bench player points shown but clearly marked as bench (not in running total)
+
+---
+
+## Review Findings (Staff Engineer + Product Owner)
+
+### Architecture Changes
+
+**1. No separate `/live/` route — extend existing scores API instead**
+
+Instead of creating `app/api/teams/[teamId]/scores/live/[gameweekId]/route.ts`, extend the existing `app/api/teams/[teamId]/scores/[gameweekId]/route.ts`. When no `GameweekScore` exists, compute live running total from `PlayerPerformance`. Add `status: 'LIVE' | 'FINAL'` to the response. The client renders the same data either way, with only a badge difference.
+
+This avoids duplicate auth checks, team lookups, and match queries across two parallel routes.
+
+**2. Extract shared scoring functions into `lib/scoring/live.ts`**
+
+The live computation is a subset of `aggregateGameweek()` in `pipeline.ts`. Extract:
+- `sumPlayerPerformances(gameweekId)` — aggregates fantasy points per player across scored matches
+- `computeLiveTeamScore(teamId, gameweekId)` — fetches lineup, sums performances, applies captain 2x
+
+Reuse `resolveMultipliers()` from `lib/scoring/multipliers.ts` for captain 2x. Both the scores API and the leaderboard call `computeLiveTeamScore()`.
+
+**3. Leaderboard — single SQL query, not N+1**
+
+Computing live totals for 10 teams naively = 20+ queries. Use a single aggregation query and add `Cache-Control: s-maxage=60, stale-while-revalidate=300` header. Live data only changes when admin scores a match (~once per 3 hours).
+
+### Dashboard Changes
+
+**4. Keep season total in hero — add separate live GW card**
+
+The dashboard hero currently shows `myStanding.totalPoints` (cumulative season total). Replacing it with a GW running total would confuse users (1,245 → 342 looks like lost points).
+
+**Fix:** Keep season total in the hero. Add a new card below:
+
+```
+┌─────────────────────────────────────────┐
+│   Season Total: 1,245                   │  ← hero (unchanged)
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│   GW 3                                  │
+│   🔴 LIVE • 4/7 matches scored          │  ← new card
+│          342                            │
+│   Bench subs + chips after final match  │
+└─────────────────────────────────────────┘
+```
+
+**5. Show estimated chip impact, not just a label**
+
+Live-to-final score swing can be 50%+ (bench subs add points, chip doubles an entire role). The one-line disclaimer is insufficient.
+
+**Fix:** Show estimated chip effect explicitly:
+
+> "Power Play Bat active — your 5 BAT players have 180 pts. This will become 360 in final score."
+
+### Performance
+
+**6. Add `Cache-Control` headers**
+
+Live scores don't change between scoring events. Add `Cache-Control: s-maxage=60, stale-while-revalidate=300` to the scores and leaderboard API responses. Vercel's edge CDN will cache this, eliminating repeated Neon queries.
+
+### Updated Files
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `lib/scoring/live.ts` | CREATE | `computeLiveTeamScore()`, `sumPlayerPerformances()` |
+| `app/api/teams/[teamId]/scores/[gameweekId]/route.ts` | MODIFY | Add live fallback when no GameweekScore |
+| `app/api/leaderboard/[leagueId]/route.ts` | MODIFY | Single SQL query for live standings + cache headers |
+| `app/page.tsx` | MODIFY | Keep season hero, add live GW card below |
+
+**Removed:** `app/api/teams/[teamId]/scores/live/[gameweekId]/route.ts` (merged into existing route)

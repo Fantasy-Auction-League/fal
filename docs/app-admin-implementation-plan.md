@@ -371,3 +371,85 @@ Covered by the TDD test suite (layers 6-9) in `docs/test-coverage-matrix.md`.
 1. **Should the cron frequency increase?** Currently once daily at midnight UTC. More frequent would catch missed matches faster, but Vercel Hobby only allows 1 daily cron. **Recommendation**: keep as-is since admin button is the primary trigger, cron is just a safety net.
 
 2. **Should admin get push notifications when matches finish?** Would eliminate the need to manually check. **Recommendation**: defer — out of scope for this PR.
+
+---
+
+## Review Findings (Staff Engineer + Product Owner)
+
+The following issues were identified during review and must be addressed before or during implementation:
+
+### P0 — Blockers
+
+**1. No SCHEDULED → COMPLETED transition**
+The scoring pipeline only claims matches in `COMPLETED` status. But after initial fixture import, nothing transitions matches from `SCHEDULED` to `COMPLETED` when they finish on SportMonks. The Import Scores button would always say "No matches ready to score."
+
+**Fix:** The Import Scores flow must first refresh match statuses from SportMonks before running the scoring pipeline. Add a `syncMatchStatuses()` step that fetches fixture statuses and transitions `SCHEDULED` → `COMPLETED` (or `CANCELLED`) for finished matches.
+
+**2. "Your Points" semantic change**
+Dashboard hero currently shows `myStanding.totalPoints` (cumulative season total). The live plan replaces this with a GW running total mid-week. Users will see their score drop from 1,245 (season) to 342 (GW live) and think they lost points.
+
+**Fix:** Keep season total in the hero. Add a separate card below for live GW score: "GW 3 Live: 342 • 4/7 matches scored."
+
+### P1 — Must Fix
+
+**3. Delete `app/api/user/is-app-admin/route.ts`**
+Session already carries `user.email`. Add `isAppAdmin: boolean` to the JWT token in `lib/auth.ts` instead of creating a separate API route called on every page navigation.
+
+**4. Extend existing scores API instead of creating `/live/` route**
+The existing `app/api/teams/[teamId]/scores/[gameweekId]/route.ts` already queries the same data. Add `status: 'LIVE' | 'FINAL'` to the response. When no `GameweekScore` exists, compute live running total from `PlayerPerformance`. This avoids a parallel route with duplicate auth/query logic.
+
+**5. Extract shared scoring functions**
+The live scores logic duplicates a subset of `aggregateGameweek()`. Extract:
+- `sumPlayerPerformances(gameweekId)` from pipeline lines 385-396
+- Reuse `resolveMultipliers()` from `lib/scoring/multipliers.ts` for captain 2x
+- Create `computeLiveTeamScore(teamId, gameweekId)` that both the scores API and leaderboard call
+
+**6. Leaderboard N+1 query**
+Computing live totals for 10 teams naively = 20+ queries per request. Use a single aggregation SQL query + `Cache-Control: s-maxage=60, stale-while-revalidate=300` header.
+
+**7. Pipeline timeout risk**
+8 matches × ~5s each + 10s aggregation = 50-58s, dangerously close to Vercel's 60s limit. **Fix:** Cap at 6 matches per run. Better: have the UI auto-retry in batches of 4 until all matches are scored.
+
+**8. AppFrame has no navigation**
+`app/components/AppFrame.tsx` is a 7-line div wrapper with no nav bar. The bottom navigation is rendered inline in page components. Find the actual nav component and update the plan.
+
+### P2 — Should Fix
+
+**9. Add `Cache-Control` headers to live scores and leaderboard APIs** — data only changes when admin scores a match, so a 60s cache eliminates repeated Neon queries during peak traffic.
+
+**10. Live-to-final score swing can be 50%+** — Show estimated chip impact: "Your 5 BAT players = 180 pts, will become 360 with Power Play Bat." Make the math visible.
+
+**11. Lineup carry-forward contradicts edge case** — PRD Section 4 says lineups carry forward. Live plan says "No lineup submitted" for missing lineups. Align these.
+
+**12. Admin dashboard must be mobile-responsive** — PRD says mobile-first (393px). Admin might score from phone while watching the match.
+
+**13. `UserRole.ADMIN` becomes dead code** — After switching scoring routes to `isAppAdmin()` (env var), the `ADMIN` enum value is unused. Explicitly document its deprecation.
+
+**14. Add operational guidance for admin** — "Wait 15-30 minutes after match completion for full data from SportMonks."
+
+**15. Sync player teams needs concurrency guard** — Unlike the scoring pipeline (atomic `UPDATE...RETURNING`), sync has no claim pattern. Two concurrent applies could create duplicate players. Add a simple DB-based lock.
+
+### Updated Files Summary (Post-Review)
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `lib/app-admin.ts` | CREATE | `isAppAdmin()` helper |
+| `lib/sync-players.ts` | CREATE | Shared sync logic |
+| `lib/scoring/live.ts` | CREATE | `computeLiveTeamScore()`, `sumPlayerPerformances()` |
+| `lib/sportmonks/match-sync.ts` | CREATE | `syncMatchStatuses()` — refresh match statuses from API |
+| `app/api/admin/sync-players/route.ts` | CREATE | GET (dry run) + POST (apply) |
+| `app/app-admin/page.tsx` | CREATE | App admin dashboard UI |
+| `lib/auth.ts` | MODIFY | Add `isAppAdmin` to JWT token |
+| `app/api/scoring/import/route.ts` | MODIFY | Add match status sync step + use `isAppAdmin()` |
+| `app/api/scoring/recalculate/[matchId]/route.ts` | MODIFY | Use `isAppAdmin()` |
+| `app/api/scoring/cancel/[matchId]/route.ts` | MODIFY | Use `isAppAdmin()` |
+| `app/api/teams/[teamId]/scores/[gameweekId]/route.ts` | MODIFY | Add live score fallback when no GameweekScore |
+| `app/api/leaderboard/[leagueId]/route.ts` | MODIFY | Live standings via single SQL query + cache headers |
+| `app/page.tsx` | MODIFY | Keep season total in hero, add live GW card below |
+| `lib/scoring/pipeline.ts` | MODIFY | Cap match limit at 6 (not unlimited) |
+| Bottom nav component (TBD) | MODIFY | Conditional App Admin nav link |
+| `scripts/reseed-player-teams.ts` | MODIFY | Refactor to use `lib/sync-players.ts` |
+
+**Removed from plan:** `app/api/user/is-app-admin/route.ts` (unnecessary), `app/api/teams/[teamId]/scores/live/[gameweekId]/route.ts` (merged into existing scores route)
+
+**Added to plan:** `lib/scoring/live.ts` (shared live scoring functions), `lib/sportmonks/match-sync.ts` (match status refresh)
