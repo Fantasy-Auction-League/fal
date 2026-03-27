@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
 import { AppFrame } from '@/app/components/AppFrame'
 
 /* ─── Types ─── */
@@ -47,7 +46,6 @@ const cardStyle = {
 
 export default function AppAdminPage() {
   const { data: session, status: sessionStatus } = useSession()
-  const pathname = usePathname()
 
   /* ─── Import Scores state ─── */
   const [matches, setMatches] = useState<Match[]>([])
@@ -184,7 +182,6 @@ export default function AppAdminPage() {
 
   const completedCount = matches.filter(m => m.scoringStatus === 'COMPLETED').length
   const hasChanges = syncResult && (syncResult.teamChanges.length > 0 || syncResult.newPlayers.length > 0 || syncResult.roleChanges.length > 0)
-  const totalChanges = syncResult ? syncResult.teamChanges.length + syncResult.newPlayers.length + syncResult.roleChanges.length : 0
 
   return (
     <AppFrame>
