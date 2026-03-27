@@ -278,7 +278,7 @@ export default function StandingsPage() {
                 borderRadius: 10,
                 gap: 8,
                 fontSize: 12.5,
-                cursor: isYou ? 'default' : 'pointer',
+                cursor: 'pointer',
                 position: 'relative',
                 background: isYou ? 'rgba(0,75,160,0.04)' : 'transparent',
                 border: isYou ? '1.5px solid rgba(0,75,160,0.1)' : '1.5px solid transparent',
@@ -316,10 +316,6 @@ export default function StandingsPage() {
               </div>
             )
 
-            if (isYou) {
-              return <div key={team.teamId}>{rowContent}</div>
-            }
-
             return (
               <Link
                 key={team.teamId}
@@ -351,7 +347,7 @@ export default function StandingsPage() {
         zIndex: 100,
       }}>
         <NavItem href="/" icon={<IconHome />} label="Home" active={false} />
-        <NavItem href="/lineup" icon={<IconLineup />} label="Lineup" active={false} />
+        <NavItem href={(() => { const my = standings.find(s => s.managerId === userId); return my ? `/view-lineup/${my.teamId}` : '/lineup' })()} icon={<IconLineup />} label="Lineup" active={false} />
         <NavItem href="/players" icon={<IconPlayers />} label="Players" active={false} />
         <NavItem href="/admin" icon={<IconLeague />} label="League" active={false} />
       </nav>
