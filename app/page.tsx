@@ -404,7 +404,10 @@ export default function DashboardPage() {
   const avgPoints = standings.length > 0
     ? Math.round(standings.reduce((sum, s) => sum + s.totalPoints, 0) / standings.length)
     : 0
-  const highestPoints = standings.length > 0 ? standings[0]?.totalPoints ?? 0 : 0
+  const topGwStanding = standings.length > 0
+    ? standings.reduce((best, s) => s.lastGwPoints > best.lastGwPoints ? s : best, standings[0])
+    : null
+  const highestPoints = topGwStanding?.lastGwPoints ?? 0
   const hasScores = standings.some(s => s.totalPoints > 0)
 
   // Deadline
@@ -502,9 +505,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Your Points (center) — tappable */}
-          <div
-            onClick={openGwSheet}
-            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer' }}
+          <Link
+            href={myStanding ? `/view-lineup/${myStanding.teamId}` : '#'}
+            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer', textDecoration: 'none' }}
           >
             {/* Left divider */}
             <div style={{ position: 'absolute', top: '10%', bottom: '20%', left: 0, width: 1, background: 'rgba(255,255,255,0.1)' }} />
@@ -514,16 +517,18 @@ export default function DashboardPage() {
               {hasScores ? formatNumber(yourPoints) : '\u2014'}
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginTop: 2 }}>Your Points</div>
-            <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 1, fontWeight: 500 }}>tap for detail</div>
-          </div>
+          </Link>
 
           {/* Highest */}
-          <div style={{ flex: 1, textAlign: 'center' }}>
+          <Link
+            href={topGwStanding ? `/view-lineup/${topGwStanding.teamId}` : '#'}
+            style={{ flex: 1, textAlign: 'center', textDecoration: 'none', cursor: topGwStanding ? 'pointer' : 'default' }}
+          >
             <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
               {hasScores ? formatNumber(highestPoints) : '\u2014'}
             </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Highest</div>
-          </div>
+          </Link>
         </div>
 
         {/* Divider */}
@@ -1200,7 +1205,7 @@ export default function DashboardPage() {
           </div>
           Home
         </Link>
-        <Link href="/lineup" style={{ textDecoration: 'none', textAlign: 'center', fontSize: 10, color: '#8e8e93', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, fontWeight: 500 }}>
+        <Link href={myStanding ? `/view-lineup/${myStanding.teamId}` : '/lineup'} style={{ textDecoration: 'none', textAlign: 'center', fontSize: 10, color: '#8e8e93', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, fontWeight: 500 }}>
           <div style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <IconLineup />
           </div>

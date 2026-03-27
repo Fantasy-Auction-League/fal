@@ -1537,8 +1537,9 @@ test('29. Player detail sheet — compact panel shows fixtures and actions @user
     await expect(page.getByText('Substitute')).toBeVisible()
     await expect(page.getByText('Full Profile')).toBeVisible()
 
-    // Should show Cancel button
-    await expect(page.getByText('Cancel')).toBeVisible()
+    // Should show X close button (44px), no Cancel button
+    await expect(page.getByRole('button', { name: 'Close' })).toBeVisible()
+    await expect(page.getByText('Cancel')).not.toBeVisible()
 
     await expect(page).toHaveScreenshot('player-detail-compact.png')
   }
@@ -1923,4 +1924,318 @@ test('43. ISSUE-011: League switch persists after hard reload @user', async ({ p
   await waitForApp(page)
 
   await expect(page).toHaveScreenshot('league-switch-persists-reload.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   44. Action sheet uses X close button (no Cancel, no drag handle)
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('44. Action sheet uses X close button @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Tap an XI player to open action sheet
+  const playerRow = page.locator('div[style*="cursor: pointer"]').first()
+  if (await playerRow.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await playerRow.click()
+    await page.waitForTimeout(500)
+
+    // X close button should be visible (aria-label="Close")
+    const closeBtn = page.getByRole('button', { name: 'Close' })
+    await expect(closeBtn).toBeVisible({ timeout: 3000 })
+
+    // Cancel button should NOT be visible
+    await expect(page.getByText('Cancel', { exact: true })).not.toBeVisible()
+
+    // Close the sheet using X button
+    await closeBtn.click()
+    await page.waitForTimeout(300)
+
+    // Sheet should be dismissed
+    await expect(page.getByText('Make Captain')).not.toBeVisible()
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   45. Swap selection sheet uses X close button
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('45. Swap selection sheet uses X close button @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/lineup')
+  await waitForApp(page)
+
+  const lockBadge = page.getByText('Lineup Locked')
+  if (await lockBadge.isVisible({ timeout: 2000 }).catch(() => false)) return
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(300)
+
+  // Tap an XI player -> Move to Bench to open swap sheet
+  const playerRow = page.locator('div[style*="cursor: pointer"]').first()
+  if (await playerRow.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await playerRow.click()
+    await page.waitForTimeout(500)
+
+    const moveToBench = page.getByText(/Move to Bench/i)
+    if (await moveToBench.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await moveToBench.click()
+      await page.waitForTimeout(500)
+
+      // Swap sheet: X close button visible
+      const closeBtn = page.getByRole('button', { name: 'Close' })
+      await expect(closeBtn).toBeVisible({ timeout: 3000 })
+
+      // No Cancel button
+      await expect(page.getByText('Cancel', { exact: true })).not.toBeVisible()
+
+      // Close via X
+      await closeBtn.click()
+      await page.waitForTimeout(300)
+    }
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   46. Dashboard "Your Points" navigates to read-only lineup
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('46. Dashboard Your Points navigates to read-only lineup @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Tap "Your Points" link
+  const yourPoints = page.getByText('Your Points')
+  await expect(yourPoints).toBeVisible({ timeout: 5000 })
+  await yourPoints.click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Should navigate to view-lineup page (read-only)
+  expect(page.url()).toContain('/view-lineup/')
+
+  // Should show "Read Only" badge
+  await expect(page.getByText('Read Only')).toBeVisible({ timeout: 5000 })
+
+  // Should default to pitch view
+  const pitchViewBtn = page.getByText('Pitch View')
+  await expect(pitchViewBtn).toBeVisible()
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   47. Dashboard "Highest" navigates to top GW scorer's lineup
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('47. Dashboard Highest navigates to top GW scorer lineup @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Tap "Highest" link
+  const highest = page.getByText('Highest', { exact: true })
+  await expect(highest).toBeVisible({ timeout: 5000 })
+  await highest.click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Should navigate to a view-lineup page
+  expect(page.url()).toContain('/view-lineup/')
+
+  // Should show "Read Only" badge
+  await expect(page.getByText('Read Only')).toBeVisible({ timeout: 5000 })
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   48. Bottom nav Lineup links to read-only lineup
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('48. Bottom nav Lineup links to read-only lineup @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Click "Lineup" in bottom nav
+  const nav = page.locator('nav.bottom-nav-fixed')
+  await nav.getByText('Lineup', { exact: true }).click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Should navigate to view-lineup (not /lineup edit mode)
+  expect(page.url()).toContain('/view-lineup/')
+
+  // Should show "Read Only" badge
+  await expect(page.getByText('Read Only')).toBeVisible({ timeout: 5000 })
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   49. Standings "You" row is clickable
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('49. Standings You row is clickable @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/standings')
+  await waitForApp(page)
+
+  // Find the "You" row and click it
+  const youRow = page.getByText('You', { exact: true })
+  await expect(youRow).toBeVisible({ timeout: 5000 })
+  await youRow.click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Should navigate to view-lineup
+  expect(page.url()).toContain('/view-lineup/')
+
+  // Should show "Read Only" badge
+  await expect(page.getByText('Read Only')).toBeVisible({ timeout: 5000 })
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   50. Read-only lineup — players clickable in pitch view
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('50. Read-only lineup players clickable — pitch view @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Navigate to own read-only lineup via "Your Points"
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+  expect(page.url()).toContain('/view-lineup/')
+
+  // Tap a player figure on the pitch (cursor: pointer divs inside the pitch area)
+  const playerFigure = page.locator('div[style*="cursor: pointer"][style*="width: 86"]').first()
+  if (await playerFigure.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await playerFigure.click()
+    await page.waitForTimeout(1000)
+
+    // Stats popup should open with Auction Price
+    await expect(page.getByText('Auction Price')).toBeVisible({ timeout: 5000 })
+
+    // Should show Pts/Match
+    await expect(page.getByText('Pts/Match')).toBeVisible()
+
+    // Should show Full Profile button
+    await expect(page.getByText('Full Profile')).toBeVisible()
+
+    // Should NOT show Captain/VC/Substitute actions
+    await expect(page.getByText('Make Captain')).not.toBeVisible()
+    await expect(page.getByText('Vice Captain')).not.toBeVisible()
+    await expect(page.getByText('Substitute')).not.toBeVisible()
+
+    await expect(page).toHaveScreenshot('readonly-player-stats-popup.png')
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   51. Read-only lineup — players clickable in list view
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('51. Read-only lineup players clickable — list view @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Navigate to own read-only lineup
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(500)
+
+  // Tap a player row
+  const playerRow = page.locator('div[style*="cursor: pointer"]').first()
+  if (await playerRow.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await playerRow.click()
+    await page.waitForTimeout(1000)
+
+    // Stats popup should open
+    await expect(page.getByText('Auction Price')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText('Full Profile')).toBeVisible()
+
+    // No edit actions
+    await expect(page.getByText('Substitute')).not.toBeVisible()
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   52. Read-only popup — no edit actions
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('52. Read-only popup has no edit actions @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Tap a player
+  const playerFigure = page.locator('div[style*="cursor: pointer"][style*="width: 86"]').first()
+  if (await playerFigure.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await playerFigure.click()
+    await page.waitForTimeout(1000)
+
+    // Full Profile button should be full width (only button, no Substitute beside it)
+    const fullProfileBtn = page.getByText('Full Profile')
+    await expect(fullProfileBtn).toBeVisible({ timeout: 5000 })
+
+    // X close button present
+    await expect(page.getByRole('button', { name: 'Close' })).toBeVisible()
+
+    // No Captain/VC checkboxes
+    await expect(page.getByText('Captain', { exact: true })).not.toBeVisible()
+    await expect(page.getByText('Move to Bench')).not.toBeVisible()
+    await expect(page.getByText('Move to Playing XI')).not.toBeVisible()
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   53. Read-only popup — Full Profile shows career stats
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('53. Read-only popup Full Profile shows career stats @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Tap a player
+  const playerFigure = page.locator('div[style*="cursor: pointer"][style*="width: 86"]').first()
+  if (await playerFigure.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await playerFigure.click()
+    await page.waitForTimeout(1000)
+
+    // Open Full Profile
+    await page.getByText('Full Profile').click()
+    await page.waitForTimeout(1000)
+
+    // Back button should be visible
+    await expect(page.getByText('Back')).toBeVisible({ timeout: 3000 })
+
+    // Should show Batting and/or Bowling tables, or "No match data" message
+    const hasBatting = await page.getByText('Batting').isVisible().catch(() => false)
+    const hasBowling = await page.getByText('Bowling').isVisible().catch(() => false)
+    const hasNoData = await page.getByText('No match data available yet').isVisible().catch(() => false)
+    expect(hasBatting || hasBowling || hasNoData).toBeTruthy()
+
+    // Back button returns to compact view
+    if (await page.getByText('Back').isVisible()) {
+      await page.getByText('Back').click()
+      await page.waitForTimeout(500)
+
+      // Should be back at compact view with Auction Price
+      await expect(page.getByText('Auction Price')).toBeVisible({ timeout: 3000 })
+    }
+
+    await expect(page).toHaveScreenshot('readonly-full-profile.png')
+  }
 })

@@ -1495,8 +1495,22 @@ export default function LineupPage() {
               background: '#fff', borderRadius: '20px 20px 0 0',
               zIndex: 210, paddingBottom: 36,
             }}>
-              {/* Handle */}
-              <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 8px' }} />
+              {/* Close */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 8px 0' }}>
+                <button
+                  onClick={closeActionSheet}
+                  aria-label="Close"
+                  style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: 'none', background: '#f2f3f8', cursor: 'pointer',
+                    fontSize: 16, color: '#666', fontFamily: 'inherit', lineHeight: 1,
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  &#10005;
+                </button>
+              </div>
               {/* Player info */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 12px',
@@ -1610,19 +1624,6 @@ export default function LineupPage() {
                   </button>
                 </>
               )}
-              {/* Cancel */}
-              <button
-                onClick={closeActionSheet}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '14px 20px', fontSize: 13, fontWeight: 600, color: '#999',
-                  cursor: 'pointer', border: 'none', background: 'transparent',
-                  width: '100%', fontFamily: 'inherit',
-                  borderTop: '1px solid #f2f3f8', marginTop: 4,
-                }}
-              >
-                Cancel
-              </button>
             </div>
           </>
         )
@@ -1655,8 +1656,22 @@ export default function LineupPage() {
               zIndex: 210, paddingBottom: 36,
               maxHeight: '70vh', display: 'flex', flexDirection: 'column',
             }}>
-              {/* Handle */}
-              <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 8px' }} />
+              {/* Close */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 8px 0' }}>
+                <button
+                  onClick={() => setSwapSelection(null)}
+                  aria-label="Close"
+                  style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: 'none', background: '#f2f3f8', cursor: 'pointer',
+                    fontSize: 16, color: '#666', fontFamily: 'inherit', lineHeight: 1,
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  &#10005;
+                </button>
+              </div>
               {/* Header with source player */}
               <div style={{
                 padding: '4px 20px 12px',
@@ -1794,19 +1809,6 @@ export default function LineupPage() {
                   </>
                 )}
               </div>
-              {/* Cancel */}
-              <button
-                onClick={() => setSwapSelection(null)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '14px 20px', fontSize: 13, fontWeight: 600, color: '#999',
-                  cursor: 'pointer', border: 'none', background: 'transparent',
-                  width: '100%', fontFamily: 'inherit',
-                  borderTop: '1px solid #f2f3f8', marginTop: 4,
-                }}
-              >
-                Cancel
-              </button>
             </div>
           </>
         )
@@ -1842,12 +1844,26 @@ export default function LineupPage() {
               zIndex: 210, paddingBottom: 36,
               animation: 'slideUp 0.25s ease-out',
             }}>
-              {/* Handle */}
-              <div style={{ width: 36, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto 8px' }} />
+              {/* Close */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 8px 0' }}>
+                <button
+                  onClick={closeStatsSheet}
+                  aria-label="Close"
+                  style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: 'none', background: '#f2f3f8', cursor: 'pointer',
+                    fontSize: 16, color: '#666', fontFamily: 'inherit', lineHeight: 1,
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  &#10005;
+                </button>
+              </div>
 
               {/* Player header — matches Players page modal */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 10px', position: 'relative',
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 10px', paddingRight: 50, position: 'relative',
               }}>
                 <div style={{
                   width: 34, height: 34, borderRadius: 10, flexShrink: 0,
@@ -2101,19 +2117,6 @@ export default function LineupPage() {
                   Full Profile
                 </button>
               </div>
-              {/* Cancel */}
-              <button
-                onClick={closeStatsSheet}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '12px 20px', fontSize: 13, fontWeight: 600, color: '#999',
-                  cursor: 'pointer', border: 'none', background: 'transparent',
-                  width: '100%', fontFamily: 'inherit',
-                  borderTop: '1px solid #f2f3f8', marginTop: 8,
-                }}
-              >
-                Cancel
-              </button>
               </>) : (
               /* ── Full Profile View ── */
               <>

@@ -78,6 +78,38 @@ Browser-based E2E tests running at 393px viewport (mobile-first per PRD). Tests 
 | 19 | League switch persists | After switching league, navigate to lineup/leaderboard/standings -> verify all pages show data from the switched league | All pages respect activeLeagueId from DB |
 | 20 | Invalid password rejected | Enter correct email + wrong password -> submit | Error message "Invalid password" shown |
 | 21 | Password too short rejected | Enter email + invite code + 3-char password -> submit | Error message "Password must be at least 6 characters" |
+| 22 | Dashboard shows active gameweek with matches | Login -> dashboard -> verify GW label and match cards | Active GW number visible, match cards show team codes and times |
+| 23 | Lineup shows gameweek deadline | Navigate to lineup screen -> verify deadline info | Deadline label and countdown visible in header area |
+| 24 | Move player from XI to bench — list view | Lineup list view -> tap XI player -> "Move to Bench" -> select bench player to swap | XI player moves to bench, bench player moves to XI |
+| 25 | Move player from bench to XI — list view | Lineup list view -> tap bench player -> "Move to Playing XI" -> select XI player to swap | Bench player moves to XI, XI player moves to bench |
+| 26 | Choose captain — list view | Lineup list view -> tap player -> "Make Captain" | Captain badge (C) appears on selected player, removed from previous captain |
+| 27 | Choose vice captain — list view | Lineup list view -> tap player -> "Make Vice Captain" | VC badge appears on selected player |
+| 28 | Save lineup and verify persistence | Make changes -> save -> reload page | Saved lineup restored correctly after reload |
+| 29 | Player detail sheet — compact panel | Pitch view -> tap player -> sheet opens with fixtures and stats | Sheet shows player name, role, team, auction price, pts/match, fixtures row |
+| 30 | Player detail sheet — fixtures row | Open player detail sheet -> verify fixture team codes | Fixtures show correct IPL team codes for opponents |
+| 31 | Full Profile — batting/bowling tables | Player detail sheet -> tap "Full Profile" | Batting and/or bowling career stats tables visible |
+| 32 | Full Profile — back button | Full Profile view -> tap "Back" | Returns to compact panel view |
+| 33 | Players page — full profile | Players page -> tap player -> view batting table | Player modal shows batting stats, no GW tabs |
+| 34 | Players page — playerId query param | Navigate to /players?playerId=X | Player modal auto-opens for specified player |
+| 35 | Players page — bowling table | Players page -> tap a bowler | Bowling stats table visible for bowling players |
+| 36 | Admin creates second league | Login as admin -> admin page -> create league | Second league created successfully |
+| 37 | View-lineup shows saved lineup | Navigate to /view-lineup/[teamId] | Read-only lineup displays saved XI, bench, C/VC correctly |
+| 38 | XI substitute shows bench section only | Lineup -> tap XI player -> "Move to Bench" | Swap sheet shows only bench players as candidates |
+| 39 | Bench substitute shows full squad | Lineup -> tap bench player -> "Move to Playing XI" | Swap sheet shows XI players as candidates |
+| 40 | Substitute from pitch view detail sheet | Pitch view -> tap player -> detail sheet -> "Substitute" | Swap selection sheet opens with correct candidates |
+| 41 | Complete swap from substitute sheet | Select a swap candidate -> confirm -> save | Swap completes, lineup updated and saved |
+| 42 | ISSUE-011: League switching updates UI immediately | Switch league via pill -> verify dashboard updates without reload | League pill label, standings, and GW data all update |
+| 43 | ISSUE-011: League switch persists after hard reload | Switch league -> hard reload -> navigate to other pages | All pages show data from the switched league |
+| 44 | Action sheet uses X button instead of Cancel | Lineup -> tap player -> action sheet opens | X close button (44px) at top-right, no Cancel button at bottom, no drag handle |
+| 45 | Swap selection sheet uses X button | Lineup -> move player -> swap sheet opens | X close button at top-right, no Cancel button, no drag handle |
+| 46 | Dashboard "Your Points" navigates to read-only lineup | Dashboard -> tap "Your Points" | Navigates to /view-lineup/[teamId] with pitch view default |
+| 47 | Dashboard "Highest" navigates to top GW scorer's lineup | Dashboard -> tap "Highest" score | Navigates to /view-lineup/[teamId] of the manager with highest current GW score |
+| 48 | Bottom nav Lineup links to read-only lineup | Dashboard -> tap "Lineup" in bottom nav | Navigates to /view-lineup/[teamId] (read-only), not /lineup (edit) |
+| 49 | Standings "You" row is clickable | Standings -> tap own row | Navigates to /view-lineup/[teamId] (same as rival managers) |
+| 50 | Read-only lineup — players clickable (pitch view) | View-lineup pitch view -> tap any player | Player stats popup opens with auction price, pts/match, fixtures |
+| 51 | Read-only lineup — players clickable (list view) | View-lineup list view -> tap any player | Player stats popup opens |
+| 52 | Read-only popup — no edit actions | View-lineup -> tap player -> popup opens | No Captain/VC checkboxes, no Substitute button; only Full Profile button (full width) |
+| 53 | Read-only popup — Full Profile | View-lineup -> tap player -> "Full Profile" | Batting/bowling career stats tables visible; Back button returns to compact view |
 
 ### PRD Design Assertions
 
@@ -91,7 +123,7 @@ Browser-based E2E tests running at 393px viewport (mobile-first per PRD). Tests 
 | Lineup pitch/list toggle | Toggle pill (Pitch View / List View) visible on lineup screen; both views render correctly |
 | List view — XI edit actions | Each XI row shows C / VC / → Bench inline buttons; tapping row opens action sheet |
 | List view — bench rows | Priority number badge (1–4) visible; → XI button present; bench section labelled "Bench — Auto-sub order" |
-| List view — action sheet | Make Captain / Make VC / Move to Bench (or Move to XI / Change Priority for bench) options present |
+| List view — action sheet | Make Captain / Make VC / Move to Bench (or Move to XI / Change Priority for bench) options present; X close button (44px) at top-right, no Cancel button, no drag handle |
 | Chip bar compact design | Chips bar is single horizontal row per chip: icon + name + Play button; no description text visible in bar |
 | Chip Play button flow | Play tapped → confirmation modal; confirmed → button shows "Active" in green; tap Active before lock → deactivates |
 | Chip confirmation modal — chip can be reverted until GW starts | Modal text contains description and warning; chip reverts on tap until GW lock |
@@ -100,6 +132,13 @@ Browser-based E2E tests running at 393px viewport (mobile-first per PRD). Tests 
 | GW score sheet — pitch view | Full 4-3-3 formation with team-coloured figures; GW points on name plates; bench row below |
 | View-lineup matches lineup design | Read-only view uses identical player figure design (team-coloured head/body, name plates with GW points) |
 | View-lineup pitch/list toggle | Toggle pill visible on view-lineup screen; list view shows GW points, read-only |
+| View-lineup players are clickable | Tapping any player (pitch or list view) opens stats popup with auction price, pts/match, fixtures, and Full Profile |
+| View-lineup popup is read-only | Stats popup shows no Captain/VC checkboxes, no Substitute button; only full-width Full Profile button |
+| Dashboard "Your Points" navigates to read-only lineup | Tapping "Your Points" navigates to /view-lineup/[teamId] defaulting to pitch view |
+| Dashboard "Highest" navigates to top GW scorer | Tapping "Highest" links to the manager with the highest current GW score (not total) |
+| Bottom nav Lineup links to read-only view | Lineup button in bottom nav navigates to /view-lineup/[teamId], not /lineup (edit mode) |
+| Standings "You" row is clickable | Own row in standings navigates to /view-lineup/[teamId] same as rival manager rows |
+| Action sheets use X close button | All bottom sheets (action sheet, swap sheet, stats sheet) use 44px X button at top-right instead of Cancel button and drag handle |
 | Dashboard league switcher pill | Pill button (top-left of hero) shows active league name; tapping opens bottom sheet |
 | League sheet — multi-league list | Sheet lists all user leagues with active checkmark; tapping a league switches active league |
 | League sheet — join a league | "Join a League" row expands inline invite code input + Join button |
@@ -134,6 +173,9 @@ Playwright's `toHaveScreenshot()` captures baseline screenshots on first run, fl
 | Standings | Full season table with GW selector |
 | Player detail | Stat breakdown modal |
 | Admin page | Join a League card with invite code input |
+| Action sheet — X close button | Player action sheet with 44px X button, no Cancel, no drag handle |
+| View lineup — player stats popup | Read-only stats popup with auction price, pts/match, fixtures, full-width Full Profile button |
+| View lineup — Full Profile | Career batting/bowling stats tables in read-only popup |
 
 ### Additional PRD Flow Tests
 
