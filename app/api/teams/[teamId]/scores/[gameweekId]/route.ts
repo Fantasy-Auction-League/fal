@@ -152,7 +152,7 @@ export async function GET(
         throw error
       }
 
-      // Enrich player data with name, role, iplTeamCode, and matchesPlayed
+      // Enrich player data with name, role, and iplTeamCode
       const playerIds = liveResult.players.map((p) => p.playerId)
       const playerData = await prisma.player.findMany({
         where: { id: { in: playerIds } },
@@ -160,24 +160,6 @@ export async function GET(
       })
 
       const playerDataMap = new Map(playerData.map((p) => [p.id, p]))
-
-      // Build matchesPlayedMap for LIVE mode: count distinct scored matches per player
-      const allMatches = await prisma.match.findMany({
-        where: { gameweekId },
-        select: { id: true, scoringStatus: true },
-      })
-      const scoredMatches = allMatches.filter((m) => m.scoringStatus === 'SCORED')
-      const performances = await prisma.playerPerformance.findMany({
-        where: { matchId: { in: scoredMatches.map((m) => m.id) } },
-        select: { playerId: true, matchId: true },
-      })
-      const matchesPlayedMap = new Map<string, number>()
-      for (const playerId of new Set(performances.map((p) => p.playerId))) {
-        const distinctMatches = new Set(
-          performances.filter((p) => p.playerId === playerId).map((p) => p.matchId)
-        )
-        matchesPlayedMap.set(playerId, distinctMatches.size)
-      }
 
       const enrichedPlayers = liveResult.players.map((p) => {
         const playerInfo = playerDataMap.get(p.playerId)
@@ -192,7 +174,7 @@ export async function GET(
           isCaptain: p.isCaptain,
           isVC: p.isVC,
           multipliedPoints: p.multipliedPoints,
-          matchesPlayed: matchesPlayedMap.get(p.playerId) || 0,
+          matchesPlayed: p.matchesPlayed,
         }
       })
 

@@ -52,6 +52,7 @@ export interface PlayerScoreResult {
   isCaptain: boolean
   isVC: boolean
   slotType: 'XI' | 'BENCH'
+  matchesPlayed: number
 }
 
 export interface ComputeLiveScoresParams {
@@ -110,6 +111,7 @@ export function computeLivePlayerScores(
       isCaptain,
       isVC,
       slotType: slot.slotType,
+      matchesPlayed: matchesPlayedMap.get(slot.playerId) ?? 0,
     })
   }
 
@@ -213,7 +215,7 @@ export async function computeLiveTeamScore(
   const slots: LiveScoreSlot[] = lineup.slots.map((slot) => ({
     playerId: slot.playerId,
     slotType: slot.slotType as 'XI' | 'BENCH',
-    role: slot.player?.role ?? slot.role ?? 'ALL',
+    role: slot.player?.role ?? 'ALL',
     isCaptain: slot.role === 'CAPTAIN',
     isVC: slot.role === 'VC',
   }))

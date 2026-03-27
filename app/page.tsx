@@ -1385,7 +1385,7 @@ export default function DashboardPage() {
                             {/* Chip progression (AC14.1) */}
                             {player.chipBonus > 0 && (
                               <div style={{ fontSize: 9, color: '#0d9e5f', fontWeight: 600, marginTop: 1 }}>
-                                {player.basePoints} → {player.multipliedPoints}
+                                {player.basePoints} → {player.multipliedPoints + player.chipBonus}
                               </div>
                             )}
                           </div>
