@@ -8,7 +8,7 @@ export interface MatchSyncResult {
   changes: { apiMatchId: number; oldStatus: string; newStatus: string; teams: string }[]
 }
 
-export async function syncMatchStatuses(seasonId: number = 1795): Promise<MatchSyncResult> {
+export async function syncMatchStatuses(): Promise<MatchSyncResult> {
   // 1. Get all SCHEDULED matches from DB
   const scheduledMatches = await prisma.match.findMany({
     where: { scoringStatus: 'SCHEDULED' },
