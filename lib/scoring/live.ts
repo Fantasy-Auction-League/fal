@@ -1,8 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
 /**
- * Pure scoring functions for live mid-gameweek score computation
- * No DB-dependent orchestration - just pure math
+ * Live mid-gameweek score computation with both pure functions and orchestration.
+ *
+ * Pure functions (aggregateBasePoints, computeLivePlayerScores) contain deterministic
+ * scoring logic and can be unit-tested without database dependencies.
+ *
+ * Orchestrator (computeLiveTeamScore) handles database fetches and calls pure functions.
+ * PrismaClient is needed only by the orchestrator, not by the pure scoring functions.
  */
 
 // ─── aggregateBasePoints ───────────────────────────────────────────
@@ -192,11 +197,6 @@ export async function computeLiveTeamScore(
 
   // Build matchesPlayedMap: count distinct matches per player
   const matchesPlayedMap = new Map<string, number>()
-  for (const perf of performances) {
-    const count = matchesPlayedMap.get(perf.playerId) ?? 0
-    matchesPlayedMap.set(perf.playerId, count)
-  }
-  // Count distinct matchIds
   for (const playerId of new Set(performances.map((p) => p.playerId))) {
     const distinctMatches = new Set(
       performances.filter((p) => p.playerId === playerId).map((p) => p.matchId)
@@ -223,7 +223,7 @@ export async function computeLiveTeamScore(
 
   // Calculate totals (XI only for totalPoints)
   const xiScores = playerScores.filter((p) => p.slotType === 'XI')
-  const totalPoints = xiScores.reduce((sum, p) => sum + p.multipliedPoints, 0)
+  const totalPoints = xiScores.reduce((sum, p) => sum + p.multipliedPoints + p.chipBonus, 0)
   const chipBonusPoints = playerScores.reduce((sum, p) => sum + p.chipBonus, 0)
 
   return {
