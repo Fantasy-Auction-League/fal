@@ -908,7 +908,7 @@ export default function DashboardPage() {
                     <div style={{ flex: 1, fontWeight: nameWeight, color: nameColor }}>
                       {s.teamName}{isYou ? ' (You)' : ''}
                     </div>
-                    <div style={{ fontSize: 11, color: '#999', fontWeight: 500, fontVariantNumeric: 'tabular-nums', width: 36, textAlign: 'right' }}>
+                    <div data-testid="gw-points" style={{ fontSize: 11, color: '#999', fontWeight: 500, fontVariantNumeric: 'tabular-nums', width: 36, textAlign: 'right' }}>
                       {gwStatus === 'LIVE' && s.liveGwPoints !== null ? s.liveGwPoints : s.lastGwPoints}
                     </div>
                     <div style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: ptsColor, width: 42, textAlign: 'right' }}>{formatNumber(s.totalPoints)}</div>

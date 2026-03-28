@@ -327,6 +327,15 @@ test.describe('Full Gameweek Lifecycle @user', () => {
     // Hero section should show "(before bench subs)" during LIVE
     await expect(page.getByText('(before bench subs)').first()).toBeVisible()
 
+    // Verify GW column in standings shows user's live GW points
+    const standingsCard = page.getByTestId('standings-card')
+    const yourRow = standingsCard.locator('a', { hasText: '(You)' })
+    await expect(yourRow).toBeVisible()
+    const gwCell = yourRow.getByTestId('gw-points')
+    const gwText = await gwCell.textContent()
+    const gwPoints = parseInt(gwText?.replace(/,/g, '') || '-1')
+    expect(gwPoints).toBe(expected.totalPoints)
+
     // Open sheet — verify captain indicator and Playing XI
     await liveCard.click()
     const gwSheet = page.getByTestId('gw-detail-sheet')
@@ -355,6 +364,11 @@ test.describe('Full Gameweek Lifecycle @user', () => {
     // FINAL badge
     await expect(liveCard.getByTestId('final-badge')).toBeVisible()
     await expect(liveCard.getByTestId('final-badge')).toHaveText('FINAL')
+
+    // Displayed score should match stored GameweekScore.totalPoints
+    const displayedText = await liveCard.getByTestId('live-gw-total').textContent()
+    const displayed = parseInt(displayedText?.replace(/,/g, '') || '-1')
+    expect(displayed).toBe(settledPoints)
 
     // No match progress in FINAL mode
     await expect(liveCard.getByText(/matches scored/)).toBeHidden()
