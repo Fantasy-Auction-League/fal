@@ -123,6 +123,15 @@ export async function POST(
 
     return Response.json({ chipUsage })
   } catch (error) {
+    if (
+      error instanceof (await import('@prisma/client')).Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return Response.json(
+        { error: 'Another chip is already active for this gameweek' },
+        { status: 409 }
+      )
+    }
     console.error('POST /api/teams/[teamId]/lineups/[gameweekId]/chip error:', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
