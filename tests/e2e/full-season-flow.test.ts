@@ -15,6 +15,9 @@ async function cleanupTestData() {
   await prisma.match.deleteMany({ where: { apiMatchId: { in: [99901, 99902] } } })
   await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102] } } })
   await prisma.teamPlayer.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
+  // Re-delete lineups in case parallel tests created them after initial cleanup
+  await prisma.lineupSlot.deleteMany({ where: { lineup: { team: { league: { name: { startsWith: TEST_PREFIX } } } } } })
+  await prisma.lineup.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
   await prisma.team.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
   await prisma.league.deleteMany({ where: { name: { startsWith: TEST_PREFIX } } })
   await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } })

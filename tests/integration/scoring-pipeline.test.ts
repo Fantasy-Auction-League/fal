@@ -106,6 +106,15 @@ async function cleanup() {
   if (gw) {
     await prisma.playerScore.deleteMany({ where: { gameweekId: gw.id } })
     await prisma.gameweekScore.deleteMany({ where: { gameweekId: gw.id } })
+    // Delete lineups and slots before gameweek (FK constraint)
+    await prisma.lineupSlot.deleteMany({
+      where: {
+        lineup: {
+          gameweekId: gw.id,
+        },
+      },
+    })
+    await prisma.lineup.deleteMany({ where: { gameweekId: gw.id } })
     await prisma.gameweek.delete({ where: { id: gw.id } })
   }
 
