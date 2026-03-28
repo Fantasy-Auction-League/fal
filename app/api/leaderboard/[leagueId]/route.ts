@@ -137,8 +137,8 @@ export async function GET(
     // Set cache headers
     const headers: Record<string, string> =
       gwStatus === 'LIVE'
-        ? { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' }
-        : { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' }
+        ? { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' }
+        : { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300' }
 
     return Response.json(
       {

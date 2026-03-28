@@ -13,9 +13,9 @@ export function getCacheHeaders(mode: ScoringMode): Headers {
   const headers = new Headers()
 
   if (mode === 'LIVE') {
-    headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
   } else if (mode === 'FINAL') {
-    headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+    headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=300')
   }
 
   return headers
