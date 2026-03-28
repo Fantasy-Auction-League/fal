@@ -547,6 +547,7 @@ export async function ensureLineups(
           },
         },
       },
+      include: { slots: true },
     })
 
     console.log(`ensureLineups: carried forward ${team.name} from GW${prevLineup.gameweek.number}`)
