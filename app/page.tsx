@@ -640,11 +640,11 @@ export default function DashboardPage() {
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Average</div>
           </div>
 
-          {/* Your Points (center) — tappable to open GW sheet */}
-          <div
+          {/* Your Points (center) — tappable to view lineup (PR #20 behavior) */}
+          <Link
             data-testid="hero-your-points"
-            onClick={openGwSheet}
-            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer' }}
+            href={myStanding ? `/view-lineup/${myStanding.teamId}` : '#'}
+            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer', textDecoration: 'none' }}
           >
             {/* Left divider */}
             <div style={{ position: 'absolute', top: '10%', bottom: '20%', left: 0, width: 1, background: 'rgba(255,255,255,0.1)' }} />
@@ -654,7 +654,7 @@ export default function DashboardPage() {
               {hasScores ? formatNumber(yourPoints) : '\u2014'}
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginTop: 2 }}>Your Points</div>
-          </div>
+          </Link>
 
           {/* Highest */}
           <Link

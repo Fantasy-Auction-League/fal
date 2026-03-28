@@ -144,22 +144,17 @@ test.describe('Full Gameweek Lifecycle @user', () => {
   })
 
   test.afterAll(() => {
+    // Restore GW to clean ACTIVE state
+    try { dbExec(`await p.gameweek.update({ where: { id: '${activeGwId}' }, data: { status: 'ACTIVE', aggregationStatus: 'PENDING' } })`) } catch (e) { console.error('restore gw:', e) }
+    try { dbExec(`await p.gameweekScore.deleteMany({ where: { gameweekId: '${activeGwId}' } })`) } catch (e) { console.error('restore gs:', e) }
+    try { dbExec(`await p.chipUsage.deleteMany({ where: { gameweekId: '${activeGwId}' } })`) } catch (e) { console.error('restore chip:', e) }
+    // Reset matches: first 3 SCORED, rest SCHEDULED
     try {
-      for (const m of originalState.matchStatuses) {
-        dbExec(`await p.match.update({ where: { id: '${m.id}' }, data: { scoringStatus: '${m.scoringStatus}' } })`)
+      const matchIds = dbQuery(`p.match.findMany({ where: { gameweekId: '${activeGwId}' }, orderBy: { startingAt: 'asc' }, select: { id: true } })`)
+      for (let i = 0; i < matchIds.length; i++) {
+        dbExec(`await p.match.update({ where: { id: '${matchIds[i].id}' }, data: { scoringStatus: '${i < 3 ? 'SCORED' : 'SCHEDULED'}' } })`)
       }
-      dbExec(`await p.gameweek.update({ where: { id: '${activeGwId}' }, data: { status: '${originalState.gwStatus}', aggregationStatus: '${originalState.aggregationStatus}' } })`)
-      if (originalState.gameweekScore) {
-        dbExec(`await p.gameweekScore.upsert({ where: { teamId_gameweekId: { teamId: '${teamId}', gameweekId: '${activeGwId}' } }, create: { teamId: '${teamId}', gameweekId: '${activeGwId}', totalPoints: ${originalState.gameweekScore.totalPoints}, chipUsed: ${originalState.gameweekScore.chipUsed ? `'${originalState.gameweekScore.chipUsed}'` : 'null'} }, update: { totalPoints: ${originalState.gameweekScore.totalPoints}, chipUsed: ${originalState.gameweekScore.chipUsed ? `'${originalState.gameweekScore.chipUsed}'` : 'null'} } })`)
-      } else {
-        dbExec(`await p.gameweekScore.deleteMany({ where: { teamId: '${teamId}', gameweekId: '${activeGwId}' } })`)
-      }
-      if (!originalState.chipUsage) {
-        dbExec(`await p.chipUsage.deleteMany({ where: { teamId: '${teamId}', gameweekId: '${activeGwId}' } })`)
-      }
-    } catch (e) {
-      console.error('Cleanup failed:', e)
-    }
+    } catch (e) { console.error('restore matches:', e) }
   })
 
   /* ─── Stage 1: Pre-scores ─── */
@@ -212,7 +207,7 @@ test.describe('Full Gameweek Lifecycle @user', () => {
   })
 
   /* ─── Stage 3: Chip activation ─── */
-  test('Stage 3: Chip activation — progression arrows in sheet', async ({ page }) => {
+  test('Stage 3: Chip activation — hero score includes chip bonus', async ({ page }) => {
     dbExec(`await p.match.updateMany({ where: { gameweekId: '${activeGwId}' }, data: { scoringStatus: 'SCORED' } })`)
     dbExec(`await p.chipUsage.deleteMany({ where: { teamId: '${teamId}', chipType: 'POWER_PLAY_BAT' } })`)
     dbExec(`await p.chipUsage.create({ data: { teamId: '${teamId}', chipType: 'POWER_PLAY_BAT', gameweekId: '${activeGwId}', status: 'PENDING' } })`)
@@ -227,31 +222,11 @@ test.describe('Full Gameweek Lifecycle @user', () => {
     const pts = await getHeroYourPoints(page)
     expect(pts).toBe(expected.totalPoints)
 
-    // Open detail sheet via Your Points tap
-    await page.getByTestId('hero-your-points').click()
-    const gwSheet = page.getByTestId('gw-detail-sheet')
-    await expect(gwSheet).toBeVisible({ timeout: 10_000 })
-
-    // Chip badge in sheet
-    const sheetChip = gwSheet.getByTestId('sheet-chip-badge')
-    await expect(sheetChip).toBeVisible()
-    await expect(sheetChip).toContainText('Power Play Bat')
-    await expect(sheetChip).toContainText('ACTIVE')
-
-    // Chip progression arrows (N → M where M > N)
-    const progressions = gwSheet.getByTestId('chip-progression')
-    const count = await progressions.count()
-    expect(count).toBeGreaterThan(0)
-    for (let i = 0; i < count; i++) {
-      const text = await progressions.nth(i).textContent()
-      expect(text).toMatch(/\d+ → \d+/)
-      const [base, boosted] = text!.match(/(\d+) → (\d+)/)!.slice(1).map(Number)
-      expect(boosted).toBeGreaterThan(base)
-    }
+    // Your Points links to view-lineup (PR #20)
+    const link = page.getByTestId('hero-your-points')
+    await expect(link).toHaveAttribute('href', /\/view-lineup\//)
 
     await page.screenshot({ path: 'test-results/lifecycle-stage3-chip.png' })
-    await page.keyboard.press('Escape')
-    await page.waitForTimeout(500)
   })
 
   /* ─── Stage 4: All scored — GW column in standings ─── */
@@ -282,37 +257,24 @@ test.describe('Full Gameweek Lifecycle @user', () => {
     const gwText = await yourRow.getByTestId('gw-points').textContent()
     expect(parseInt(gwText?.replace(/,/g, '') || '-1')).toBe(expected.totalPoints)
 
-    // Open sheet — verify captain + LIVE badge
-    await page.getByTestId('hero-your-points').click()
-    const gwSheet = page.getByTestId('gw-detail-sheet')
-    await expect(gwSheet).toBeVisible({ timeout: 10_000 })
-    await expect(gwSheet.getByTestId('sheet-live-badge')).toBeVisible()
-    await expect(gwSheet.getByText('(C)')).toBeVisible()
-
     await page.screenshot({ path: 'test-results/lifecycle-stage4-allscored.png' })
-    await page.keyboard.press('Escape')
-    await page.waitForTimeout(500)
   })
 
-  /* ─── Stage 5: Settlement — user's score settled (FINAL in sheet) ─── */
-  test('Stage 5: Settlement — FINAL badge in detail sheet', async ({ page }) => {
+  /* ─── Stage 5: Settlement — GameweekScore created ─── */
+  test('Stage 5: Settlement — GameweekScore stored', async ({ page }) => {
     const settledPoints = 474
     dbExec(`await p.gameweekScore.upsert({ where: { teamId_gameweekId: { teamId: '${teamId}', gameweekId: '${activeGwId}' } }, create: { teamId: '${teamId}', gameweekId: '${activeGwId}', totalPoints: ${settledPoints}, chipUsed: 'POWER_PLAY_BAT' }, update: { totalPoints: ${settledPoints}, chipUsed: 'POWER_PLAY_BAT' } })`)
 
     await page.goto('/')
     await waitForApp(page)
 
-    // Hero still shows LIVE (leaderboard detects active GW until aggregation DONE)
-    // But the detail sheet should show FINAL (user's GameweekScore exists)
-    await page.getByTestId('hero-your-points').click()
-    const gwSheet = page.getByTestId('gw-detail-sheet')
-    await expect(gwSheet).toBeVisible({ timeout: 10_000 })
-    await expect(gwSheet.getByTestId('sheet-final-badge')).toBeVisible()
-    await expect(gwSheet.getByTestId('sheet-live-badge')).toBeHidden()
+    // Hero still shows LIVE badge (leaderboard active until aggregation DONE)
+    await expect(page.getByTestId('hero-live-badge')).toBeVisible()
+
+    // Your Points link still works
+    await expect(page.getByTestId('hero-your-points')).toHaveAttribute('href', /\/view-lineup\//)
 
     await page.screenshot({ path: 'test-results/lifecycle-stage5-final.png' })
-    await page.keyboard.press('Escape')
-    await page.waitForTimeout(500)
   })
 
   /* ─── Stage 6: GW completed ─── */

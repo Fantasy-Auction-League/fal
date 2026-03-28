@@ -54,41 +54,18 @@ test('Hero shows GW scores and LIVE/FINAL badge @user', async ({ page }) => {
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Hero: Your Points opens GW detail sheet
+   Hero: Your Points navigates to read-only lineup view (PR #20 behavior)
    ═══════════════════════════════════════════════════════════════════════════ */
-test('Tapping Your Points opens GW detail sheet @user', async ({ page }) => {
+test('Tapping Your Points navigates to view-lineup @user', async ({ page }) => {
   await page.goto('/')
   await waitForApp(page)
 
-  // Tap Your Points
+  // Tap Your Points — should navigate to /view-lineup/{teamId}
   await page.getByTestId('hero-your-points').click()
+  await page.waitForURL(/\/view-lineup\//, { timeout: 10_000 })
 
-  // GW sheet should open
-  const gwSheet = page.getByTestId('gw-detail-sheet')
-  await expect(gwSheet).toBeVisible({ timeout: 10_000 })
-
-  // Sheet should have GW Breakdown header
-  await expect(gwSheet.getByText(/Gameweek.*Breakdown/)).toBeVisible()
-
-  // Should show LIVE or FINAL badge in the sheet
-  const sheetLive = gwSheet.getByTestId('sheet-live-badge')
-  const sheetFinal = gwSheet.getByTestId('sheet-final-badge')
-  const hasLive = await sheetLive.isVisible().catch(() => false)
-  const hasFinal = await sheetFinal.isVisible().catch(() => false)
-  expect(hasLive || hasFinal).toBe(true)
-
-  // Should have "Playing XI" section
-  await expect(gwSheet.getByText('Playing XI')).toBeVisible()
-
-  // Captain indicator
-  await expect(gwSheet.getByText('(C)')).toBeVisible()
-
-  // Bench section exists
-  const benchHeader = gwSheet.getByText('Bench', { exact: true }).first()
-  await expect(benchHeader).toHaveCount(1)
-
-  // Summary row exists
-  await expect(gwSheet.getByText('Base Pts')).toHaveCount(1)
+  // Should show the lineup view page (shows team name + "Lineup" or pitch/list toggle)
+  await expect(page.getByText(/Lineup|Pitch View/i).first()).toBeVisible({ timeout: 10_000 })
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
