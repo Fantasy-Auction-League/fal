@@ -11,6 +11,12 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/simulation/**', 'node_modules/**'],
     testTimeout: 30000,
+    // Run files that call aggregateGameweek() sequentially to prevent
+    // cross-file interference (ensureLineups processes ALL teams globally)
+    sequence: {
+      concurrent: false,
+    },
+    fileParallelism: false,
   },
   resolve: {
     alias: {

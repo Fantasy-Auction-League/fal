@@ -105,6 +105,17 @@ export async function POST(
       )
     }
 
+    // Check if a different chip is already active for this gameweek
+    const pendingChipThisGw = await prisma.chipUsage.findFirst({
+      where: { teamId, gameweekId, status: 'PENDING' },
+    })
+    if (pendingChipThisGw) {
+      return Response.json(
+        { error: `Already have ${pendingChipThisGw.chipType} active for this gameweek. Deactivate it first.` },
+        { status: 409 }
+      )
+    }
+
     // Create chip usage
     const chipUsage = await prisma.chipUsage.create({
       data: { teamId, chipType, gameweekId, status: 'PENDING' },
@@ -112,6 +123,15 @@ export async function POST(
 
     return Response.json({ chipUsage })
   } catch (error) {
+    if (
+      error instanceof (await import('@prisma/client')).Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return Response.json(
+        { error: 'Another chip is already active for this gameweek' },
+        { status: 409 }
+      )
+    }
     console.error('POST /api/teams/[teamId]/lineups/[gameweekId]/chip error:', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }

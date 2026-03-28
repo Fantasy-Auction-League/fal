@@ -1,0 +1,14 @@
+
+> fal@0.1.0 test
+> vitest run run
+
+[dotenv@17.3.1] injecting env (8) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+[1m[46m RUN [49m[22m [36mv4.1.0 [39m[90m/Users/viiveeksankar/workspace/fal[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33mrun[39m
+[2minclude: [22m[33mtests/**/*.test.ts[39m
+[2mexclude:  [22m[33mtests/simulation/**[2m, [22mnode_modules/**[39m
+

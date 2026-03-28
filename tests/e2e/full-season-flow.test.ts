@@ -5,19 +5,33 @@ const prisma = new PrismaClient()
 const TEST_PREFIX = 'e2e-flow'
 
 async function cleanupTestData() {
-  // Delete in correct order to respect foreign key constraints
-  await prisma.chipUsage.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
-  await prisma.gameweekScore.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
-  await prisma.lineupSlot.deleteMany({ where: { lineup: { team: { league: { name: { startsWith: TEST_PREFIX } } } } } })
-  await prisma.lineup.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
-  await prisma.playerPerformance.deleteMany({ where: { match: { apiMatchId: { in: [99901, 99902] } } } })
-  await prisma.playerScore.deleteMany({ where: { gameweek: { number: { in: [101, 102] } } } })
-  await prisma.match.deleteMany({ where: { apiMatchId: { in: [99901, 99902] } } })
-  await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102] } } })
-  await prisma.teamPlayer.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
-  await prisma.team.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
-  await prisma.league.deleteMany({ where: { name: { startsWith: TEST_PREFIX } } })
-  await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } })
+  // Retry cleanup because parallel tests calling aggregateGameweek() can create
+  // lineups for our teams between our lineup delete and team delete
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      // Delete in correct order to respect foreign key constraints
+      await prisma.chipUsage.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
+      await prisma.gameweekScore.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
+      await prisma.playerPerformance.deleteMany({ where: { match: { apiMatchId: { in: [99901, 99902] } } } })
+      await prisma.playerScore.deleteMany({ where: { gameweek: { number: { in: [101, 102] } } } })
+      await prisma.match.deleteMany({ where: { apiMatchId: { in: [99901, 99902] } } })
+      // Delete ALL lineups referencing test gameweeks (ensureLineups creates them for all teams globally)
+      await prisma.lineupSlot.deleteMany({ where: { lineup: { gameweek: { number: { in: [101, 102] } } } } })
+      await prisma.lineup.deleteMany({ where: { gameweek: { number: { in: [101, 102] } } } })
+      await prisma.gameweekScore.deleteMany({ where: { gameweek: { number: { in: [101, 102] } } } })
+      await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102] } } })
+      await prisma.teamPlayer.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
+      // Delete lineups for e2e teams (any gameweek) right before team deletion
+      await prisma.lineupSlot.deleteMany({ where: { lineup: { team: { league: { name: { startsWith: TEST_PREFIX } } } } } })
+      await prisma.lineup.deleteMany({ where: { team: { league: { name: { startsWith: TEST_PREFIX } } } } })
+      await prisma.team.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
+      await prisma.league.deleteMany({ where: { name: { startsWith: TEST_PREFIX } } })
+      await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } })
+      return // success
+    } catch {
+      if (attempt === 3) throw new Error('Cleanup failed after 3 retries (parallel test interference)')
+    }
+  }
 }
 
 describe('Full Season Flow E2E', () => {

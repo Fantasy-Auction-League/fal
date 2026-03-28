@@ -278,6 +278,9 @@ model ChipUsage {
   createdAt  DateTime   @default(now())
 
   @@unique([teamId, chipType])
+  // Only one chip activation (any type) per team per gameweek.
+  // DELETE removes the row, so deactivate-then-reactivate works.
+  @@unique([teamId, gameweekId])
 }
 
 model GameweekScore {
