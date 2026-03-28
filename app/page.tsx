@@ -500,18 +500,22 @@ export default function DashboardPage() {
   // Gameweek label
   const gwLabel = seasonStarted ? `Gameweek ${currentGw!.number}` : 'Season not started'
 
-  // Score trio
+  // Score trio — during LIVE mode, show GW-level scores; during FINAL, show season totals
   const userId = session.user?.id
   const myStanding = standings.find(s => s.managerId === userId)
-  const yourPoints = myStanding?.totalPoints ?? 0
+
+  // GW-level scores from standings (liveGwPoints during LIVE, lastGwPoints during FINAL)
+  const getGwPoints = (s: Standing) => gwStatus === 'LIVE' && s.liveGwPoints !== null ? s.liveGwPoints : (s.lastGwPoints ?? 0)
+  const yourGwPoints = myStanding ? getGwPoints(myStanding) : 0
+  const yourPoints = yourGwPoints
   const avgPoints = standings.length > 0
-    ? Math.round(standings.reduce((sum, s) => sum + s.totalPoints, 0) / standings.length)
+    ? Math.round(standings.reduce((sum, s) => sum + getGwPoints(s), 0) / standings.length)
     : 0
   const topGwStanding = standings.length > 0
-    ? standings.reduce((best, s) => s.lastGwPoints > best.lastGwPoints ? s : best, standings[0])
+    ? standings.reduce((best, s) => getGwPoints(s) > getGwPoints(best) ? s : best, standings[0])
     : null
-  const highestPoints = topGwStanding?.lastGwPoints ?? 0
-  const hasScores = standings.some(s => s.totalPoints > 0)
+  const highestPoints = topGwStanding ? getGwPoints(topGwStanding) : 0
+  const hasScores = standings.some(s => getGwPoints(s) > 0 || s.totalPoints > 0)
 
   // GW score total from live response or legacy playerScores
   const gwScoreTotal = liveScoreResponse?.totalPoints ?? gwPlayerScores.reduce((sum, s) => sum + s.totalPoints, 0)
@@ -588,13 +592,42 @@ export default function DashboardPage() {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Dashboard</div>
         </div>
 
-        {/* Gameweek label */}
+        {/* Gameweek label with LIVE/FINAL badge */}
         <div style={{
-          textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.6)',
-          fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 2,
-          marginTop: 6,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          marginTop: 6, marginBottom: 2,
         }}>
-          {gwLabel}
+          <div style={{
+            fontSize: 10, color: 'rgba(255,255,255,0.6)',
+            fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' as const,
+          }}>
+            {gwLabel}
+          </div>
+          {gwStatus === 'LIVE' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%', background: '#22C55E',
+                animation: 'pulse 2s infinite',
+              }} />
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: '#22C55E',
+                background: 'rgba(34,197,94,0.15)', padding: '2px 5px', borderRadius: 4,
+              }}>LIVE</div>
+            </div>
+          )}
+          {gwStatus === 'FINAL' && activeGwNumber !== null && (
+            <div style={{
+              fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.6)',
+              background: 'rgba(255,255,255,0.1)', padding: '2px 5px', borderRadius: 4,
+            }}>FINAL</div>
+          )}
+          {gwStatus === 'LIVE' && matchesScored !== null && matchesTotal !== null && (
+            <div style={{
+              fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+            }}>
+              {matchesScored}/{matchesTotal} matches
+            </div>
+          )}
         </div>
 
         {/* Score Trio */}
@@ -605,13 +638,12 @@ export default function DashboardPage() {
               {hasScores ? formatNumber(avgPoints) : '\u2014'}
             </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Average</div>
-            {gwStatus === 'LIVE' && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.5)', marginTop: 2, fontWeight: 500 }}>(before bench subs)</div>}
           </div>
 
-          {/* Your Points (center) — tappable */}
-          <Link
-            href={myStanding ? `/view-lineup/${myStanding.teamId}` : '#'}
-            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer', textDecoration: 'none' }}
+          {/* Your Points (center) — tappable to open GW sheet */}
+          <div
+            onClick={openGwSheet}
+            style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer' }}
           >
             {/* Left divider */}
             <div style={{ position: 'absolute', top: '10%', bottom: '20%', left: 0, width: 1, background: 'rgba(255,255,255,0.1)' }} />
@@ -621,7 +653,7 @@ export default function DashboardPage() {
               {hasScores ? formatNumber(yourPoints) : '\u2014'}
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginTop: 2 }}>Your Points</div>
-          </Link>
+          </div>
 
           {/* Highest */}
           <Link
@@ -632,7 +664,6 @@ export default function DashboardPage() {
               {hasScores ? formatNumber(highestPoints) : '\u2014'}
             </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Highest</div>
-            {gwStatus === 'LIVE' && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.5)', marginTop: 2, fontWeight: 500 }}>(before bench subs)</div>}
           </Link>
         </div>
 
@@ -666,140 +697,6 @@ export default function DashboardPage() {
           50% { opacity: 0.4; }
         }
       `}</style>
-
-      {/* Live GW Card */}
-      {activeGwNumber !== null && liveScoreFetched && liveScoreResponse && (
-        <div style={{ padding: '0 14px' }}>
-          <div
-            data-testid="live-gw-card"
-            onClick={openGwSheet}
-            style={{
-              background: '#fff',
-              border: '1px solid rgba(0,0,0,0.06)',
-              borderRadius: 16,
-              padding: 14,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              cursor: 'pointer',
-            }}
-          >
-            {/* Header with status badge and GW label */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {liveScoreResponse.status === 'LIVE' ? (
-                  <>
-                    {/* Pulsing green dot */}
-                    <div
-                      data-testid="pulsing-dot"
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        background: '#22C55E',
-                        animation: 'pulse 2s infinite',
-                      }}
-                    />
-                    {/* LIVE badge */}
-                    <div
-                      data-testid="live-badge"
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: '#fff',
-                        background: '#22C55E',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                      }}
-                    >
-                      LIVE
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* FINAL badge */}
-                    <div
-                      data-testid="final-badge"
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: '#fff',
-                        background: '#6B7280',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                      }}
-                    >
-                      FINAL
-                    </div>
-                  </>
-                )}
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#666' }}>
-                GW {liveScoreResponse.gameweekNumber}
-              </div>
-            </div>
-
-            {/* Match progress (LIVE only) */}
-            {liveScoreResponse.status === 'LIVE' && (
-              <div style={{ fontSize: 11, color: '#999', marginBottom: 8 }}>
-                {liveScoreResponse.matchesScored}/{liveScoreResponse.matchesTotal} matches scored
-              </div>
-            )}
-
-            {/* Large running total number */}
-            <div data-testid="live-gw-total" style={{
-              fontSize: 36,
-              fontWeight: 800,
-              color: '#1a1a2e',
-              marginBottom: 8,
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              {formatNumber(liveScoreResponse.totalPoints)}
-            </div>
-
-            {/* Chip badge (if chip active) */}
-            {liveScoreResponse.chipActive && (
-              <div data-testid="card-chip-badge" style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#1a1a2e',
-                background: 'rgba(249,205,5,0.15)',
-                border: '1px solid rgba(249,205,5,0.3)',
-                padding: '6px 10px',
-                borderRadius: 8,
-                marginBottom: 8,
-              }}>
-                ⚡ {getChipName(liveScoreResponse.chipActive)} +{liveScoreResponse.chipBonusPoints} pts
-              </div>
-            )}
-
-            {/* Footer message */}
-            {liveScoreResponse.status === 'LIVE' && (
-              <div style={{ fontSize: 10, color: '#999', marginTop: 8 }}>
-                Bench subs applied after final match
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Fallback card when no lineup submitted */}
-      {activeGwNumber !== null && liveScoreFetched && !liveScoreResponse && (
-        <div style={{ padding: '0 14px' }}>
-          <div
-            data-testid="no-lineup-card"
-            style={{
-              background: '#fff',
-              border: '1px solid rgba(0,0,0,0.06)',
-              borderRadius: 16,
-              padding: 14,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-            }}
-          >
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#666', textAlign: 'center' }}>
-              No lineup submitted for GW {activeGwNumber}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CONTENT */}
       <div style={{ padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
