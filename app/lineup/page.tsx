@@ -1962,7 +1962,7 @@ export default function LineupPage() {
                         Auction Price
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', fontVariantNumeric: 'tabular-nums' }}>
-                        {'\u20B9'}{p.purchasePrice}
+                        ${p.purchasePrice}M
                       </div>
                     </div>
                     {/* Pts/Match */}

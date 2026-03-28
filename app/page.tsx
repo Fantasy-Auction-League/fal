@@ -297,6 +297,7 @@ export default function DashboardPage() {
   const [joinCode, setJoinCode] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
   const [joinError, setJoinError] = useState('')
+  const [editGwDeadline, setEditGwDeadline] = useState<{ number: number; lockTime: string | null } | null>(null)
   const joinInputRef = useRef<HTMLInputElement>(null)
 
   /* ─── Fetch league on mount ─── */
@@ -396,6 +397,28 @@ export default function DashboardPage() {
       eagerFetchLiveScore()
     }
   }, [gwStatus, liveScoreFetched, eagerFetchLiveScore])
+
+  // Deadline — find the next unlocked GW's lock time for editing
+  useEffect(() => {
+    if (!currentGw) return
+    const locked = currentGw.lockTime ? new Date() >= new Date(currentGw.lockTime) : false
+    if (!locked) {
+      setEditGwDeadline({ number: currentGw.number, lockTime: currentGw.lockTime })
+    } else {
+      fetch('/api/gameweeks').then(res => res.ok ? res.json() : []).then((allGws: { number: number; status: string; lockTime: string | null }[]) => {
+        const nextGw = allGws
+          .filter(gw => gw.number > currentGw.number && (gw.status === 'UPCOMING' || gw.status === 'ACTIVE'))
+          .sort((a, b) => a.number - b.number)[0]
+        if (nextGw) {
+          setEditGwDeadline({ number: nextGw.number, lockTime: nextGw.lockTime })
+        } else {
+          setEditGwDeadline({ number: currentGw.number, lockTime: currentGw.lockTime })
+        }
+      }).catch(() => {
+        setEditGwDeadline({ number: currentGw.number, lockTime: currentGw.lockTime })
+      })
+    }
+  }, [currentGw])
 
   /* ─── GW Score Detail fetch ─── */
   const openGwSheet = useCallback(async () => {
@@ -520,12 +543,10 @@ export default function DashboardPage() {
   // GW score total from live response or legacy playerScores
   const gwScoreTotal = liveScoreResponse?.totalPoints ?? gwPlayerScores.reduce((sum, s) => sum + s.totalPoints, 0)
 
-  // Deadline
-  const nextGwNumber = currentGw ? currentGw.number + 1 : null
-  const deadline = currentGw
-    ? formatDeadline(currentGw.lockTime)
+  const deadline = editGwDeadline
+    ? formatDeadline(editGwDeadline.lockTime)
     : { label: 'Deadline', time: 'Season starts soon' }
-  const deadlineLabel = nextGwNumber ? `GW${nextGwNumber} Deadline` : deadline.label
+  const deadlineLabel = editGwDeadline ? `GW${editGwDeadline.number} Deadline` : deadline.label
 
   // Matches
   const matches = currentGw?.matches ?? []

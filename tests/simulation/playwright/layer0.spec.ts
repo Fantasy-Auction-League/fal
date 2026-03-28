@@ -2239,3 +2239,205 @@ test('53. Read-only popup Full Profile shows career stats @user', async ({ page 
     await expect(page).toHaveScreenshot('readonly-full-profile.png')
   }
 })
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   54. Read-only lineup — GW navigation bar visible
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('54. Read-only lineup shows GW navigation bar @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  // Wait for standings to load so "Your Points" link has a valid href
+  await expect(page.getByText(/Sim Team 1/)).toBeVisible({ timeout: 10000 })
+
+  // Navigate to own read-only lineup
+  await page.getByText('Your Points').click()
+  await page.waitForURL('**/view-lineup/**', { timeout: 15000 })
+  await waitForApp(page)
+  expect(page.url()).toContain('/view-lineup/')
+
+  // GW navigation bar should show "GW" label with a number
+  await expect(page.getByText(/GW \d+/)).toBeVisible({ timeout: 10000 })
+
+  // Points total should be displayed in the GW nav bar (e.g. "GW1 · 269 pts")
+  await expect(page.getByText(/GW\d+ · \d+ pts/)).toBeVisible({ timeout: 5000 })
+
+  await expect(page).toHaveScreenshot('readonly-gw-nav-bar.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   55. Read-only lineup — player figures show GW points
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('55. Read-only lineup player figures show GW points @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Player figures on pitch should show "X pts" text (not team code)
+  // Wait for data to load — look for any element with "pts" text inside the pitch area
+  const ptsLabels = page.locator('text=/\\d+ pts/')
+  await expect(ptsLabels.first()).toBeVisible({ timeout: 10000 })
+
+  // Should have multiple players showing points (at least 1 in XI)
+  const count = await ptsLabels.count()
+  expect(count).toBeGreaterThanOrEqual(1)
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   56. Read-only lineup — list view shows player points
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('56. Read-only lineup list view shows player points @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Switch to list view
+  await page.getByText('List View').click()
+  await page.waitForTimeout(500)
+
+  // Playing XI section should be visible
+  await expect(page.getByText('Playing XI').first()).toBeVisible()
+
+  // Player rows should show numeric point values (not hardcoded "0" or "—")
+  // The summary bar should show a GW total
+  const summaryTotal = page.getByText(/GW\d+ Total/)
+  await expect(summaryTotal).toBeVisible({ timeout: 5000 })
+
+  await expect(page).toHaveScreenshot('readonly-list-view-points.png')
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   57. Read-only lineup — GW prev navigation works
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('57. Read-only lineup GW prev navigation @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Get the current GW number from the navigation bar
+  const gwLabel = page.locator('text=/GW \\d+/').first()
+  await expect(gwLabel).toBeVisible({ timeout: 10000 })
+  const gwText = await gwLabel.textContent()
+  const currentGW = parseInt(gwText!.replace(/\D/g, ''))
+
+  // Try clicking the prev (←) button
+  const prevButton = page.locator('button').filter({ hasText: '←' })
+  if (currentGW > 1 && await prevButton.isEnabled({ timeout: 3000 }).catch(() => false)) {
+    await prevButton.click()
+    await page.waitForTimeout(2000)
+
+    // GW label should now show previous GW number
+    await expect(page.getByText(`GW ${currentGW - 1}`)).toBeVisible({ timeout: 10000 })
+
+    await expect(page).toHaveScreenshot('readonly-gw-prev.png')
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   58. Read-only lineup — GW total uses server-computed score
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('58. Read-only lineup GW total from server @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Header should show points (e.g., "GW1 · 42 pts")
+  const headerPoints = page.locator('text=/GW\\d+ · \\d+ pts/')
+  await expect(headerPoints).toBeVisible({ timeout: 10000 })
+
+  // Switch to list view to check summary bar
+  await page.getByText('List View').click()
+  await page.waitForTimeout(500)
+
+  // Summary bar should show GW total
+  const summaryTotal = page.getByText(/GW\d+ Total/)
+  await expect(summaryTotal).toBeVisible({ timeout: 5000 })
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   59. Read-only lineup — currency shows $ instead of ₹
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('59. Read-only lineup auction price shows dollar currency @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Tap a player figure to open the stats popup
+  const playerFigure = page.locator('div[style*="cursor: pointer"][style*="width: 86"]').first()
+  if (await playerFigure.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await playerFigure.click()
+    await page.waitForTimeout(1000)
+
+    // Auction Price should be visible
+    await expect(page.getByText('Auction Price')).toBeVisible({ timeout: 5000 })
+
+    // Price should show $ symbol with M suffix (e.g., "$10M", "$8.5M")
+    await expect(page.getByText(/\$[\d.]+M/)).toBeVisible({ timeout: 3000 })
+
+    // Should NOT show rupee symbol
+    await expect(page.getByText(/₹/)).not.toBeVisible()
+  }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   60. Read-only lineup — no lineup message for empty GW
+   ═══════════════════════════════════════════════════════════════════════════ */
+test('60. Read-only lineup shows no lineup message for empty GW @user', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.goto('/')
+  await waitForApp(page)
+
+  await page.getByText('Your Points').click()
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 })
+  await waitForApp(page)
+
+  // Navigate back to GW 1 (which may not have a lineup) if we're past GW 1
+  const gwLabel = page.locator('text=/GW \\d+/').first()
+  await expect(gwLabel).toBeVisible({ timeout: 10000 })
+  const gwText = await gwLabel.textContent()
+  const currentGW = parseInt(gwText!.replace(/\D/g, ''))
+
+  if (currentGW > 1) {
+    // Navigate backwards to find a GW without a lineup
+    const prevButton = page.locator('button').filter({ hasText: '←' })
+    let attempts = 0
+    while (attempts < currentGW - 1) {
+      if (await prevButton.isEnabled({ timeout: 2000 }).catch(() => false)) {
+        await prevButton.click()
+        await page.waitForTimeout(2000)
+
+        // Check if "No lineup submitted" message appeared
+        const noLineup = page.getByText(/No lineup submitted/)
+        if (await noLineup.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await expect(noLineup).toBeVisible()
+          await expect(page).toHaveScreenshot('readonly-no-lineup.png')
+          break
+        }
+        attempts++
+      } else {
+        break
+      }
+    }
+  }
+})

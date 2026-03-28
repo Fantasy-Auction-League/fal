@@ -151,9 +151,9 @@ const LockIcon = () => (
   </svg>
 )
 
-/* ─── Player Figure Component (EXACT copy from edit lineup) ─── */
-function PlayerFigure({ player, isCaptain, isVC, isBench }: {
-  player: SquadPlayer; isCaptain: boolean; isVC: boolean; isBench?: boolean
+/* ─── Player Figure Component ─── */
+function PlayerFigure({ player, isCaptain, isVC, isBench, points }: {
+  player: SquadPlayer; isCaptain: boolean; isVC: boolean; isBench?: boolean; points?: number
 }) {
   const code = player.iplTeamCode || ''
   const grad = teamGradients[code] || defaultGrad
@@ -175,7 +175,7 @@ function PlayerFigure({ player, isCaptain, isVC, isBench }: {
   const plateMaxW = isBench ? 72 : 90
   const platePx = isBench ? '2px 5px 1px' : '4px 8px'
   const nameFs = isBench ? 11 : 12
-  const valueFs = isBench ? 9 : 10
+  const valueFs = isBench ? 10 : 12
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -184,15 +184,15 @@ function PlayerFigure({ player, isCaptain, isVC, isBench }: {
         {/* C/VC badge */}
         {(isCaptain || isVC) && (
           <div style={{
-            position: 'absolute', top: -2, right: isBench ? -2 : 2, zIndex: 5,
-            width: 16, height: 16, borderRadius: '50%',
+            position: 'absolute', top: -4, right: isBench ? -4 : 0, zIndex: 5,
+            width: 24, height: 24, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 8, fontWeight: 900,
+            fontSize: 12, fontWeight: 900,
             background: isCaptain ? '#F9CD05' : '#C0C7D0',
             color: '#1a1a1a',
             boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
           }}>
-            {isCaptain ? 'C' : 'V'}
+            {isCaptain ? 'C' : 'VC'}
           </div>
         )}
         {/* Head */}
@@ -253,11 +253,16 @@ function PlayerFigure({ player, isCaptain, isVC, isBench }: {
           {shortName}
         </div>
         <div style={{
-          fontSize: valueFs, fontWeight: 500,
+          fontSize: valueFs, fontWeight: 700,
           color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)',
           marginTop: 2, lineHeight: '1.55',
+          display: 'flex', alignItems: 'center', gap: 2,
         }}>
-          {code || 'IPL'}
+          {points !== undefined ? (
+            <span>{points} pts</span>
+          ) : (
+            code || 'IPL'
+          )}
         </div>
       </div>
     </div>
@@ -305,6 +310,14 @@ export default function ViewLineupPage() {
   const [sheetDetailLoading, setSheetDetailLoading] = useState(false)
   const [sheetView, setSheetView] = useState<'compact' | 'full'>('compact')
 
+  /* ─── GW navigation state ─── */
+  const [allGameweeks, setAllGameweeks] = useState<{ id: string; number: number; status: string }[]>([])
+  const [selectedGWNumber, setSelectedGWNumber] = useState<number | null>(null)
+  const [playerPoints, setPlayerPoints] = useState<Record<string, number>>({})
+  const [gwTotal, setGwTotal] = useState<number>(0)
+  const [gwLoading, setGwLoading] = useState(false)
+  const [noLineupForGW, setNoLineupForGW] = useState(false)
+
   /* ─── Fetch player detail when stats sheet opens ─── */
   useEffect(() => {
     if (!playerStatsSheet) { setSheetDetail(null); setSheetView('compact'); return }
@@ -339,22 +352,143 @@ export default function ViewLineupPage() {
     return () => { cancelled = true }
   }, [playerStatsSheet])
 
+  /* ─── Restore lineup from API response slots ─── */
+  const restoreLineupFromSlots = useCallback((
+    slots: { slotType: string; playerId: string; role: string | null; benchPriority: number | null }[],
+    playerMap: Map<string, SquadPlayer>,
+  ): boolean => {
+    const xiSlots = slots.filter(s => s.slotType === 'XI')
+    const benchSlots = slots
+      .filter(s => s.slotType === 'BENCH')
+      .sort((a, b) => (a.benchPriority ?? 99) - (b.benchPriority ?? 99))
+
+    const xiPlayers = xiSlots
+      .map(s => playerMap.get(s.playerId))
+      .filter(Boolean) as SquadPlayer[]
+    const benchPlayers = benchSlots
+      .map(s => playerMap.get(s.playerId))
+      .filter(Boolean) as SquadPlayer[]
+
+    if (xiPlayers.length === 0) return false
+
+    setXi(xiPlayers)
+    setBench(benchPlayers)
+
+    const capSlot = slots.find(s => s.role === 'CAPTAIN')
+    const vcSlot = slots.find(s => s.role === 'VC')
+    if (capSlot && playerMap.has(capSlot.playerId)) setCaptainId(capSlot.playerId)
+    else setCaptainId(xiPlayers[0].id)
+    if (vcSlot && playerMap.has(vcSlot.playerId)) setVcId(vcSlot.playerId)
+    else if (xiPlayers.length > 1) setVcId(xiPlayers[1].id)
+
+    return true
+  }, [])
+
+  /* ─── Fetch GW-specific lineup + scores ─── */
+  const fetchGWData = useCallback(async (gwNumber: number) => {
+    if (!teamId || allGameweeks.length === 0) return
+    const gw = allGameweeks.find(g => g.number === gwNumber)
+    if (!gw) return
+
+    setGwLoading(true)
+    setNoLineupForGW(false)
+
+    try {
+      const [lineupRes, scoresRes] = await Promise.all([
+        fetch(`/api/teams/${teamId}/lineups/${gw.id}`),
+        fetch(`/api/teams/${teamId}/scores/${gw.id}`),
+      ])
+
+      // Restore lineup snapshot
+      if (lineupRes.ok) {
+        const lineupData = await lineupRes.json()
+        const slots = lineupData.lineup?.slots
+        if (Array.isArray(slots) && slots.length > 0 && squad) {
+          const playerMap = new Map(squad.players.map(p => [p.id, p]))
+          const restored = restoreLineupFromSlots(slots, playerMap)
+          if (!restored) setNoLineupForGW(true)
+        } else {
+          setNoLineupForGW(true)
+        }
+      } else {
+        setNoLineupForGW(true)
+      }
+
+      // Parse player scores + server-computed GW total (LIVE/FINAL unified format)
+      if (scoresRes.ok) {
+        const scoresData = await scoresRes.json()
+        const pointsMap: Record<string, number> = {}
+        // New format: scoresData.players[] with { id, multipliedPoints }
+        if (Array.isArray(scoresData.players) && scoresData.players.length > 0) {
+          for (const p of scoresData.players) {
+            pointsMap[p.id] = p.multipliedPoints ?? 0
+          }
+        } else if (Array.isArray(scoresData.performances) && scoresData.performances.length > 0) {
+          // Mid-GW fallback: sum per-match fantasy points from PlayerPerformance
+          for (const perf of scoresData.performances) {
+            const pid = perf.player.id
+            pointsMap[pid] = (pointsMap[pid] || 0) + perf.fantasyPoints
+          }
+        }
+        setPlayerPoints(pointsMap)
+        // totalPoints at top level (both LIVE and FINAL modes)
+        if (scoresData.totalPoints !== undefined) {
+          setGwTotal(scoresData.totalPoints)
+        } else {
+          // Mid-GW fallback: sum all live points (with multipliers applied)
+          const liveTotal = Object.values(pointsMap).reduce((sum: number, pts) => sum + (pts as number), 0)
+          setGwTotal(liveTotal)
+        }
+      } else {
+        setPlayerPoints({})
+        setGwTotal(0)
+      }
+    } catch {
+      setNoLineupForGW(true)
+      setPlayerPoints({})
+      setGwTotal(0)
+    } finally {
+      setGwLoading(false)
+    }
+  }, [teamId, allGameweeks, squad, restoreLineupFromSlots])
+
   const fetchData = useCallback(async () => {
     if (!teamId) return
     try {
-      const [squadRes, teamRes, gwRes] = await Promise.all([
+      const [squadRes, teamRes, gwRes, allGwRes] = await Promise.all([
         fetch(`/api/teams/${teamId}/squad`),
         fetch(`/api/teams/${teamId}`),
         fetch('/api/gameweeks/current'),
+        fetch('/api/gameweeks'),
       ])
 
-      // Parse current gameweek data once
+      // Parse all gameweeks
+      let allGws: { id: string; number: number; status: string }[] = []
+      if (allGwRes.ok) {
+        allGws = await allGwRes.json()
+        setAllGameweeks(allGws)
+      }
+
+      // Parse current gameweek data
       let currentGW: { id: string; number: number } | null = null
       if (gwRes.ok) {
         const gwData = await gwRes.json()
         if (gwData && !gwData.error) {
           currentGW = { id: gwData.id, number: gwData.number }
           setCurrentGWNumber(gwData.number)
+          setSelectedGWNumber(gwData.number)
+        }
+      }
+
+      // Fallback: if no current GW, use latest completed
+      if (!currentGW && allGws.length > 0) {
+        const completed = allGws
+          .filter(gw => gw.status === 'COMPLETED')
+          .sort((a, b) => b.number - a.number)
+        if (completed.length > 0) {
+          currentGW = { id: completed[0].id, number: completed[0].number }
+          setCurrentGWNumber(completed[0].number)
+          setSelectedGWNumber(completed[0].number)
         }
       }
 
@@ -366,63 +500,42 @@ export default function ViewLineupPage() {
         const playerMap = new Map(players.map(p => [p.id, p]))
         let restored = false
 
-        // Determine which gameweek ID to fetch the lineup for:
-        // 1. Current (UPCOMING/ACTIVE) gameweek
-        // 2. Last COMPLETED gameweek as fallback
-        let lineupGWId: string | null = currentGW?.id ?? null
-        if (!lineupGWId) {
-          // No current GW — try to find last completed gameweek
+        if (currentGW) {
           try {
-            const allGwRes = await fetch('/api/gameweeks')
-            if (allGwRes.ok) {
-              const allGws = await allGwRes.json()
-              const completed = (allGws as { id: string; status: string; number: number }[])
-                .filter(gw => gw.status === 'COMPLETED')
-                .sort((a, b) => b.number - a.number)
-              if (completed.length > 0) {
-                lineupGWId = completed[0].id
-                setCurrentGWNumber(completed[0].number)
-              }
-            }
-          } catch {
-            // Fall through to default
-          }
-        }
+            const [lineupRes, scoresRes] = await Promise.all([
+              fetch(`/api/teams/${teamId}/lineups/${currentGW.id}`),
+              fetch(`/api/teams/${teamId}/scores/${currentGW.id}`),
+            ])
 
-        if (lineupGWId) {
-          try {
-            const lineupRes = await fetch(`/api/teams/${teamId}/lineups/${lineupGWId}`)
             if (lineupRes.ok) {
               const lineupData = await lineupRes.json()
               const slots = lineupData.lineup?.slots
               if (Array.isArray(slots) && slots.length > 0) {
-                const xiSlots = slots.filter((s: { slotType: string }) => s.slotType === 'XI')
-                const benchSlots = slots
-                  .filter((s: { slotType: string }) => s.slotType === 'BENCH')
-                  .sort((a: { benchPriority: number | null }, b: { benchPriority: number | null }) =>
-                    (a.benchPriority ?? 99) - (b.benchPriority ?? 99)
-                  )
+                restored = restoreLineupFromSlots(slots, playerMap)
+              }
+            }
 
-                const xiPlayers = xiSlots
-                  .map((s: { playerId: string }) => playerMap.get(s.playerId))
-                  .filter(Boolean) as SquadPlayer[]
-                const benchPlayers = benchSlots
-                  .map((s: { playerId: string }) => playerMap.get(s.playerId))
-                  .filter(Boolean) as SquadPlayer[]
-
-                if (xiPlayers.length > 0) {
-                  setXi(xiPlayers)
-                  setBench(benchPlayers)
-
-                  const capSlot = slots.find((s: { role: string | null }) => s.role === 'CAPTAIN')
-                  const vcSlot = slots.find((s: { role: string | null }) => s.role === 'VC')
-                  if (capSlot && playerMap.has(capSlot.playerId)) setCaptainId(capSlot.playerId)
-                  else if (xiPlayers.length > 0) setCaptainId(xiPlayers[0].id)
-                  if (vcSlot && playerMap.has(vcSlot.playerId)) setVcId(vcSlot.playerId)
-                  else if (xiPlayers.length > 1) setVcId(xiPlayers[1].id)
-
-                  restored = true
+            // Parse initial scores + server-computed GW total (LIVE/FINAL unified format)
+            if (scoresRes.ok) {
+              const scoresData = await scoresRes.json()
+              const pointsMap: Record<string, number> = {}
+              if (Array.isArray(scoresData.players) && scoresData.players.length > 0) {
+                for (const p of scoresData.players) {
+                  pointsMap[p.id] = p.multipliedPoints ?? 0
                 }
+              } else if (Array.isArray(scoresData.performances) && scoresData.performances.length > 0) {
+                // Mid-GW fallback: sum per-match fantasy points from PlayerPerformance
+                for (const perf of scoresData.performances) {
+                  const pid = perf.player.id
+                  pointsMap[pid] = (pointsMap[pid] || 0) + perf.fantasyPoints
+                }
+              }
+              setPlayerPoints(pointsMap)
+              if (scoresData.totalPoints !== undefined) {
+                setGwTotal(scoresData.totalPoints)
+              } else {
+                const liveTotal = Object.values(pointsMap).reduce((sum: number, pts) => sum + (pts as number), 0)
+                setGwTotal(liveTotal)
               }
             }
           } catch {
@@ -456,12 +569,32 @@ export default function ViewLineupPage() {
     } finally {
       setLoading(false)
     }
-  }, [teamId])
+  }, [teamId, restoreLineupFromSlots])
 
   useEffect(() => {
     if (sessionStatus === 'authenticated') fetchData()
     else if (sessionStatus === 'unauthenticated') setLoading(false)
   }, [sessionStatus, fetchData])
+
+  /* ─── GW navigation handler ─── */
+  const navigateGW = useCallback((direction: 'prev' | 'next') => {
+    if (selectedGWNumber === null || allGameweeks.length === 0) return
+    const newNum = direction === 'prev' ? selectedGWNumber - 1 : selectedGWNumber + 1
+    const minGW = Math.min(...allGameweeks.map(g => g.number))
+    const maxGW = currentGWNumber ?? Math.max(...allGameweeks.map(g => g.number))
+    if (newNum < minGW || newNum > maxGW) return
+    setSelectedGWNumber(newNum)
+    fetchGWData(newNum)
+  }, [selectedGWNumber, allGameweeks, currentGWNumber, fetchGWData])
+
+  /* ─── GW navigation bounds ─── */
+  const minGWNumber = allGameweeks.length > 0 ? Math.min(...allGameweeks.map(g => g.number)) : 1
+  const maxGWNumber = currentGWNumber ?? (allGameweeks.length > 0 ? Math.max(...allGameweeks.map(g => g.number)) : 1)
+  const canGoPrev = selectedGWNumber !== null && selectedGWNumber > minGWNumber
+  const canGoNext = selectedGWNumber !== null && selectedGWNumber < maxGWNumber
+
+  /* ─── Helper: get player points ─── */
+  const getPoints = (playerId: string): number => playerPoints[playerId] ?? 0
 
   /* ─── Arrange XI into fixed 4-3-4 formation, sorted by role priority (EXACT copy from edit lineup) ─── */
   const rolePri: Record<string, number> = { WK: 0, BAT: 1, ALL: 2, BOWL: 3 }
@@ -549,15 +682,71 @@ export default function ViewLineupPage() {
                 Read Only
               </span>
             </div>
-            <div style={{
-              fontSize: 10, fontWeight: 600, color: '#999', letterSpacing: -0.1,
-              marginTop: 1,
-            }}>
-              {currentGWNumber ? `GW${currentGWNumber}` : 'Pre-season'} · 0 pts
-            </div>
           </div>
         </div>
       </div>
+
+      {/* ── GW Navigation Bar ── */}
+      {selectedGWNumber !== null && (
+        <div style={{
+          background: '#fff', padding: '8px 16px 6px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={() => navigateGW('prev')}
+            disabled={!canGoPrev || gwLoading}
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: canGoPrev ? '#f2f3f8' : 'transparent',
+              border: canGoPrev ? '1px solid rgba(0,0,0,0.06)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: canGoPrev ? 'pointer' : 'default',
+              color: canGoPrev ? '#333' : 'transparent',
+              fontSize: 15, fontWeight: 600,
+              opacity: canGoPrev ? 1 : 0,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            &#8592;
+          </button>
+          {(() => {
+            const selectedGwData = allGameweeks.find(g => g.number === selectedGWNumber)
+            const isInProgress = selectedGwData?.status === 'ACTIVE' || selectedGwData?.status === 'UPCOMING'
+            const ptsColor = isInProgress ? '#0d9e5f' : '#1a1a2e'
+            return (
+              <div style={{
+                fontSize: 14, fontWeight: 700, color: '#1a1a2e',
+                minWidth: 80, textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+              }}>
+                <span>GW {selectedGWNumber}</span>
+                <span style={{ fontSize: 26, fontWeight: 800, color: ptsColor, marginTop: 2, letterSpacing: -1 }}>
+                  {gwLoading ? '...' : `${gwTotal}`}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#999', marginTop: -2 }}>pts</span>
+              </div>
+            )
+          })()}
+          <button
+            onClick={() => navigateGW('next')}
+            disabled={!canGoNext || gwLoading}
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: canGoNext ? '#f2f3f8' : 'transparent',
+              border: canGoNext ? '1px solid rgba(0,0,0,0.06)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: canGoNext ? 'pointer' : 'default',
+              color: canGoNext ? '#333' : 'transparent',
+              fontSize: 15, fontWeight: 600,
+              opacity: canGoNext ? 1 : 0,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            &#8594;
+          </button>
+        </div>
+      )}
 
       {/* ── View Toggle ── */}
       <div style={{
@@ -618,7 +807,30 @@ export default function ViewLineupPage() {
               pointerEvents: 'none',
             }} />
 
-            {xi.length > 0 ? (
+            {/* GW loading overlay */}
+            {gwLoading && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(48,150,76,0.6)', backdropFilter: 'blur(2px)',
+              }}>
+                <p style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Loading GW {selectedGWNumber}...</p>
+              </div>
+            )}
+
+            {/* No lineup for this GW */}
+            {noLineupForGW && !gwLoading && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 5,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600 }}>
+                  No lineup submitted for GW {selectedGWNumber}
+                </p>
+              </div>
+            )}
+
+            {xi.length > 0 && !noLineupForGW ? (
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column',
@@ -640,7 +852,7 @@ export default function ViewLineupPage() {
                         width: 86, cursor: 'pointer',
                         display: 'flex', flexDirection: 'column', alignItems: 'center',
                       }}>
-                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} points={getPoints(p.id)} />
                     </div>
                   ))}
                 </div>
@@ -659,7 +871,7 @@ export default function ViewLineupPage() {
                         width: 86, cursor: 'pointer',
                         display: 'flex', flexDirection: 'column', alignItems: 'center',
                       }}>
-                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} points={getPoints(p.id)} />
                     </div>
                   ))}
                 </div>
@@ -678,7 +890,7 @@ export default function ViewLineupPage() {
                         width: 86, cursor: 'pointer',
                         display: 'flex', flexDirection: 'column', alignItems: 'center',
                       }}>
-                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} />
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} points={getPoints(p.id)} />
                     </div>
                   ))}
                 </div>
@@ -734,7 +946,7 @@ export default function ViewLineupPage() {
                       }}>
                         {role}
                       </div>
-                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
+                      <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench points={getPoints(p.id)} />
                     </div>
                   )
                 })}
@@ -750,6 +962,27 @@ export default function ViewLineupPage() {
           flex: 1, overflowY: 'auto', background: '#f2f3f8',
           display: 'flex', flexDirection: 'column',
         }}>
+          {gwLoading && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '40px 16px',
+            }}>
+              <p style={{ color: '#888', fontSize: 14, fontWeight: 600 }}>Loading GW {selectedGWNumber}...</p>
+            </div>
+          )}
+
+          {noLineupForGW && !gwLoading && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '40px 16px',
+            }}>
+              <p style={{ color: '#888', fontSize: 14, fontWeight: 600 }}>
+                No lineup submitted for GW {selectedGWNumber}
+              </p>
+            </div>
+          )}
+
+          {!noLineupForGW && !gwLoading && (<>
           {/* Playing XI section */}
           <div style={{
             fontSize: 9, fontWeight: 700, color: '#aaa', textTransform: 'uppercase',
@@ -806,13 +1039,7 @@ export default function ViewLineupPage() {
                     fontSize: 15, fontWeight: 800,
                     color: isCap ? '#b58800' : '#1a1a2e',
                     fontVariantNumeric: 'tabular-nums',
-                  }}>0</span>
-                  {isCap && (
-                    <span style={{
-                      fontSize: 9, fontWeight: 700, color: '#004BA0',
-                      background: 'rgba(0,75,160,0.06)', padding: '1px 4px', borderRadius: 3,
-                    }}>2&times;</span>
-                  )}
+                  }}>{getPoints(p.id)}</span>
                 </div>
               </div>
             )
@@ -859,16 +1086,17 @@ export default function ViewLineupPage() {
                         {p.iplTeamCode || 'IPL'} · {role}
                       </div>
                     </div>
-                    {/* Muted dash */}
+                    {/* Bench points (actual, but didn't count) */}
                     <span style={{
-                      fontSize: 15, fontWeight: 800, color: '#ccc',
+                      fontSize: 15, fontWeight: 800, color: '#aaa',
                       fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-                    }}>&mdash;</span>
+                    }}>{getPoints(p.id)}</span>
                   </div>
                 )
               })}
             </>
           )}
+          </>)}
 
           {/* Summary bar */}
           <div style={{
@@ -877,9 +1105,9 @@ export default function ViewLineupPage() {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>0</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#333' }}>{gwTotal}</div>
               <div style={{ fontSize: 9, color: '#aaa', fontWeight: 500, marginTop: 1 }}>
-                {currentGWNumber ? `GW${currentGWNumber} Total` : 'Total'}
+                {selectedGWNumber ? `GW${selectedGWNumber} Total` : currentGWNumber ? `GW${currentGWNumber} Total` : 'Total'}
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
@@ -1004,7 +1232,7 @@ export default function ViewLineupPage() {
                         Auction Price
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#1a1a2e', fontVariantNumeric: 'tabular-nums' }}>
-                        {'\u20B9'}{p.purchasePrice}
+                        ${p.purchasePrice}M
                       </div>
                     </div>
                     {/* Pts/Match */}

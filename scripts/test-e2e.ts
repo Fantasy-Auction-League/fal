@@ -393,7 +393,7 @@ async function main() {
   for (const team of finalLeague!.teams) {
     const budget = team.teamPlayers.reduce((sum, tp) => sum + tp.purchasePrice, 0)
     console.log(`\nTeam: ${team.name} (${team.user.email})`)
-    console.log(`  Budget Used: \u20B9${budget.toFixed(1)}M`)
+    console.log(`  Budget Used: $${budget.toFixed(1)}M`)
     console.log(`  Squad (${team.teamPlayers.length} players):`)
 
     // Group by role
@@ -412,7 +412,7 @@ async function main() {
     for (const role of roleOrder) {
       const players = byRole[role] || []
       if (players.length === 0) continue
-      const list = players.map((p) => `${p.name} (${p.team}) - \u20B9${p.price}M`).join(', ')
+      const list = players.map((p) => `${p.name} (${p.team}) - $${p.price}M`).join(', ')
       console.log(`    ${role}: ${list}`)
     }
   }
