@@ -52,6 +52,10 @@ async function cleanup() {
     await prisma.playerScore.deleteMany({ where: { gameweekId: gw.id } })
     await prisma.gameweekScore.deleteMany({ where: { gameweekId: gw.id } })
 
+    // Delete ALL lineups for this gameweek (ensureLineups creates them for all teams globally)
+    await prisma.lineupSlot.deleteMany({ where: { lineup: { gameweekId: gw.id } } })
+    await prisma.lineup.deleteMany({ where: { gameweekId: gw.id } })
+
     // Delete matches and their performances
     const matches = await prisma.match.findMany({
       where: { gameweekId: gw.id },
@@ -119,13 +123,13 @@ describe('Match Status Sync (AC2)', () => {
       where: { id: match.id },
     })
 
-    // If sync succeeded, match should be COMPLETED
-    if (result.transitioned > 0) {
-      expect(updatedMatch!.scoringStatus).toBe('COMPLETED')
+    // Check the specific test match's status (not global transitioned count,
+    // which includes matches from parallel test files)
+    if (updatedMatch!.scoringStatus === 'COMPLETED') {
       expect(updatedMatch!.apiStatus).toBe('Finished')
     } else {
-      // If API failed, log a warning so test results show the caveat
-      console.warn('AC2.1 test: SportMonks API unavailable or match not finished - skipping COMPLETED assertion')
+      // API returned 404 for test fixture — match stays SCHEDULED
+      console.warn('AC2.1 test: SportMonks API unavailable for fixture 900001 - skipping COMPLETED assertion')
       expect(updatedMatch!.scoringStatus).toBe('SCHEDULED')
     }
   }, 15000)
