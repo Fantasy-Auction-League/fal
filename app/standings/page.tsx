@@ -74,7 +74,9 @@ export default function StandingsPage() {
           const gwData: GameweekInfo[] = await gwRes.json()
           setGameweeks(gwData)
           if (gwData.length > 0) {
-            setActiveGW(gwData[gwData.length - 1].number)
+            // Default to the current active/upcoming GW, fall back to last
+            const currentGW = gwData.find(g => g.status === 'ACTIVE') || gwData.find(g => g.status === 'UPCOMING') || gwData[gwData.length - 1]
+            setActiveGW(currentGW.number)
           }
         }
 

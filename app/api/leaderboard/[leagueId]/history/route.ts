@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { computeLeagueLiveScores } from '@/lib/scoring/live'
 
 // GET /api/leaderboard/[leagueId]/history — GW-by-GW history
 export async function GET(
@@ -77,6 +78,50 @@ export async function GET(
         totalPoints: s.totalPoints,
         chipUsed: s.chipUsed,
       })
+    }
+
+    // Check for active GW with live scores (not yet aggregated)
+    const activeGw = await prisma.gameweek.findFirst({
+      where: { status: 'ACTIVE', aggregationStatus: { not: 'DONE' } },
+      orderBy: { number: 'desc' },
+    })
+
+    if (activeGw && !history[activeGw.number]) {
+      // Compute live scores for the active GW
+      try {
+        const liveResult = await computeLeagueLiveScores(prisma, activeGw.id, leagueId)
+
+        // Get team names
+        const teams = await prisma.team.findMany({
+          where: { leagueId },
+          select: { id: true, name: true, user: { select: { name: true } } },
+        })
+        const teamMap = new Map(teams.map(t => [t.id, t]))
+
+        const liveScores: typeof history[number]['scores'] = []
+        for (const [teamId, score] of liveResult.teamScores) {
+          const team = teamMap.get(teamId)
+          if (team) {
+            liveScores.push({
+              teamId,
+              teamName: team.name,
+              manager: team.user.name,
+              totalPoints: score.liveGwPoints,
+              chipUsed: score.chipType,
+            })
+          }
+        }
+
+        if (liveScores.length > 0) {
+          history[activeGw.number] = {
+            gameweekId: activeGw.id,
+            gameweekNumber: activeGw.number,
+            scores: liveScores,
+          }
+        }
+      } catch {
+        // Live scoring failed — skip, show stored data only
+      }
     }
 
     return Response.json({
