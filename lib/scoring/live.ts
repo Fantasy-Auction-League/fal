@@ -169,13 +169,13 @@ export async function computeLiveTeamScore(
     select: { id: true, scoringStatus: true },
   })
 
-  const scoredMatches = allMatches.filter((m) => m.scoringStatus === 'SCORED')
-  const matchesScored = scoredMatches.length
+  const activeMatches = allMatches.filter((m) => m.scoringStatus === 'SCORED' || m.scoringStatus === 'LIVE_SCORING')
+  const matchesScored = activeMatches.length
   const matchesTotal = allMatches.length
 
-  // Fetch performances for scored matches only
+  // Fetch performances for scored and live matches
   const performances = await prisma.playerPerformance.findMany({
-    where: { matchId: { in: scoredMatches.map((m) => m.id) } },
+    where: { matchId: { in: activeMatches.map((m) => m.id) } },
     select: { playerId: true, fantasyPoints: true, matchId: true },
   })
 
@@ -308,18 +308,24 @@ export async function computeLeagueLiveScores(
     select: { id: true, scoringStatus: true },
   })
 
-  const scoredMatches = allMatches.filter((m) => m.scoringStatus === 'SCORED')
-  const matchesScored = scoredMatches.length
+  const activeMatches = allMatches.filter((m) => m.scoringStatus === 'SCORED' || m.scoringStatus === 'LIVE_SCORING')
+  const matchesScored = activeMatches.length
   const matchesTotal = allMatches.length
 
-  // Fetch all performances for scored matches in this gameweek
+  // Fetch all performances for scored and live matches in this gameweek
   const performances = await prisma.playerPerformance.findMany({
-    where: { matchId: { in: scoredMatches.map((m) => m.id) } },
+    where: { matchId: { in: activeMatches.map((m) => m.id) } },
     select: { playerId: true, fantasyPoints: true, matchId: true },
   })
 
+  // Fetch ALL teams in league (not just those with lineups) for fallback scoring
+  const allTeams = await prisma.team.findMany({
+    where: { leagueId },
+    select: { id: true },
+  })
+
   // Query 3: Fetch all chip usages for teams in this league in this gameweek
-  const teamIds = lineups.map((l) => l.team.id)
+  const teamIds = allTeams.map((t) => t.id)
   const chipUsages = await prisma.chipUsage.findMany({
     where: { teamId: { in: teamIds }, gameweekId, status: 'PENDING' },
   })
@@ -385,6 +391,35 @@ export async function computeLeagueLiveScores(
       liveGwPoints,
       chipType,
     })
+  }
+
+  // Fallback: for teams without lineups, sum PlayerPerformance for their squad players
+  const teamsWithLineups = new Set(lineups.map((l) => l.team.id))
+  const teamsWithoutLineups = allTeams.filter((t) => !teamsWithLineups.has(t.id))
+
+  if (teamsWithoutLineups.length > 0 && performances.length > 0) {
+    // Batch fetch squad players for teams without lineups
+    const noLineupTeamIds = teamsWithoutLineups.map((t) => t.id)
+    const squadPlayers = await prisma.teamPlayer.findMany({
+      where: { teamId: { in: noLineupTeamIds } },
+      select: { teamId: true, playerId: true },
+    })
+
+    // Group by team
+    const squadByTeam = new Map<string, string[]>()
+    for (const sp of squadPlayers) {
+      if (!squadByTeam.has(sp.teamId)) squadByTeam.set(sp.teamId, [])
+      squadByTeam.get(sp.teamId)!.push(sp.playerId)
+    }
+
+    for (const team of teamsWithoutLineups) {
+      const playerIds = squadByTeam.get(team.id) || []
+      let total = 0
+      for (const pid of playerIds) {
+        total += basePointsMap.get(pid) || 0
+      }
+      teamScores.set(team.id, { liveGwPoints: total, chipType: null })
+    }
   }
 
   return {

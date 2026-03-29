@@ -8,24 +8,30 @@ export interface MatchSyncResult {
   changes: { apiMatchId: number; oldStatus: string; newStatus: string; teams: string }[]
 }
 
+// SportMonks statuses that indicate a match is in progress
+const LIVE_STATUSES = new Set([
+  '1st Innings', '2nd Innings', '3rd Innings', '4th Innings',
+  'Innings Break', 'Tea Break', 'Lunch', 'Dinner',
+  'Delayed', 'Int.',
+])
+
 export async function syncMatchStatuses(): Promise<MatchSyncResult> {
-  // 1. Get all SCHEDULED matches from DB
-  const scheduledMatches = await prisma.match.findMany({
-    where: { scoringStatus: 'SCHEDULED' },
-    select: { id: true, apiMatchId: true, localTeamName: true, visitorTeamName: true },
+  // 1. Get all SCHEDULED and LIVE_SCORING matches from DB
+  const matches = await prisma.match.findMany({
+    where: { scoringStatus: { in: ['SCHEDULED', 'LIVE_SCORING'] } },
+    select: { id: true, apiMatchId: true, localTeamName: true, visitorTeamName: true, scoringStatus: true },
   })
 
-  if (scheduledMatches.length === 0) {
+  if (matches.length === 0) {
     return { checked: 0, transitioned: 0, changes: [] }
   }
 
-  // 2. Fetch each SCHEDULED match's current status from SportMonks individually.
-  // This avoids pagination issues with season-wide filters and only queries
-  // matches we actually care about. IPL has max ~10 SCHEDULED matches at any time,
+  // 2. Fetch each match's current status from SportMonks individually.
+  // IPL has max ~10 active matches at any time,
   // so this is at most 10 API calls (well within 3,000/hour rate limit).
   const changes: MatchSyncResult['changes'] = []
 
-  for (const match of scheduledMatches) {
+  for (const match of matches) {
     let fixture: SportMonksFixture
     try {
       fixture = await sportmonks.fetch<SportMonksFixture>(
@@ -39,14 +45,20 @@ export async function syncMatchStatuses(): Promise<MatchSyncResult> {
     }
 
     // Map SportMonks status to local scoringStatus
-    let newScoringStatus: 'COMPLETED' | 'CANCELLED' | null = null
+    let newScoringStatus: 'LIVE_SCORING' | 'COMPLETED' | 'CANCELLED' | null = null
+
     if (fixture.status === 'Finished') {
       newScoringStatus = 'COMPLETED'
     } else if (fixture.status === 'Cancl.' || fixture.status === 'Aban.') {
       newScoringStatus = 'CANCELLED'
+    } else if (LIVE_STATUSES.has(fixture.status) && match.scoringStatus === 'SCHEDULED') {
+      newScoringStatus = 'LIVE_SCORING'
     }
+    // If match is already LIVE_SCORING and still live → no transition needed
 
-    if (!newScoringStatus) continue // Still NS, in progress, delayed — skip
+    if (!newScoringStatus) continue
+    // Skip if status hasn't changed (e.g. LIVE_SCORING match still live)
+    if (newScoringStatus === match.scoringStatus) continue
 
     await prisma.match.update({
       where: { id: match.id },
@@ -56,15 +68,20 @@ export async function syncMatchStatuses(): Promise<MatchSyncResult> {
         note: fixture.note ?? undefined,
         winnerTeamId: fixture.winner_team_id ?? undefined,
         superOver: fixture.super_over ?? undefined,
+        // Reset scoring attempts when LIVE_SCORING → COMPLETED so final
+        // scoring gets full 3 retries in runScoringPipeline
+        ...(match.scoringStatus === 'LIVE_SCORING' && newScoringStatus === 'COMPLETED'
+          ? { scoringAttempts: 0 }
+          : {}),
       },
     })
     changes.push({
       apiMatchId: match.apiMatchId,
-      oldStatus: 'SCHEDULED',
+      oldStatus: match.scoringStatus,
       newStatus: newScoringStatus,
       teams: `${match.localTeamName || '?'} vs ${match.visitorTeamName || '?'}`,
     })
   }
 
-  return { checked: scheduledMatches.length, transitioned: changes.length, changes }
+  return { checked: matches.length, transitioned: changes.length, changes }
 }

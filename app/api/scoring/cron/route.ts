@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { syncMatchStatuses } from '@/lib/sportmonks/match-sync'
-import { runScoringPipeline } from '@/lib/scoring/pipeline'
+import { runScoringPipeline, scoreLiveMatches } from '@/lib/scoring/pipeline'
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -9,11 +9,22 @@ export async function GET(request: Request) {
   }
 
   try {
+    // 1. Sync match statuses (SCHEDULED → LIVE_SCORING or COMPLETED)
     const syncResult = await syncMatchStatuses()
-    const result = await runScoringPipeline()
+
+    // 2. Score live in-progress matches (upsert PlayerPerformance with latest stats)
+    const liveResult = await scoreLiveMatches()
+
+    // 3. Run normal pipeline (COMPLETED → SCORING → SCORED, then GW aggregation)
+    const pipelineResult = await runScoringPipeline()
+
     return NextResponse.json({
-      ...result,
+      ...pipelineResult,
       matchesTransitioned: syncResult.transitioned,
+      liveMatchesScored: liveResult.matchesScored,
+      liveMatchesFailed: liveResult.matchesFailed,
+      lineupsCreated: liveResult.lineupsCreated,
+      liveErrors: liveResult.errors,
     })
   } catch (error) {
     console.error('Scoring cron error:', error)

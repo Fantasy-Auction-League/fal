@@ -16,5 +16,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!login|api/auth|api/scoring/cron|api/admin/sync-players/cron|_next/static|_next/image|favicon.ico).*)'],
 }

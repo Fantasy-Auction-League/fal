@@ -62,7 +62,7 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
 
   it('AC2.1: SCHEDULED match with SportMonks status "Finished" transitions to COMPLETED', async () => {
     mockState.findMany.mockResolvedValueOnce([
-      { id: 'match-1', apiMatchId: 1001, localTeamName: 'Team A', visitorTeamName: 'Team B' },
+      { id: 'match-1', apiMatchId: 1001, localTeamName: 'Team A', visitorTeamName: 'Team B', scoringStatus: 'SCHEDULED' },
     ])
 
     mockState.sportmonksFetch.mockResolvedValueOnce(
@@ -96,7 +96,7 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
 
   it('AC2.2: SCHEDULED match with SportMonks status "Cancl." transitions to CANCELLED', async () => {
     mockState.findMany.mockResolvedValueOnce([
-      { id: 'match-2', apiMatchId: 1002, localTeamName: 'Team C', visitorTeamName: 'Team D' },
+      { id: 'match-2', apiMatchId: 1002, localTeamName: 'Team C', visitorTeamName: 'Team D', scoringStatus: 'SCHEDULED' },
     ])
 
     mockState.sportmonksFetch.mockResolvedValueOnce(
@@ -120,7 +120,7 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
 
   it('AC2.2: SCHEDULED match with SportMonks status "Aban." transitions to CANCELLED', async () => {
     mockState.findMany.mockResolvedValueOnce([
-      { id: 'match-3', apiMatchId: 1003, localTeamName: 'Team E', visitorTeamName: 'Team F' },
+      { id: 'match-3', apiMatchId: 1003, localTeamName: 'Team E', visitorTeamName: 'Team F', scoringStatus: 'SCHEDULED' },
     ])
 
     mockState.sportmonksFetch.mockResolvedValueOnce(
@@ -144,7 +144,7 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
 
   it('SCHEDULED match with SportMonks status "NS" remains SCHEDULED (no update)', async () => {
     mockState.findMany.mockResolvedValueOnce([
-      { id: 'match-4', apiMatchId: 1004, localTeamName: 'Team G', visitorTeamName: 'Team H' },
+      { id: 'match-4', apiMatchId: 1004, localTeamName: 'Team G', visitorTeamName: 'Team H', scoringStatus: 'SCHEDULED' },
     ])
 
     mockState.sportmonksFetch.mockResolvedValueOnce(
@@ -161,9 +161,9 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
 
   it('handles multiple SCHEDULED matches with mixed status transitions', async () => {
     mockState.findMany.mockResolvedValueOnce([
-      { id: 'match-5', apiMatchId: 1005, localTeamName: 'Team I', visitorTeamName: 'Team J' },
-      { id: 'match-6', apiMatchId: 1006, localTeamName: 'Team K', visitorTeamName: 'Team L' },
-      { id: 'match-7', apiMatchId: 1007, localTeamName: 'Team M', visitorTeamName: 'Team N' },
+      { id: 'match-5', apiMatchId: 1005, localTeamName: 'Team I', visitorTeamName: 'Team J', scoringStatus: 'SCHEDULED' },
+      { id: 'match-6', apiMatchId: 1006, localTeamName: 'Team K', visitorTeamName: 'Team L', scoringStatus: 'SCHEDULED' },
+      { id: 'match-7', apiMatchId: 1007, localTeamName: 'Team M', visitorTeamName: 'Team N', scoringStatus: 'SCHEDULED' },
     ])
 
     // Return fixtures in order of calls
@@ -197,8 +197,8 @@ describe('Match Status Sync - Unit Tests (AC2 Status Mapping)', () => {
 
   it('handles SportMonks API errors gracefully', async () => {
     mockState.findMany.mockResolvedValueOnce([
-      { id: 'match-8', apiMatchId: 1008, localTeamName: 'Team O', visitorTeamName: 'Team P' },
-      { id: 'match-9', apiMatchId: 1009, localTeamName: 'Team Q', visitorTeamName: 'Team R' },
+      { id: 'match-8', apiMatchId: 1008, localTeamName: 'Team O', visitorTeamName: 'Team P', scoringStatus: 'SCHEDULED' },
+      { id: 'match-9', apiMatchId: 1009, localTeamName: 'Team Q', visitorTeamName: 'Team R', scoringStatus: 'SCHEDULED' },
     ])
 
     // First call throws, second succeeds
