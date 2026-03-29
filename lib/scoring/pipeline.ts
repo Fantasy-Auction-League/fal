@@ -112,9 +112,10 @@ export async function runScoringPipeline(): Promise<PipelineResult> {
 export async function scoreLiveMatches(): Promise<{
   matchesScored: number
   matchesFailed: number
+  lineupsCreated: number
   errors: string[]
 }> {
-  const result = { matchesScored: 0, matchesFailed: 0, errors: [] as string[] }
+  const result = { matchesScored: 0, matchesFailed: 0, lineupsCreated: 0, errors: [] as string[] }
 
   const liveMatches = await prisma.match.findMany({
     where: { scoringStatus: 'LIVE_SCORING' },
@@ -122,6 +123,13 @@ export async function scoreLiveMatches(): Promise<{
   })
 
   if (liveMatches.length === 0) return result
+
+  // Ensure lineups exist for the GW before scoring live matches
+  const gwIds = [...new Set(liveMatches.map((m) => m.gameweekId))]
+  for (const gwId of gwIds) {
+    const created = await ensureLineupsForGameweek(gwId)
+    result.lineupsCreated += created
+  }
 
   for (const match of liveMatches) {
     try {
@@ -528,7 +536,110 @@ export async function aggregateGameweek(gameweekId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Lineup Carry-Forward
+// Pre-GW Lineup Ensure (for live scoring)
+// ---------------------------------------------------------------------------
+
+/**
+ * Ensures all teams in leagues with matches in this GW have lineups.
+ * Called before live scoring so computeLiveTeamScore has lineups to work with.
+ * Returns number of lineups created.
+ */
+async function ensureLineupsForGameweek(gameweekId: string): Promise<number> {
+  // Find all teams that DON'T have a lineup for this GW
+  const teamsWithoutLineups = await prisma.team.findMany({
+    where: {
+      lineups: { none: { gameweekId } },
+    },
+    include: {
+      league: true,
+      teamPlayers: {
+        include: { player: true },
+        orderBy: { purchasePrice: 'desc' },
+      },
+    },
+  })
+
+  if (teamsWithoutLineups.length === 0) return 0
+
+  let created = 0
+
+  for (const team of teamsWithoutLineups) {
+    // Try carry-forward from previous GW
+    const prevLineup = await prisma.lineup.findFirst({
+      where: { teamId: team.id },
+      orderBy: { gameweek: { number: 'desc' } },
+      include: { slots: true, gameweek: { select: { number: true } } },
+    })
+
+    if (prevLineup) {
+      const currentPlayerIds = new Set(team.teamPlayers.map((tp) => tp.playerId))
+      const filteredSlots = prevLineup.slots.filter((slot) => currentPlayerIds.has(slot.playerId))
+
+      if (filteredSlots.length > 0) {
+        await prisma.lineup.create({
+          data: {
+            teamId: team.id,
+            gameweekId,
+            slots: {
+              createMany: {
+                data: filteredSlots.map((slot) => ({
+                  playerId: slot.playerId,
+                  slotType: slot.slotType,
+                  role: slot.role,
+                  benchPriority: slot.benchPriority,
+                })),
+              },
+            },
+          },
+        })
+        console.log(`ensureLineupsForGameweek: carried forward ${team.name} from GW${prevLineup.gameweek.number}`)
+        created++
+        continue
+      }
+    }
+
+    // Auto-generate from squad
+    if (team.teamPlayers.length === 0) continue
+
+    const xiPlayers = team.teamPlayers.slice(0, 11)
+    const benchPlayers = team.teamPlayers.slice(11, 15)
+
+    const slots: { playerId: string; slotType: 'XI' | 'BENCH'; role: 'CAPTAIN' | 'VC' | null; benchPriority: number | null }[] = []
+
+    for (let i = 0; i < xiPlayers.length; i++) {
+      slots.push({
+        playerId: xiPlayers[i].playerId,
+        slotType: 'XI',
+        role: i === 0 ? 'CAPTAIN' : i === 1 ? 'VC' : null,
+        benchPriority: null,
+      })
+    }
+
+    for (let i = 0; i < benchPlayers.length; i++) {
+      slots.push({
+        playerId: benchPlayers[i].playerId,
+        slotType: 'BENCH',
+        role: null,
+        benchPriority: i + 1,
+      })
+    }
+
+    await prisma.lineup.create({
+      data: {
+        teamId: team.id,
+        gameweekId,
+        slots: { createMany: { data: slots } },
+      },
+    })
+    console.log(`ensureLineupsForGameweek: auto-generated ${team.name} (captain: ${xiPlayers[0].player.fullname})`)
+    created++
+  }
+
+  return created
+}
+
+// ---------------------------------------------------------------------------
+// Lineup Carry-Forward (used during aggregation)
 // ---------------------------------------------------------------------------
 
 type TeamsWithLineups = Awaited<ReturnType<typeof prisma.team.findMany<{

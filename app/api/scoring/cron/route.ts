@@ -23,6 +23,7 @@ export async function GET(request: Request) {
       matchesTransitioned: syncResult.transitioned,
       liveMatchesScored: liveResult.matchesScored,
       liveMatchesFailed: liveResult.matchesFailed,
+      lineupsCreated: liveResult.lineupsCreated,
       liveErrors: liveResult.errors,
     })
   } catch (error) {
