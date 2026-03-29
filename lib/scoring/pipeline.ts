@@ -106,6 +106,44 @@ export async function runScoringPipeline(): Promise<PipelineResult> {
 }
 
 // ---------------------------------------------------------------------------
+// Live mid-match scoring
+// ---------------------------------------------------------------------------
+
+export async function scoreLiveMatches(): Promise<{
+  matchesScored: number
+  matchesFailed: number
+  errors: string[]
+}> {
+  const result = { matchesScored: 0, matchesFailed: 0, errors: [] as string[] }
+
+  const liveMatches = await prisma.match.findMany({
+    where: { scoringStatus: 'LIVE_SCORING' },
+    select: { id: true, apiMatchId: true, gameweekId: true, superOver: true },
+  })
+
+  if (liveMatches.length === 0) return result
+
+  for (const match of liveMatches) {
+    try {
+      await scoreMatch(match)
+      // scoreMatch() marks it as SCORED — reset back to LIVE_SCORING
+      // so it gets re-scored on next cron run with updated stats
+      await prisma.match.update({
+        where: { id: match.id },
+        data: { scoringStatus: 'LIVE_SCORING' },
+      })
+      result.matchesScored++
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error)
+      result.matchesFailed++
+      result.errors.push(`Live match ${match.apiMatchId}: ${msg}`)
+    }
+  }
+
+  return result
+}
+
+// ---------------------------------------------------------------------------
 // Per-match scoring
 // ---------------------------------------------------------------------------
 
