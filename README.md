@@ -2,71 +2,100 @@
 
 Private IPL fantasy league platform for friends. Season-long squads built via auction, weekly lineup management, automated scoring from live IPL data, and strategy chips.
 
-## Quick Start
+## Quick Start (Fresh Mac)
 
-### Prerequisites
-
-- **Node.js 20+** — `brew install node`
-- **PostgreSQL 16+** — `brew install postgresql@16 && brew services start postgresql@16`
-
-### Setup
+### 1. Install Prerequisites
 
 ```bash
-# Clone
-git clone https://github.com/Fantasy-Auction-League/fal.git
-cd fal
+# Install Homebrew (skip if already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# Install dependencies
-npm install
+# Install Node.js and PostgreSQL
+brew install node
+brew install postgresql@16
+brew services start postgresql@16
 
-# Create database
-createdb fal
-
-# Set up environment
-cp .env.example .env.local
-# Edit .env.local with your DATABASE_URL and SPORTMONKS_API_TOKEN
+# Add PostgreSQL to PATH (add to ~/.zshrc to persist)
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 ```
 
-### Environment Variables (`.env.local`)
+### 2. Clone and Install
+
+```bash
+git clone https://github.com/Fantasy-Auction-League/fal.git
+cd fal
+npm install
+```
+
+### 3. Create Database
+
+```bash
+createdb fal
+```
+
+> If `createdb` is not found, run: `export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"`
+
+### 4. Set Up Environment
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your values:
 
 ```env
+# Database — replace YOUR_USERNAME with your macOS username (run: whoami)
 DATABASE_URL="postgresql://YOUR_USERNAME@localhost/fal"
-AUTH_SECRET="any-secret-string-for-dev"
+DIRECT_URL="postgresql://YOUR_USERNAME@localhost/fal"
+
+# Auth
+AUTH_SECRET="dev-secret-change-in-production"
 AUTH_URL="http://localhost:3000"
+
+# SportMonks Cricket API (get token from sportmonks.com)
 SPORTMONKS_API_TOKEN="your-sportmonks-api-token"
 SPORTMONKS_SEASON_ID="1795"
 SPORTMONKS_LEAGUE_ID="1"
-CRON_SECRET="any-cron-secret"
+
+# Admin
+ADMIN_SECRET="fal-admin-2026"
+APP_ADMIN_EMAILS=your-email@example.com
+
+# Cron
+CRON_SECRET=dev-cron-secret
 ```
 
-> Replace `YOUR_USERNAME` with your macOS username (run `whoami` to check).
-
-### Initialize
+### 5. Initialize Database and Seed Data
 
 ```bash
-# Push database schema
+# Push database schema (creates all tables)
 npx prisma db push
 
-# Seed 250 IPL 2026 players from SportMonks
+# Seed 250 IPL 2026 players from SportMonks API
 npm run seed:players
 
 # Seed IPL fixtures and gameweeks
 npm run seed:fixtures
+```
 
-# Start the dev server
+### 6. Start Dev Server
+
+```bash
 npm run dev
 ```
 
-Open **http://localhost:3000** — sign in with any email (no password in dev mode).
+Open **http://localhost:3000**
 
-### First-Time Flow
+### 7. First-Time Login and Setup
 
-1. **Login** — Enter your email (e.g., `viiveek@fal.com`)
-2. **Create League** — Go to `/admin`, type a league name
-3. **Upload Roster** — Upload a CSV file with team rosters (see format below)
+1. **Login** — Enter your email, a password (min 6 chars), and the admin secret (`fal-admin-2026` or whatever you set in `ADMIN_SECRET`)
+2. **Create League** — Go to `/admin`, type a league name, get the invite code
+3. **Upload Roster** — Upload a CSV file with team rosters (see format below). A sample 10-team roster is included: `sample-roster-10teams.csv`
 4. **View Teams** — Click any team to see their squad
 5. **Start Season** — Click "Start Season" when all rosters are ready
 6. **Set Lineup** — Go to `/lineup` to pick your Playing XI, Captain, and VC
+
+> **Other users** log in with their email + invite code + a password. No admin secret needed for regular users.
 
 ### CSV Roster Format
 
@@ -78,6 +107,60 @@ rohit@fal.test,Rohits Rockets,Virat Kohli,16.0
 ```
 
 A sample 10-team roster is included: `sample-roster-10teams.csv`
+
+## Local Development
+
+### Starting the Dev Server
+
+```bash
+npm run dev
+```
+
+Server runs at **http://localhost:3000** with hot reload (Turbopack).
+
+### Useful Commands
+
+```bash
+# View/edit database in browser
+npx prisma studio
+
+# Reset database (drop all data, re-push schema)
+dropdb fal && createdb fal && npx prisma db push
+
+# Re-seed after reset
+npm run seed:players && npm run seed:fixtures
+
+# Run scoring cron locally (scores live/completed matches)
+curl -H "Authorization: Bearer dev-cron-secret" http://localhost:3000/api/scoring/cron
+
+# Check TypeScript compiles
+npx tsc --noEmit
+
+# Lint
+npm run lint
+```
+
+### Connecting to Production Database
+
+```bash
+# Pull production env vars (requires Vercel CLI + login)
+npm i -g vercel
+vercel login
+vercel env pull .env.vercel.local
+
+# Use Prisma Studio against prod
+DATABASE_URL="<prod-url>" npx prisma studio
+```
+
+### Common Issues
+
+| Problem | Fix |
+|---------|-----|
+| `createdb: command not found` | `export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"` |
+| `DIRECT_URL not found` during `prisma db push` | Add `DIRECT_URL` to `.env.local` (same value as `DATABASE_URL`) |
+| Login shows "Invalid password" | User already exists with a different password. Reset via `psql fal -c "UPDATE \"User\" SET \"passwordHash\" = NULL WHERE email = 'your@email'"` |
+| Scoring cron returns 307 redirect | Middleware blocking. Cron endpoints must be in the middleware exclude list |
+| `SPORTMONKS_API_TOKEN not set` | Add the token to `.env.local`. Get it from the team or sportmonks.com |
 
 ## Running Tests
 
