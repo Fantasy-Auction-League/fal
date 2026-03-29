@@ -106,10 +106,33 @@ The cron flow: `syncMatchStatuses() → scoreLiveMatches() → runScoringPipelin
 - Both call `GET /api/scoring/cron` with `Authorization: Bearer <CRON_SECRET>`
 - Cron endpoints are excluded from session auth middleware
 
+## Framework Conventions
+
+- **Next.js App Router** — all pages in `app/`, API routes in `app/api/`
+- **All pages are client components** — `'use client'` at top of every page
+- **API routes use `Response.json()`** — not `NextResponse.json()` (except cron routes)
+- **API route params are async** — `{ params }: { params: Promise<{ id: string }> }`, must `await params`
+- **Auth check pattern** — every API route starts with `const session = await auth()` + 401 check
+- **Prisma import** — always `import { prisma } from '@/lib/db'`
+- **Path alias** — `@/` maps to project root (e.g., `@/lib/scoring/pipeline`)
+- **One shared layout component** — `AppFrame` wraps all pages (bottom nav, max-width container)
+- **No separate component files** — components are defined inline in page files (except `AppFrame`)
+- **API error pattern** — `try/catch` wrapping entire handler, return `{ error: string }` with status code
+
+## Code Conventions
+
+- **TypeScript strict** — no `any` in new code, explicit types for function params/returns
+- **Prisma queries** — use `select` to limit fields, `include` for relations, `upsert` for idempotent writes
+- **Atomic operations** — scoring pipeline uses `UPDATE...RETURNING` raw SQL for concurrent safety
+- **Error handling in loops** — per-item try/catch so one failure doesn't block others (see `scoreLiveMatches`)
+- **No ORMs for complex queries** — use `prisma.$queryRawUnsafe` when Prisma's query builder can't express it
+
 ## Style Conventions
 
-- Inline styles (not Tailwind classes) for component-level styling
-- Mobile-first design (max-width 480px)
-- IPL team gradients defined per component
-- Plus Jakarta Sans font family
-- No emojis in code or UI unless explicitly requested
+- **Inline styles only** — no Tailwind classes, no CSS modules, no styled-components
+- **Mobile-first** — max-width 480px, designed for phone screens
+- **IPL team colors** — each team has gradient definitions (`teamGradients` object in pages)
+- **Font** — Plus Jakarta Sans (loaded via Next.js)
+- **Color palette** — primary `#004BA0`, accent `#0EB1A2`, gold `#F9CD05`, dark `#1a1a2e`
+- **No emojis** in code or UI unless explicitly requested
+- **Currency** — `$` (dollar), not `₹` (rupee)
