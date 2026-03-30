@@ -171,17 +171,15 @@ describe('Layer 5: Edge Cases', () => {
   // Scoring rule edge cases
   // -----------------------------------------------------------------------
 
-  it('milestone stacking: 75 runs = 25+50+75 bonuses (+24)', () => {
-    // 75 runs from 50 balls, 8 fours, 2 sixes, dismissed caught (not-out irrelevant)
-    // Points: 75 (runs) + 8*4 (fours) + 2*6 (sixes) + 4 (25-ms) + 8 (50-ms) + 12 (75-ms)
-    //       = 75 + 32 + 12 + 4 + 8 + 12 = 143
-    // SR = 150 -> SR bonus = +4
-    // Total = 147
+  it('milestone highest-only: 75 runs = only 75-bonus (+12), no stacking', () => {
+    // 75 runs from 50 balls, 8 fours, 2 sixes, dismissed caught
+    // Points: 75 (runs) + 8*4 (fours) + 2*6 (sixes) + 12 (75-bonus only)
+    //       = 75 + 32 + 12 + 12 = 131
+    // SR = 150 -> SR bonus = +2 (>=130)
+    // Total = 133
     const stats: BattingStats = { runs: 75, balls: 50, fours: 8, sixes: 2, wicketId: 54 }
     const points = computeBattingPoints(stats, 'BAT')
-    // Verify milestone stacking: 4+8+12 = 24 milestone bonus included
-    // 75 + 32 + 12 + 24 + SR bonus = actual computed value
-    expect(points).toBe(145)
+    expect(points).toBe(133)
   })
 
   it('milestone replacement: 100 runs = only +16 (not cumulative)', () => {

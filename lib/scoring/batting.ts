@@ -18,14 +18,11 @@ export function computeBattingPoints(stats: BattingStats, role: string): number 
   pts += stats.fours * 4    // +4 per four
   pts += stats.sixes * 6    // +6 per six
 
-  // Milestone bonuses (century REPLACES all lower, below century they STACK)
-  if (stats.runs >= 100) {
-    pts += 16  // century only — no 25/50/75
-  } else {
-    if (stats.runs >= 75) pts += 12
-    if (stats.runs >= 50) pts += 8
-    if (stats.runs >= 25) pts += 4
-  }
+  // Milestone bonuses (highest only — do NOT stack)
+  if (stats.runs >= 100) pts += 16
+  else if (stats.runs >= 75) pts += 12
+  else if (stats.runs >= 50) pts += 8
+  else if (stats.runs >= 25) pts += 4
 
   // Duck: -2 if scored 0, faced >= 1 ball, dismissed, role != BOWL
   if (stats.runs === 0 && stats.balls >= 1 &&

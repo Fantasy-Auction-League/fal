@@ -19,20 +19,20 @@ describe('computeBattingPoints', () => {
     )).toBe(60)
   })
 
-  // Half century
-  it('50 runs = 50 + 4 (25-bonus) + 8 (50-bonus) = 62 pts', () => {
+  // Half century (highest milestone only, no stacking)
+  it('50 runs = 50 + 8 (50-bonus only) = 58 pts', () => {
     // 50 runs off 50 balls = SR 100 (neutral)
     expect(computeBattingPoints(
       { runs: 50, balls: 50, fours: 0, sixes: 0, wicketId: null }, 'BAT'
-    )).toBe(62)
+    )).toBe(58)
   })
 
-  // 75 milestone (stacks with 25 and 50)
-  it('75 runs = 75 + 4 + 8 + 12 = 99 pts', () => {
+  // 75 milestone (highest only, does NOT stack with 25 and 50)
+  it('75 runs = 75 + 12 (75-bonus only) = 87 pts', () => {
     // 75 runs off 75 balls = SR 100 (neutral)
     expect(computeBattingPoints(
       { runs: 75, balls: 75, fours: 0, sixes: 0, wicketId: null }, 'BAT'
-    )).toBe(99)
+    )).toBe(87)
   })
 
   // Century replaces all lower milestones

@@ -40,19 +40,15 @@ export function computeBattingBreakdown(stats: {
     lines.push({ category: 'Sixes', rawValue: `${sixes}`, formula: '× 6pts', points: sixes * 6 })
   }
 
-  // Milestone bonuses: century replaces all lower; below century they STACK
+  // Milestone bonuses (highest only — do NOT stack)
   if (runs >= 100) {
     lines.push({ category: '100 Bonus', rawValue: '✓', formula: '100+ runs', points: 16 })
-  } else {
-    if (runs >= 75) {
-      lines.push({ category: '75 Bonus', rawValue: '✓', formula: '75+ runs', points: 12 })
-    }
-    if (runs >= 50) {
-      lines.push({ category: '50 Bonus', rawValue: '✓', formula: '50+ runs', points: 8 })
-    }
-    if (runs >= 25) {
-      lines.push({ category: '25 Bonus', rawValue: '✓', formula: '25+ runs', points: 4 })
-    }
+  } else if (runs >= 75) {
+    lines.push({ category: '75 Bonus', rawValue: '✓', formula: '75+ runs', points: 12 })
+  } else if (runs >= 50) {
+    lines.push({ category: '50 Bonus', rawValue: '✓', formula: '50+ runs', points: 8 })
+  } else if (runs >= 25) {
+    lines.push({ category: '25 Bonus', rawValue: '✓', formula: '25+ runs', points: 4 })
   }
 
   // Strike rate bonus/penalty (min 10 balls, bowlers exempt)
