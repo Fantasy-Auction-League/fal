@@ -107,7 +107,8 @@ export function applyChipEffects(
   switch (chip) {
     case 'POWER_PLAY_BAT':
       for (const pid of scoringXI) {
-        if (playerRoles.get(pid) === 'BAT') {
+        const role = playerRoles.get(pid)
+        if (role === 'BAT' || role === 'WK') {
           teamTotal += gwPoints.get(pid) ?? 0
         }
       }

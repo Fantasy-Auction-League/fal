@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { AppFrame } from '@/app/components/AppFrame'
 
 interface CurrentGameweek {
@@ -216,12 +216,24 @@ export default function LineupPage() {
   const [actionSheetPlayer, setActionSheetPlayer] = useState<SquadPlayer | null>(null)
   const [actionSheetIsBench, setActionSheetIsBench] = useState(false)
   const [swapSelection, setSwapSelection] = useState<{ direction: 'toBench' | 'toXI'; sourceId: string } | null>(null)
+  const [gwFixtures, setGwFixtures] = useState<{ localTeamName: string | null; visitorTeamName: string | null }[]>([])
   const [playerStatsSheet, setPlayerStatsSheet] = useState<SquadPlayer | null>(null)
   const [sheetDetail, setSheetDetail] = useState<SheetPlayerDetail | null>(null)
   const [sheetDetailLoading, setSheetDetailLoading] = useState(false)
   const [sheetSeasonTab, setSheetSeasonTab] = useState<number | null>(null)
   const [sheetView, setSheetView] = useState<'compact' | 'full'>('compact')
   const isLocked = currentGW?.lockTime ? new Date() >= new Date(currentGW.lockTime) : false
+
+  /* ─── Fetch GW fixtures for opponent display ─── */
+  useEffect(() => {
+    if (!currentGW?.id) return
+    fetch(`/api/gameweeks/current`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.matches) setGwFixtures(data.matches)
+      })
+      .catch(() => {})
+  }, [currentGW?.id])
 
   /* ─── Fetch player detail when stats sheet opens ─── */
   useEffect(() => {
@@ -679,6 +691,17 @@ export default function LineupPage() {
     )
   }
 
+  /* ─── GW opponent helper ─── */
+  function getGwOpponents(iplTeamName: string | null, fixtures: { localTeamName: string | null; visitorTeamName: string | null }[]): string[] {
+    if (!iplTeamName) return []
+    return fixtures
+      .filter(f => f.localTeamName === iplTeamName || f.visitorTeamName === iplTeamName)
+      .map(f => {
+        const opponent = f.localTeamName === iplTeamName ? f.visitorTeamName : f.localTeamName
+        return teamNameToCode[opponent ?? ''] || opponent?.slice(0, 3).toUpperCase() || '?'
+      })
+  }
+
   /* ─── Player Figure Component ─── */
   const PlayerFigure = ({ player, isCaptain, isVC, isBench }: {
     player: SquadPlayer; isCaptain: boolean; isVC: boolean; isBench?: boolean
@@ -711,13 +734,14 @@ export default function LineupPage() {
           {/* C/VC badge */}
           {(isCaptain || isVC) && (
             <div style={{
-              position: 'absolute', top: -2, right: isBench ? -2 : 2, zIndex: 5,
-              width: 16, height: 16, borderRadius: '50%',
+              position: 'absolute', top: -4, right: isBench ? -4 : 0, zIndex: 5,
+              width: 22, height: 22, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 8, fontWeight: 900,
+              fontSize: 11, fontWeight: 900,
               background: isCaptain ? '#F9CD05' : '#C0C7D0',
               color: '#1a1a1a',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+              border: '2px solid #fff',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
             }}>
               {isCaptain ? 'C' : 'V'}
             </div>
@@ -779,13 +803,22 @@ export default function LineupPage() {
           }}>
             {shortName}
           </div>
-          <div style={{
-            fontSize: valueFs, fontWeight: 500,
-            color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)',
-            marginTop: 2, lineHeight: '1.55',
-          }}>
-            {code || 'IPL'}
-          </div>
+          {(() => {
+            const opponents = getGwOpponents(player.iplTeamName, gwFixtures)
+            return opponents.length > 0 ? opponents.map((opp, i) => (
+              <div key={i} style={{ fontSize: valueFs, color: light ? '#1a1a1a' : '#fff', fontWeight: 600, lineHeight: 1.3 }}>
+                vs {opp}
+              </div>
+            )) : (
+              <div style={{
+                fontSize: valueFs, fontWeight: 500,
+                color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)',
+                marginTop: 2, lineHeight: '1.55',
+              }}>
+                {code || 'IPL'}
+              </div>
+            )
+          })()}
         </div>
       </div>
     )
@@ -1016,12 +1049,14 @@ export default function LineupPage() {
                 padding: '12px 0 10px', zIndex: 3,
                 gap: 6,
               }}>
-                {/* Row 1: Top Order */}
+                {/* Playing XI header */}
                 <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Top Order</div>
+                  fontSize: 11, fontWeight: 700, letterSpacing: 1.5,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.5)',
+                  textAlign: 'center', marginBottom: 4,
+                }}>Playing XI</div>
+
+                {/* Row 1 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row1.map(p => (
                     <div key={p.id} onClick={() => handlePlayerTap(p.id)}
@@ -1036,12 +1071,7 @@ export default function LineupPage() {
                   ))}
                 </div>
 
-                {/* Row 2: Middle order */}
-                <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Middle Order</div>
+                {/* Row 2 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row2.map(p => (
                     <div key={p.id} onClick={() => handlePlayerTap(p.id)}
@@ -1056,12 +1086,7 @@ export default function LineupPage() {
                   ))}
                 </div>
 
-                {/* Row 3: Lower order */}
-                <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Lower Order</div>
+                {/* Row 3 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row3.map(p => (
                     <div key={p.id} onClick={() => handlePlayerTap(p.id)}
@@ -1124,13 +1149,6 @@ export default function LineupPage() {
                         transition: 'all 0.2s',
                       }}
                     >
-                      <div style={{
-                        fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
-                        textTransform: 'uppercase', letterSpacing: 0.5,
-                        color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
-                      }}>
-                        {role}
-                      </div>
                       <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench />
                     </div>
                   )
@@ -1236,7 +1254,12 @@ export default function LineupPage() {
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                    {p.iplTeamCode || 'IPL'} &middot; {role}
+                    {(() => {
+                      const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                      return opponents.length > 0
+                        ? opponents.map(o => `vs ${o}`).join(', ')
+                        : (p.iplTeamCode || 'IPL')
+                    })()} &middot; {role}
                   </div>
                 </div>
                 {/* Action buttons */}
@@ -1338,7 +1361,12 @@ export default function LineupPage() {
                         {p.fullname}
                       </div>
                       <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                        {p.iplTeamCode || 'IPL'} &middot; {role}
+                        {(() => {
+                          const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                          return opponents.length > 0
+                            ? opponents.map(o => `vs ${o}`).join(', ')
+                            : (p.iplTeamCode || 'IPL')
+                        })()} &middot; {role}
                       </div>
                     </div>
                     {/* Move to XI button */}
@@ -1774,7 +1802,12 @@ export default function LineupPage() {
                               {isVCPlayer && <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: '#C0C7D0', color: '#1a1a1a', flexShrink: 0 }}>VC</span>}
                             </div>
                             <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                              {p.iplTeamCode || 'IPL'} &middot; {role}
+                              {(() => {
+                                const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                                return opponents.length > 0
+                                  ? opponents.map(o => `vs ${o}`).join(', ')
+                                  : (p.iplTeamCode || 'IPL')
+                              })()} &middot; {role}
                             </div>
                           </div>
                           <div style={{
@@ -1835,7 +1868,12 @@ export default function LineupPage() {
                           <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.fullname}</div>
                             <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                              {p.iplTeamCode || 'IPL'} &middot; {role}
+                              {(() => {
+                                const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                                return opponents.length > 0
+                                  ? opponents.map(o => `vs ${o}`).join(', ')
+                                  : (p.iplTeamCode || 'IPL')
+                              })()} &middot; {role}
                             </div>
                           </div>
                           <div style={{
@@ -2286,19 +2324,31 @@ export default function LineupPage() {
                           </thead>
                           <tbody>
                             {batRows.map((r, i) => (
-                              <tr key={i} style={{
-                                background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
-                              }}>
-                                <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
-                                  {r.label}
-                                </td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.runs}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fiftyHundred}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.foursSixes}</td>
-                              </tr>
+                              <Fragment key={i}>
+                                {i === 1 && batRows[0]?.isCareer && (
+                                  <tr>
+                                    <td colSpan={7} style={{ padding: '8px 4px 4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{ fontSize: 9, fontWeight: 800, color: '#004BA0', textTransform: 'uppercase', letterSpacing: 1 }}>IPL</span>
+                                        <div style={{ flex: 1, height: 1, background: 'rgba(0,75,160,0.15)' }} />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                <tr style={{
+                                  background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
+                                }}>
+                                  <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+                                    {r.label}
+                                  </td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.runs}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fiftyHundred}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.foursSixes}</td>
+                                </tr>
+                              </Fragment>
                             ))}
                           </tbody>
                         </table>
@@ -2324,19 +2374,31 @@ export default function LineupPage() {
                           </thead>
                           <tbody>
                             {bowlRows.map((r, i) => (
-                              <tr key={i} style={{
-                                background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
-                              }}>
-                                <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
-                                  {r.label}
-                                </td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.wkts}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.econ}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fourFive}</td>
-                              </tr>
+                              <Fragment key={i}>
+                                {i === 1 && bowlRows[0]?.isCareer && (
+                                  <tr>
+                                    <td colSpan={7} style={{ padding: '8px 4px 4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{ fontSize: 9, fontWeight: 800, color: '#004BA0', textTransform: 'uppercase', letterSpacing: 1 }}>IPL</span>
+                                        <div style={{ flex: 1, height: 1, background: 'rgba(0,75,160,0.15)' }} />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                <tr style={{
+                                  background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
+                                }}>
+                                  <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+                                    {r.label}
+                                  </td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.wkts}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.econ}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fourFive}</td>
+                                </tr>
+                              </Fragment>
                             ))}
                           </tbody>
                         </table>

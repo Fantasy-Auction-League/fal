@@ -101,8 +101,9 @@ This document maps every testable PRD requirement to its test coverage status.
 | 3.7 | Chip status transitions PENDING -> USED after aggregation | COVERED | `tests/simulation/layer4-aggregation.test.ts` |
 | 3.8 | Chip effects verified with real IPL scored data | NOT COVERED | *Proposed: layer7* |
 | 3.9 | Used chip permanently unavailable | COVERED | DB unique constraint `@@unique([teamId, chipType])` |
-| 3.10 | POWER_PLAY_BAT does not affect BOWL/ALL/WK players | NOT COVERED | *Proposed: layer7* |
-| 3.11 | BOWLING_BOOST does not affect BAT/ALL/WK players | NOT COVERED | *Proposed: layer7* |
+| 3.10 | POWER_PLAY_BAT does not affect BOWL/ALL players | COVERED | `tests/unit/scoring-multipliers.test.ts` |
+| 3.11 | POWER_PLAY_BAT doubles WK-role player points (same as BAT) | COVERED | `tests/unit/scoring-multipliers.test.ts` |
+| 3.12 | BOWLING_BOOST does not affect BAT/ALL/WK players | NOT COVERED | *Proposed: layer7* |
 
 ---
 
@@ -209,6 +210,27 @@ This document maps every testable PRD requirement to its test coverage status.
 
 ---
 
+## 12. Lineup UI & Scoring Changes (2026-03-29)
+
+| # | Requirement | Status | Test File |
+|---|-------------|--------|-----------|
+| 12.1 | C/VC badge 22px on edit lineup | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.2 | C/VC badge 22px on read-only lineup | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.3 | Role labels (Top/Middle/Lower Order) removed | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.4 | "Playing XI" header on both lineup screens | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.5 | Read-only lineup gradient header with score trio | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.6 | GW navigation in gradient header | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.7 | Highest score clickable to team lineup | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.8 | Edit lineup shows "vs" opponent labels | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.9 | Player popup GW points breakdown with formulas | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.10 | Breakdown updates on GW navigation | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.11 | IPL divider in full profile stats tables | COVERED | `tests/simulation/playwright/lineup-ui-changes.spec.ts` |
+| 12.12 | WK players get POWER_PLAY_BAT chip bonus | COVERED | `tests/unit/scoring-multipliers.test.ts` |
+| 12.13 | GW stats API (average, highest, highestTeamId) | NOT COVERED | Integration test needed |
+| 12.14 | Client-side scoring breakdown matches engine rules | PARTIAL | Verified by code review, no unit tests for breakdown.ts |
+
+---
+
 ## Summary
 
 | Category | Total | Covered | Partial | Not Covered | Gap/Bug |
@@ -227,9 +249,10 @@ This document maps every testable PRD requirement to its test coverage status.
 | Data ingestion | 6 | 4 | 1 | 0 | 1 |
 | Auth/account | 6 | 4 | 0 | 1 | 1 |
 | UI/UX smoke | 10 | 10 | 0 | 0 | 0 |
-| **TOTAL** | **103** | **79** | **5** | **15** | **4** |
+| Lineup UI & scoring (2026-03-29) | 14 | 11 | 1 | 2 | 0 |
+| **TOTAL** | **117** | **90** | **6** | **17** | **4** |
 
-**Current coverage: 77% covered, 5% partial, 15% not covered, 4% gap/bug**
+**Current coverage: 77% covered, 5% partial, 15% not covered, 3% gap/bug**
 
 ### Path to 100% Coverage (Layers 6-9)
 

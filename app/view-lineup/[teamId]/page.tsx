@@ -1,9 +1,10 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState, useEffect, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { AppFrame } from '@/app/components/AppFrame'
+import { computeBattingBreakdown, computeBowlingBreakdown, computeFieldingBreakdown, type ScoringLine } from '@/lib/scoring/breakdown'
 
 /* ─── Types ─── */
 interface SquadPlayer {
@@ -185,12 +186,13 @@ function PlayerFigure({ player, isCaptain, isVC, isBench, points }: {
         {(isCaptain || isVC) && (
           <div style={{
             position: 'absolute', top: -4, right: isBench ? -4 : 0, zIndex: 5,
-            width: 24, height: 24, borderRadius: '50%',
+            width: 22, height: 22, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 900,
+            fontSize: 11, fontWeight: 900,
             background: isCaptain ? '#F9CD05' : '#C0C7D0',
             color: '#1a1a1a',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+            border: '2px solid #fff',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
           }}>
             {isCaptain ? 'C' : 'VC'}
           </div>
@@ -294,7 +296,9 @@ export default function ViewLineupPage() {
   const { data: session, status: sessionStatus } = useSession()
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const teamId = params?.teamId as string
+  const gwFromUrl = searchParams?.get('gw')
 
   const [squad, setSquad] = useState<SquadData | null>(null)
   const [teamDetail, setTeamDetail] = useState<TeamDetail | null>(null)
@@ -317,6 +321,16 @@ export default function ViewLineupPage() {
   const [gwTotal, setGwTotal] = useState<number>(0)
   const [gwLoading, setGwLoading] = useState(false)
   const [noLineupForGW, setNoLineupForGW] = useState(false)
+  const [gwStats, setGwStats] = useState<{ average: number; highest: number; highestTeamId: string | null } | null>(null)
+
+  /* ─── Fetch league GW stats (average / highest) ─── */
+  useEffect(() => {
+    if (!teamDetail?.league?.id || selectedGWNumber === null) return
+    fetch(`/api/leagues/${teamDetail.league.id}/gw-stats?gw=${selectedGWNumber}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setGwStats(data))
+      .catch(() => setGwStats(null))
+  }, [teamDetail?.league?.id, selectedGWNumber])
 
   /* ─── Fetch player detail when stats sheet opens ─── */
   useEffect(() => {
@@ -335,7 +349,7 @@ export default function ViewLineupPage() {
           maidens: p.maidens as number | null, runsConceded: p.runsConceded as number | null,
           catches: (p.catches as number) || 0, stumpings: (p.stumpings as number) || 0,
           fantasyPoints: (p.fantasyPoints as number) || 0,
-          match: p.match as { localTeamName: string | null; visitorTeamName: string | null; gameweek?: { number: number } | null } | undefined,
+          match: p.match as { localTeamName: string | null; visitorTeamName: string | null; startingAt?: string; gameweek?: { number: number } | null } | undefined,
         }))
         setSheetDetail({
           totalPoints: data.stats?.totalPoints ?? 0,
@@ -492,6 +506,14 @@ export default function ViewLineupPage() {
         }
       }
 
+      // Override with ?gw= URL param if present
+      if (gwFromUrl) {
+        const gwNum = parseInt(gwFromUrl)
+        if (!isNaN(gwNum) && allGws.some(g => g.number === gwNum)) {
+          setSelectedGWNumber(gwNum)
+        }
+      }
+
       if (squadRes.ok) {
         const data: SquadData = await squadRes.json()
         setSquad(data)
@@ -593,6 +615,11 @@ export default function ViewLineupPage() {
   const canGoPrev = selectedGWNumber !== null && selectedGWNumber > minGWNumber
   const canGoNext = selectedGWNumber !== null && selectedGWNumber < maxGWNumber
 
+  /* ─── Derive GW status from allGameweeks ─── */
+  const gwStatus = selectedGWNumber !== null
+    ? allGameweeks.find(g => g.number === selectedGWNumber)?.status ?? null
+    : null
+
   /* ─── Helper: get player points ─── */
   const getPoints = (playerId: string): number => playerPoints[playerId] ?? 0
 
@@ -641,112 +668,136 @@ export default function ViewLineupPage() {
       fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
       WebkitFontSmoothing: 'antialiased',
     }}>
-      {/* ── Header Bar ── */}
+      {/* ── Dashboard-Style Hero Header ── */}
       <div style={{
-        background: '#fff',
-        padding: '14px 18px 8px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%)',
+        padding: '20px 18px 16px',
+        position: 'relative',
+        overflow: 'hidden',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Back arrow */}
+        {/* Radial glow */}
+        <div style={{
+          position: 'absolute', top: '-30%', right: '-20%',
+          width: 300, height: 300,
+          background: 'radial-gradient(circle, rgba(249,205,5,0.07) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Top row: back + title + read only badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <button
             onClick={() => router.back()}
             style={{
               width: 30, height: 30, borderRadius: 8,
-              background: '#f2f3f8', border: '1px solid rgba(0,0,0,0.06)',
+              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#333',
+              cursor: 'pointer', color: 'rgba(255,255,255,0.7)',
               fontSize: 15, fontWeight: 600,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             }}
           >
             &#8592;
           </button>
-          {/* Title group */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>
+            {managerFirstName}&apos;s Lineup
+          </div>
+          <span style={{
+            marginLeft: 'auto',
+            display: 'inline-flex', alignItems: 'center', gap: 3,
+            fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.6)',
+            background: 'rgba(255,255,255,0.12)', padding: '2px 7px', borderRadius: 5,
+            border: '1px solid rgba(255,255,255,0.15)',
+            letterSpacing: 0.3, textTransform: 'uppercase' as const,
+          }}>
+            <LockIcon />
+            Read Only
+          </span>
+        </div>
+
+        {/* GW label with status badge */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+          <div style={{
+            fontSize: 10, color: 'rgba(255,255,255,0.5)',
+            fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' as const,
+          }}>
+            Gameweek {selectedGWNumber}
+          </div>
+          {gwStatus && (
             <div style={{
-              fontSize: 15, fontWeight: 700, color: '#1a1a2e', letterSpacing: -0.3,
-              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 9, fontWeight: 700,
+              color: gwStatus === 'ACTIVE' ? '#4ade80' : 'rgba(255,255,255,0.5)',
+              background: gwStatus === 'ACTIVE' ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.1)',
+              padding: '2px 6px', borderRadius: 4,
             }}>
-              {managerFirstName}&apos;s Lineup
-              {/* Read Only badge */}
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 3,
-                fontSize: 9, fontWeight: 700, color: '#888',
-                background: '#f2f3f8', padding: '2px 7px', borderRadius: 5,
-                border: '1px solid rgba(0,0,0,0.06)',
-                letterSpacing: 0.3, textTransform: 'uppercase' as const,
-              }}>
-                <LockIcon />
-                Read Only
-              </span>
+              {gwStatus === 'ACTIVE' ? 'LIVE' : 'FINAL'}
             </div>
+          )}
+        </div>
+
+        {/* Score trio */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', marginBottom: 12 }}>
+          {/* Average */}
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
+              {gwStats?.average ?? '\u2014'}
+            </div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Average</div>
+          </div>
+
+          {/* This team's points (center, large) */}
+          <div style={{ flex: 1.3, textAlign: 'center', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '10%', bottom: '20%', left: 0, width: 1, background: 'rgba(255,255,255,0.12)' }} />
+            <div style={{ position: 'absolute', top: '10%', bottom: '20%', right: 0, width: 1, background: 'rgba(255,255,255,0.12)' }} />
+            <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: -1.5, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              {gwTotal > 0 ? gwTotal : '\u2014'}
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginTop: 2 }}>Points</div>
+          </div>
+
+          {/* Highest (clickable) */}
+          <div
+            onClick={() => {
+              if (gwStats?.highestTeamId && gwStats.highestTeamId !== teamId) {
+                router.push(`/view-lineup/${gwStats.highestTeamId}?gw=${selectedGWNumber}`)
+              }
+            }}
+            style={{ flex: 1, textAlign: 'center', cursor: gwStats?.highestTeamId ? 'pointer' : 'default' }}
+          >
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
+              {gwStats?.highest ?? '\u2014'}
+            </div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginTop: 1 }}>Highest</div>
           </div>
         </div>
-      </div>
 
-      {/* ── GW Navigation Bar ── */}
-      {selectedGWNumber !== null && (
-        <div style={{
-          background: '#fff', padding: '8px 16px 6px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-          flexShrink: 0,
-        }}>
-          <button
-            onClick={() => navigateGW('prev')}
-            disabled={!canGoPrev || gwLoading}
-            style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: canGoPrev ? '#f2f3f8' : 'transparent',
-              border: canGoPrev ? '1px solid rgba(0,0,0,0.06)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: canGoPrev ? 'pointer' : 'default',
-              color: canGoPrev ? '#333' : 'transparent',
-              fontSize: 15, fontWeight: 600,
-              opacity: canGoPrev ? 1 : 0,
-              transition: 'opacity 0.2s ease',
-            }}
-          >
-            &#8592;
-          </button>
-          {(() => {
-            const selectedGwData = allGameweeks.find(g => g.number === selectedGWNumber)
-            const isInProgress = selectedGwData?.status === 'ACTIVE' || selectedGwData?.status === 'UPCOMING'
-            const ptsColor = isInProgress ? '#0d9e5f' : '#1a1a2e'
-            return (
-              <div style={{
-                fontSize: 14, fontWeight: 700, color: '#1a1a2e',
-                minWidth: 80, textAlign: 'center',
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-              }}>
-                <span>GW {selectedGWNumber}</span>
-                <span style={{ fontSize: 26, fontWeight: 800, color: ptsColor, marginTop: 2, letterSpacing: -1 }}>
-                  {gwLoading ? '...' : `${gwTotal}`}
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#999', marginTop: -2 }}>pts</span>
-              </div>
-            )
-          })()}
-          <button
-            onClick={() => navigateGW('next')}
-            disabled={!canGoNext || gwLoading}
-            style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: canGoNext ? '#f2f3f8' : 'transparent',
-              border: canGoNext ? '1px solid rgba(0,0,0,0.06)' : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: canGoNext ? 'pointer' : 'default',
-              color: canGoNext ? '#333' : 'transparent',
-              fontSize: 15, fontWeight: 600,
-              opacity: canGoNext ? 1 : 0,
-              transition: 'opacity 0.2s ease',
-            }}
-          >
-            &#8594;
-          </button>
+        {/* GW navigation */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          {canGoPrev && (
+            <button
+              onClick={() => navigateGW('prev')}
+              style={{
+                background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8,
+                padding: '4px 12px', fontSize: 11, color: 'rgba(255,255,255,0.6)',
+                fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              &larr; GW{selectedGWNumber - 1}
+            </button>
+          )}
+          {selectedGWNumber !== null && canGoNext && (
+            <button
+              onClick={() => navigateGW('next')}
+              style={{
+                background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8,
+                padding: '4px 12px', fontSize: 11, color: 'rgba(255,255,255,0.6)',
+                fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              GW{selectedGWNumber + 1} &rarr;
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── View Toggle ── */}
       <div style={{
@@ -838,12 +889,14 @@ export default function ViewLineupPage() {
                 padding: '12px 0 10px', zIndex: 3,
                 gap: 6,
               }}>
-                {/* Row 1: Top Order */}
+                {/* Playing XI header */}
                 <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Top Order</div>
+                  fontSize: 11, fontWeight: 700, letterSpacing: 1.5,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.5)',
+                  textAlign: 'center', marginBottom: 4,
+                }}>Playing XI</div>
+
+                {/* Row 1 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row1.map(p => (
                     <div key={p.id}
@@ -857,12 +910,7 @@ export default function ViewLineupPage() {
                   ))}
                 </div>
 
-                {/* Row 2: Middle Order */}
-                <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Middle Order</div>
+                {/* Row 2 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row2.map(p => (
                     <div key={p.id}
@@ -876,12 +924,7 @@ export default function ViewLineupPage() {
                   ))}
                 </div>
 
-                {/* Row 3: Lower Order */}
-                <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Lower Order</div>
+                {/* Row 3 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row3.map(p => (
                     <div key={p.id}
@@ -939,13 +982,6 @@ export default function ViewLineupPage() {
                         display: 'flex', flexDirection: 'column', alignItems: 'center',
                       }}
                     >
-                      <div style={{
-                        fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 2,
-                        textTransform: 'uppercase', letterSpacing: 0.5,
-                        color: benchRoleColors[role] || 'rgba(255,255,255,0.3)',
-                      }}>
-                        {role}
-                      </div>
                       <PlayerFigure player={p} isCaptain={captainId === p.id} isVC={vcId === p.id} isBench points={getPoints(p.id)} />
                     </div>
                   )
@@ -1319,6 +1355,90 @@ export default function ViewLineupPage() {
                 )
               })()}
 
+              {/* GW Points Breakdown */}
+              {!sheetDetailLoading && sheetDetail && (() => {
+                const gwPerfs = sheetDetail.performances.filter(perf => {
+                  const gwNum = perf.match?.gameweek?.number
+                  return gwNum === selectedGWNumber
+                })
+                if (gwPerfs.length === 0) return null
+
+                const gwMatchTotal = gwPerfs.reduce((sum, pr) => sum + pr.fantasyPoints, 0)
+                const playerTeam = p.iplTeamName
+
+                return (
+                  <div style={{ padding: '8px 16px 4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                        GW{selectedGWNumber} Points Breakdown
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#004BA0' }}>{gwMatchTotal} pts</div>
+                    </div>
+
+                    {gwPerfs.map((perf, perfIdx) => {
+                      const m = perf.match
+                      if (!m) return null
+                      const opponentName = m.localTeamName === playerTeam ? m.visitorTeamName : m.localTeamName
+                      const oppCode = teamNameToCode[opponentName ?? ''] || opponentName?.slice(0, 3).toUpperCase() || '?'
+                      const fmtDate = (iso: string) => {
+                        const d = new Date(iso)
+                        return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                      }
+                      const matchDate = m.startingAt ? fmtDate(m.startingAt) : ''
+                      const pts = perf.fantasyPoints
+                      const ptsColor = pts > 30 ? '#0d9e5f' : pts >= 15 ? '#c88a00' : '#d44'
+
+                      const perfRole = normalizeRole(p.role)
+                      const batLines = computeBattingBreakdown(perf, perfRole)
+                      const bowlLines = computeBowlingBreakdown(perf)
+                      const fieldLines = computeFieldingBreakdown(perf)
+                      const batTotal = batLines.reduce((s, l) => s + l.points, 0)
+                      const bowlTotal = bowlLines.reduce((s, l) => s + l.points, 0)
+                      const fieldTotal = fieldLines.reduce((s, l) => s + l.points, 0)
+                      const remainder = pts - batTotal - bowlTotal - fieldTotal
+                      const otherLines: ScoringLine[] = remainder !== 0
+                        ? [{ category: 'Other', rawValue: '', formula: 'dots, lbw/b, etc.', points: remainder }]
+                        : []
+                      const allLines = [...batLines, ...bowlLines, ...fieldLines, ...otherLines]
+
+                      return (
+                        <div key={perfIdx} style={{
+                          background: '#fff', border: '1.5px solid #e8eaf0', borderRadius: 12,
+                          padding: '12px 14px', marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        }}>
+                          <div style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            marginBottom: 10, paddingBottom: 8, borderBottom: '1.5px solid #f0f1f5',
+                          }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#1a1a2e' }}>
+                              vs {oppCode} {matchDate ? `· ${matchDate}` : ''}
+                            </div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: ptsColor }}>{pts}</div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {allLines.map((line, i) => (
+                              <div key={i} style={{
+                                display: 'flex', alignItems: 'center', fontSize: 12, padding: '5px 0',
+                                borderBottom: i < allLines.length - 1 ? '1px solid #f5f6f9' : 'none',
+                              }}>
+                                <span style={{ flex: 1.2, color: '#555', fontWeight: 500 }}>{line.category}</span>
+                                <span style={{ flex: 2, textAlign: 'center', color: '#1a1a2e' }}>
+                                  <span style={{ fontWeight: 700, fontSize: 13 }}>{line.rawValue}</span>
+                                  <span style={{ color: '#999', fontSize: 11, marginLeft: 2 }}>{line.formula}</span>
+                                </span>
+                                <span style={{ flex: 0.8, textAlign: 'right', fontWeight: 700, color: line.points >= 0 ? '#004BA0' : '#d44', fontSize: 12 }}>
+                                  {line.points > 0 ? '+' : ''}{line.points} pts
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+
               {/* Full Profile button — full width */}
               <div style={{ padding: '10px 20px 0' }}>
                 <button
@@ -1460,19 +1580,31 @@ export default function ViewLineupPage() {
                           </thead>
                           <tbody>
                             {batRows.map((r, i) => (
-                              <tr key={i} style={{
-                                background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
-                              }}>
-                                <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
-                                  {r.label}
-                                </td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.runs}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fiftyHundred}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.foursSixes}</td>
-                              </tr>
+                              <Fragment key={i}>
+                                {i === 1 && batRows[0]?.isCareer && (
+                                  <tr>
+                                    <td colSpan={7} style={{ padding: '8px 4px 4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{ fontSize: 9, fontWeight: 800, color: '#004BA0', textTransform: 'uppercase', letterSpacing: 1 }}>IPL</span>
+                                        <div style={{ flex: 1, height: 1, background: 'rgba(0,75,160,0.15)' }} />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                <tr style={{
+                                  background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
+                                }}>
+                                  <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+                                    {r.label}
+                                  </td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.runs}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fiftyHundred}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.foursSixes}</td>
+                                </tr>
+                              </Fragment>
                             ))}
                           </tbody>
                         </table>
@@ -1498,19 +1630,31 @@ export default function ViewLineupPage() {
                           </thead>
                           <tbody>
                             {bowlRows.map((r, i) => (
-                              <tr key={i} style={{
-                                background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
-                              }}>
-                                <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
-                                  {r.label}
-                                </td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.wkts}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.econ}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
-                                <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fourFive}</td>
-                              </tr>
+                              <Fragment key={i}>
+                                {i === 1 && bowlRows[0]?.isCareer && (
+                                  <tr>
+                                    <td colSpan={7} style={{ padding: '8px 4px 4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{ fontSize: 9, fontWeight: 800, color: '#004BA0', textTransform: 'uppercase', letterSpacing: 1 }}>IPL</span>
+                                        <div style={{ flex: 1, height: 1, background: 'rgba(0,75,160,0.15)' }} />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                <tr style={{
+                                  background: r.isCareer ? 'rgba(0,75,160,0.04)' : i % 2 === 0 ? '#fff' : '#fafbfd',
+                                }}>
+                                  <td style={{ padding: '6px 4px 6px 8px', fontSize: 10, fontWeight: r.isMostRecent ? 700 : 600, color: r.isCareer ? '#004BA0' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+                                    {r.label}
+                                  </td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.mat}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400 }}>{r.wkts}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.avg}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.econ}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.sr}</td>
+                                  <td style={{ ...tdStyle, fontWeight: r.isMostRecent ? 700 : 400, color: '#444' }}>{r.fourFive}</td>
+                                </tr>
+                              </Fragment>
                             ))}
                           </tbody>
                         </table>

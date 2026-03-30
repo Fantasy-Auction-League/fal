@@ -134,4 +134,17 @@ describe('applyChipEffects', () => {
     const roles = new Map([['cap', 'BAT']])
     expect(applyChipEffects('POWER_PLAY_BAT', scoringXI, gwPoints, roles)).toBe(400)
   })
+
+  it('POWER_PLAY_BAT doubles WK player points', () => {
+    const scoringXI = new Set(['p1', 'p2', 'p3'])
+    const gwPoints = new Map([['p1', 30], ['p2', 20], ['p3', 15]])
+    const playerRoles = new Map([['p1', 'BAT'], ['p2', 'WK'], ['p3', 'BOWL']])
+
+    const total = applyChipEffects('POWER_PLAY_BAT', scoringXI, gwPoints, playerRoles)
+
+    // Base: 30 + 20 + 15 = 65
+    // Chip doubles BAT (30) + WK (20) = 50 extra
+    // Total: 65 + 50 = 115
+    expect(total).toBe(115)
+  })
 })
