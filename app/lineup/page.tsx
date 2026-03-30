@@ -911,7 +911,7 @@ export default function LineupPage() {
               ) : (
                 <strong style={{ fontWeight: 800, color: '#1a1a2e', fontSize: 15 }}>
                   {currentGW.lockTime
-                    ? `Deadline: ${new Date(currentGW.lockTime).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' })}, ${new Date(currentGW.lockTime).toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}`
+                    ? `Deadline: ${new Date(currentGW.lockTime).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' })}, ${new Date(currentGW.lockTime).toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit' })}`
                     : 'Deadline TBD'}
                 </strong>
               )}

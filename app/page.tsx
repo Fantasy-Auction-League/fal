@@ -196,7 +196,7 @@ function formatDeadline(lockTime: string | null): { label: string; time: string 
   if (!lockTime) return { label: 'Deadline', time: 'TBD' }
   const d = new Date(lockTime)
   const date = d.toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' })
-  const time = d.toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const time = d.toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit' })
   return {
     label: 'Deadline',
     time: `${date}, ${time}`,
