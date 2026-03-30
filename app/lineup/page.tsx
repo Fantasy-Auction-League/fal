@@ -216,12 +216,24 @@ export default function LineupPage() {
   const [actionSheetPlayer, setActionSheetPlayer] = useState<SquadPlayer | null>(null)
   const [actionSheetIsBench, setActionSheetIsBench] = useState(false)
   const [swapSelection, setSwapSelection] = useState<{ direction: 'toBench' | 'toXI'; sourceId: string } | null>(null)
+  const [gwFixtures, setGwFixtures] = useState<{ localTeamName: string | null; visitorTeamName: string | null }[]>([])
   const [playerStatsSheet, setPlayerStatsSheet] = useState<SquadPlayer | null>(null)
   const [sheetDetail, setSheetDetail] = useState<SheetPlayerDetail | null>(null)
   const [sheetDetailLoading, setSheetDetailLoading] = useState(false)
   const [sheetSeasonTab, setSheetSeasonTab] = useState<number | null>(null)
   const [sheetView, setSheetView] = useState<'compact' | 'full'>('compact')
   const isLocked = currentGW?.lockTime ? new Date() >= new Date(currentGW.lockTime) : false
+
+  /* ─── Fetch GW fixtures for opponent display ─── */
+  useEffect(() => {
+    if (!currentGW?.id) return
+    fetch(`/api/gameweeks/current`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.matches) setGwFixtures(data.matches)
+      })
+      .catch(() => {})
+  }, [currentGW?.id])
 
   /* ─── Fetch player detail when stats sheet opens ─── */
   useEffect(() => {
@@ -679,6 +691,17 @@ export default function LineupPage() {
     )
   }
 
+  /* ─── GW opponent helper ─── */
+  function getGwOpponents(iplTeamName: string | null, fixtures: { localTeamName: string | null; visitorTeamName: string | null }[]): string[] {
+    if (!iplTeamName) return []
+    return fixtures
+      .filter(f => f.localTeamName === iplTeamName || f.visitorTeamName === iplTeamName)
+      .map(f => {
+        const opponent = f.localTeamName === iplTeamName ? f.visitorTeamName : f.localTeamName
+        return teamNameToCode[opponent ?? ''] || opponent?.slice(0, 3).toUpperCase() || '?'
+      })
+  }
+
   /* ─── Player Figure Component ─── */
   const PlayerFigure = ({ player, isCaptain, isVC, isBench }: {
     player: SquadPlayer; isCaptain: boolean; isVC: boolean; isBench?: boolean
@@ -780,13 +803,22 @@ export default function LineupPage() {
           }}>
             {shortName}
           </div>
-          <div style={{
-            fontSize: valueFs, fontWeight: 500,
-            color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)',
-            marginTop: 2, lineHeight: '1.55',
-          }}>
-            {code || 'IPL'}
-          </div>
+          {(() => {
+            const opponents = getGwOpponents(player.iplTeamName, gwFixtures)
+            return opponents.length > 0 ? opponents.map((opp, i) => (
+              <div key={i} style={{ fontSize: valueFs, color: '#0d9488', fontWeight: 600, lineHeight: 1.3 }}>
+                vs {opp}
+              </div>
+            )) : (
+              <div style={{
+                fontSize: valueFs, fontWeight: 500,
+                color: light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.8)',
+                marginTop: 2, lineHeight: '1.55',
+              }}>
+                {code || 'IPL'}
+              </div>
+            )
+          })()}
         </div>
       </div>
     )
@@ -1229,7 +1261,12 @@ export default function LineupPage() {
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                    {p.iplTeamCode || 'IPL'} &middot; {role}
+                    {(() => {
+                      const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                      return opponents.length > 0
+                        ? opponents.map(o => `vs ${o}`).join(', ')
+                        : (p.iplTeamCode || 'IPL')
+                    })()} &middot; {role}
                   </div>
                 </div>
                 {/* Action buttons */}
@@ -1331,7 +1368,12 @@ export default function LineupPage() {
                         {p.fullname}
                       </div>
                       <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                        {p.iplTeamCode || 'IPL'} &middot; {role}
+                        {(() => {
+                          const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                          return opponents.length > 0
+                            ? opponents.map(o => `vs ${o}`).join(', ')
+                            : (p.iplTeamCode || 'IPL')
+                        })()} &middot; {role}
                       </div>
                     </div>
                     {/* Move to XI button */}
@@ -1767,7 +1809,12 @@ export default function LineupPage() {
                               {isVCPlayer && <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: '#C0C7D0', color: '#1a1a1a', flexShrink: 0 }}>VC</span>}
                             </div>
                             <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                              {p.iplTeamCode || 'IPL'} &middot; {role}
+                              {(() => {
+                                const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                                return opponents.length > 0
+                                  ? opponents.map(o => `vs ${o}`).join(', ')
+                                  : (p.iplTeamCode || 'IPL')
+                              })()} &middot; {role}
                             </div>
                           </div>
                           <div style={{
@@ -1828,7 +1875,12 @@ export default function LineupPage() {
                           <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.fullname}</div>
                             <div style={{ fontSize: 11, color: '#999', fontWeight: 500, marginTop: 1 }}>
-                              {p.iplTeamCode || 'IPL'} &middot; {role}
+                              {(() => {
+                                const opponents = getGwOpponents(p.iplTeamName, gwFixtures)
+                                return opponents.length > 0
+                                  ? opponents.map(o => `vs ${o}`).join(', ')
+                                  : (p.iplTeamCode || 'IPL')
+                              })()} &middot; {role}
                             </div>
                           </div>
                           <div style={{
