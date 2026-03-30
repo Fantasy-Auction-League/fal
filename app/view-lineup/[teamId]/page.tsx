@@ -819,12 +819,14 @@ export default function ViewLineupPage() {
                 padding: '12px 0 10px', zIndex: 3,
                 gap: 6,
               }}>
-                {/* Row 1: Top Order */}
+                {/* Playing XI header */}
                 <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Top Order</div>
+                  fontSize: 11, fontWeight: 700, letterSpacing: 1.5,
+                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.5)',
+                  textAlign: 'center', marginBottom: 4,
+                }}>Playing XI</div>
+
+                {/* Row 1 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row1.map(p => (
                     <div key={p.id}
@@ -838,12 +840,7 @@ export default function ViewLineupPage() {
                   ))}
                 </div>
 
-                {/* Row 2: Middle Order */}
-                <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Middle Order</div>
+                {/* Row 2 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row2.map(p => (
                     <div key={p.id}
@@ -857,12 +854,7 @@ export default function ViewLineupPage() {
                   ))}
                 </div>
 
-                {/* Row 3: Lower Order */}
-                <div style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: 1.2,
-                  textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.25)',
-                  textAlign: 'center', marginBottom: -2,
-                }}>Lower Order</div>
+                {/* Row 3 */}
                 <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%' }}>
                   {row3.map(p => (
                     <div key={p.id}
