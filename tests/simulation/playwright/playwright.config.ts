@@ -61,5 +61,12 @@ export default defineConfig({
       use: { storageState: 'tests/simulation/playwright/.auth/user1.json' },
       dependencies: ['setup'],
     },
+    {
+      name: 'lineup-ui-changes-user',
+      testMatch: 'lineup-ui-changes.spec.ts',
+      grep: /@user/,
+      use: { storageState: 'tests/simulation/playwright/.auth/user1.json' },
+      dependencies: ['setup'],
+    },
   ],
 })

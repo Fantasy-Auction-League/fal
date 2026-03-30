@@ -74,7 +74,7 @@ test('2. User views squad @user', async ({ page }) => {
   await expect(benchLabel.first()).toBeVisible()
 
   // Verify 15 players visible (11 XI + 4 bench) — check pitch area exists
-  await expect(page.getByText('Top Order')).toBeVisible()
+  await expect(page.getByText('Playing XI').first()).toBeVisible()
 
   await expect(page).toHaveScreenshot('lineup-squad.png')
 })
@@ -96,10 +96,8 @@ test('3. User sets lineup — pitch view @user', async ({ page }) => {
   await expect(page.getByText('Bowling Boost')).toBeVisible()
   await expect(page.getByText('Power Play Bat')).toBeVisible()
 
-  // 4-3-3 formation row labels (Top Order, Middle Order, Lower Order)
-  await expect(page.getByText('Top Order')).toBeVisible()
-  await expect(page.getByText('Middle Order')).toBeVisible()
-  await expect(page.getByText('Lower Order')).toBeVisible()
+  // "Playing XI" header label visible on pitch view
+  await expect(page.getByText('Playing XI').first()).toBeVisible()
 
   // Captain badge ("C") should be visible on the pitch figure
   const captainBadge = page.locator('div').filter({ hasText: /^C$/ }).first()
@@ -364,9 +362,8 @@ test('9. User views GW score detail — pitch view @user', async ({ page }) => {
   await page.waitForTimeout(300)
 
   // Pitch view should show formation with player figures and scores
-  // Look for formation row labels or player score plates
-  const topOrder = page.getByText('Top Order')
-  const hasFormation = await topOrder.isVisible({ timeout: 3000 }).catch(() => false)
+  const playingXI = page.getByText('Playing XI').first()
+  const hasFormation = await playingXI.isVisible({ timeout: 3000 }).catch(() => false)
   if (!hasFormation) {
     // May show empty state if no scores
     await expect(page.getByText(/No player scores|No lineup/i).first()).toBeVisible()
@@ -487,10 +484,8 @@ test("13. User views another manager's lineup — pitch view @user", async ({ pa
     // Read Only badge should be visible
     await expect(page.getByText('Read Only')).toBeVisible()
 
-    // Pitch View is default — formation rows visible
-    await expect(page.getByText('Top Order')).toBeVisible()
-    await expect(page.getByText('Middle Order')).toBeVisible()
-    await expect(page.getByText('Lower Order')).toBeVisible()
+    // Pitch View is default — Playing XI header visible
+    await expect(page.getByText('Playing XI').first()).toBeVisible()
 
     // View toggle present
     await expect(page.getByText('Pitch View')).toBeVisible()
@@ -984,7 +979,7 @@ test('29. Swap bench player into XI via pitch view @user', async ({ page }) => {
 
   // Ensure Pitch View is active (default)
   await expect(page.getByText('Pitch View')).toBeVisible()
-  await expect(page.getByText('Top Order')).toBeVisible()
+  await expect(page.getByText('Playing XI').first()).toBeVisible()
 
   // Find a bench player figure and click it to enter swap mode
   // Bench players are below the pitch, inside divs with onClick={handleBenchTap}
@@ -1416,7 +1411,7 @@ test('40. Substitute from pitch view detail sheet shows swap sheet @user', async
 
   // Ensure Pitch View is active
   await expect(page.getByText('Pitch View')).toBeVisible()
-  await expect(page.getByText('Top Order')).toBeVisible()
+  await expect(page.getByText('Playing XI').first()).toBeVisible()
 
   // Click an XI player on the pitch to open the stats sheet
   const allClickable = page.locator('div[style*="cursor: pointer"]')
