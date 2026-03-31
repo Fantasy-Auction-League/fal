@@ -1,0 +1,33 @@
+name: Scoring Cron (Daily Fallback)
+
+# Daily fallback at 18:30 UTC (2:30 PM EDT) to catch any matches
+# missed by the 5-min match window cron (e.g. rain delays, late finishes)
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call scoring endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PROD_URL: ${{ secrets.PROD_URL }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$PROD_URL/api/scoring/cron")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Scoring cron failed with status $http_code"
+            exit 1
+          fi
