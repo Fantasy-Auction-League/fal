@@ -1,0 +1,32 @@
+name: Sync Players Cron (Daily)
+
+# Runs daily at 6:00 AM UTC to sync player team changes from SportMonks
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call sync-players endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PROD_URL: ${{ secrets.PROD_URL }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$PROD_URL/api/admin/sync-players/cron")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Sync players cron failed with status $http_code"
+            exit 1
+          fi
