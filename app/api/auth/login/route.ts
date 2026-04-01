@@ -2,6 +2,10 @@ import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
 
+function safeUser(user: { id: string; email: string; name: string | null; role: string }) {
+  return { id: user.id, email: user.email, name: user.name, role: user.role }
+}
+
 export async function POST(req: NextRequest) {
   const { email: rawEmail, name, inviteCode, adminSecret, password } = await req.json()
   if (!rawEmail) return Response.json({ error: 'Email required' }, { status: 400 })
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
         where: { email },
         data: { name: name || undefined, role: 'ADMIN' },
       })
-      return Response.json(user)
+      return Response.json(safeUser(user))
     }
 
     // New admin creation
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest) {
         passwordHash,
       },
     })
-    return Response.json(user)
+    return Response.json(safeUser(user))
   }
 
   // Case 1: Invite code provided — validate and upsert user into league
@@ -112,7 +116,7 @@ export async function POST(req: NextRequest) {
       user.activeLeagueId = league.id
     }
 
-    return Response.json(user)
+    return Response.json(safeUser(user))
   }
 
   // Case 2: No invite code — check if existing user is already in a league
@@ -143,7 +147,7 @@ export async function POST(req: NextRequest) {
       where: { email },
       data: { name: name || undefined },
     })
-    return Response.json(user)
+    return Response.json(safeUser(user))
   }
 
   // Case 3: No invite code + not an admin — reject
