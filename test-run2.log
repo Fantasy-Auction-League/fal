@@ -1,0 +1,43 @@
+
+> fal@0.1.0 test
+> vitest run
+
+[dotenv@17.3.1] injecting env (9) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+[1m[46m RUN [49m[22m [36mv4.1.0 [39m[90m/Users/viiveeksankar/workspace/fal[39m
+
+ [31m❯[39m tests/e2e/full-season-flow.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 277[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/e2e/full-season-flow.test.ts[2m > [22mFull Season Flow E2E
+[31m[1mPrismaClientKnownRequestError[22m: 
+Invalid `prisma.team.deleteMany()` invocation in
+/Users/viiveeksankar/workspace/fal/tests/e2e/full-season-flow.test.ts:18:21
+
+  15 await prisma.match.deleteMany({ where: { apiMatchId: { in: [99901, 99902] } } })
+  16 await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102] } } })
+  17 await prisma.teamPlayer.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
+→ 18 await prisma.team.deleteMany(
+Foreign key constraint violated on the constraint: `Lineup_teamId_fkey`[39m
+[90m [2m❯[22m ei.handleRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m228:12[22m[39m
+[90m [2m❯[22m ei.handleAndLogRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m174:11[22m[39m
+[90m [2m❯[22m ei.request node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m143:11[22m[39m
+[90m [2m❯[22m a node_modules/@prisma/client/src/runtime/getPrismaClient.ts:[2m833:23[22m[39m
+[36m [2m❯[22m cleanupTestData tests/e2e/full-season-flow.test.ts:[2m18:3[22m[39m
+    [90m 16|[39m   await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102]…
+    [90m 17|[39m   await prisma.teamPlayer.deleteMany({ where: { league: { name: { star…
+    [90m 18|[39m   await prisma.team.deleteMany({ where: { league: { name: { startsWith…
+    [90m   |[39m   [31m^[39m
+    [90m 19|[39m   await prisma.league.deleteMany({ where: { name: { startsWith: TEST_P…
+    [90m 20|[39m   await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.tes…
+[90m [2m❯[22m tests/e2e/full-season-flow.test.ts:[2m36:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m20 passed[39m[22m[90m (21)[39m
+[2m      Tests [22m [1m[32m162 passed[39m[22m[90m (162)[39m
+[2m   Start at [22m 21:47:56
+[2m   Duration [22m 3.18s[2m (transform 638ms, setup 0ms, import 982ms, tests 6.22s, environment 1ms)[22m
+

@@ -3,7 +3,6 @@
 import { useSession } from 'next-auth/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { trackEvent, GA_EVENTS } from '@/lib/analytics'
 import { usePathname } from 'next/navigation'
 import { AppFrame } from '@/app/components/AppFrame'
 
@@ -257,7 +256,6 @@ function getChipName(chipCode: string | null): string {
 }
 
 export default function DashboardPage() {
-  useEffect(() => { trackEvent(GA_EVENTS.VIEW_DASHBOARD) }, [])
   const { data: session, status: sessionStatus } = useSession()
   const pathname = usePathname()
 

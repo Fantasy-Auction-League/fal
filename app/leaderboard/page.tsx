@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { AppFrame } from '@/app/components/AppFrame'
-import { trackEvent, GA_EVENTS } from '@/lib/analytics'
 
 /* ─── Types ─── */
 interface Standing {
@@ -74,7 +73,6 @@ const IconLeague = () => (
 )
 
 export default function LeaderboardPage() {
-  useEffect(() => { trackEvent(GA_EVENTS.VIEW_LEADERBOARD) }, [])
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState<'season' | 'gw' | 'history'>('season')
   const [standings, setStandings] = useState<Standing[]>([])

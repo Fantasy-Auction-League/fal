@@ -1,0 +1,190 @@
+
+> fal@0.1.0 test
+> vitest run
+
+[dotenv@17.3.1] injecting env (9) from .env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+
+[1m[46m RUN [49m[22m [36mv4.1.0 [39m[90m/Users/viiveeksankar/workspace/fal[39m
+
+ [31m❯[39m tests/unit/ensure-lineups.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 6[2mms[22m[39m
+[31m     [31m×[31m AC2.2: assigns XI (top 11) and BENCH (bottom 4) by purchase price[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m AC2.3: assigns CAPTAIN to highest price and VC to second highest[39m[32m 0[2mms[22m[39m
+[31m     [31m×[31m AC2.4: assigns bench priorities 1-4 in descending price order[39m[32m 0[2mms[22m[39m
+ [31m❯[39m tests/e2e/full-season-flow.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 281[2mms[22m[39m
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Team Alpha from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Team Beta from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Team Gamma from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 9 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 10 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 1 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Nehas Knights from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Arjuns Avengers from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 8 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Ensure Test Team from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 5 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 6 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Amits Arsenal from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Saras Stars from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Deepaks Dynasty from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Shaheels Strikers from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 4 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Priyas Panthers from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Rajs Royals from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Rohits Rockets from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 2 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Viiveeks XI from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 7 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: carried forward Sim Team 3 from GW8889
+
+[90mstdout[2m | tests/integration/ensure-lineups.test.ts[2m > [22m[2mEnsure Lineups - Integration Test[2m > [22m[2mAC1.4: Skip team with existing lineup for current GW
+[22m[39mensureLineups: 24 carried forward, 0 auto-generated
+
+ [31m❯[39m tests/integration/ensure-lineups.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 802[2mms[22m[39m
+[31m     [31m×[31m AC1.4: Skip team with existing lineup for current GW[39m[32m 115[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/e2e/full-season-flow.test.ts[2m > [22mFull Season Flow E2E
+[31m[1mPrismaClientKnownRequestError[22m: 
+Invalid `prisma.team.deleteMany()` invocation in
+/Users/viiveeksankar/workspace/fal/tests/e2e/full-season-flow.test.ts:18:21
+
+  15 await prisma.match.deleteMany({ where: { apiMatchId: { in: [99901, 99902] } } })
+  16 await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102] } } })
+  17 await prisma.teamPlayer.deleteMany({ where: { league: { name: { startsWith: TEST_PREFIX } } } })
+→ 18 await prisma.team.deleteMany(
+Foreign key constraint violated on the constraint: `Lineup_teamId_fkey`[39m
+[90m [2m❯[22m ei.handleRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m228:12[22m[39m
+[90m [2m❯[22m ei.handleAndLogRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m174:11[22m[39m
+[90m [2m❯[22m ei.request node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m143:11[22m[39m
+[90m [2m❯[22m a node_modules/@prisma/client/src/runtime/getPrismaClient.ts:[2m833:23[22m[39m
+[36m [2m❯[22m cleanupTestData tests/e2e/full-season-flow.test.ts:[2m18:3[22m[39m
+    [90m 16|[39m   await prisma.gameweek.deleteMany({ where: { number: { in: [101, 102]…
+    [90m 17|[39m   await prisma.teamPlayer.deleteMany({ where: { league: { name: { star…
+    [90m 18|[39m   await prisma.team.deleteMany({ where: { league: { name: { startsWith…
+    [90m   |[39m   [31m^[39m
+    [90m 19|[39m   await prisma.league.deleteMany({ where: { name: { startsWith: TEST_P…
+    [90m 20|[39m   await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.tes…
+[90m [2m❯[22m tests/e2e/full-season-flow.test.ts:[2m36:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/ensure-lineups.test.ts[2m > [22mEnsure Lineups - Integration Test[2m > [22mAC1.4: Skip team with existing lineup for current GW
+[31m[1mPrismaClientKnownRequestError[22m: 
+Invalid `prisma.gameweek.delete()` invocation in
+/Users/viiveeksankar/workspace/fal/tests/integration/ensure-lineups.test.ts:690:27
+
+  687 await prisma.team.delete({ where: { id: testTeam.id } })
+  688 await prisma.league.delete({ where: { id: testLeague.id } })
+  689 await prisma.user.delete({ where: { id: testUser.id } })
+→ 690 await prisma.gameweek.delete(
+Foreign key constraint violated on the constraint: `Lineup_gameweekId_fkey`[39m
+[90m [2m❯[22m ei.handleRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m228:12[22m[39m
+[90m [2m❯[22m ei.handleAndLogRequestError node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m174:11[22m[39m
+[90m [2m❯[22m ei.request node_modules/@prisma/client/src/runtime/RequestHandler.ts:[2m143:11[22m[39m
+[90m [2m❯[22m a node_modules/@prisma/client/src/runtime/getPrismaClient.ts:[2m833:23[22m[39m
+[36m [2m❯[22m tests/integration/ensure-lineups.test.ts:[2m690:5[22m[39m
+    [90m688|[39m     [35mawait[39m prisma[33m.[39mleague[33m.[39m[35mdelete[39m({ where[33m:[39m { id[33m:[39m testLeague[33m.[39mid } })
+    [90m689|[39m     [35mawait[39m prisma[33m.[39muser[33m.[39m[35mdelete[39m({ where[33m:[39m { id[33m:[39m testUser[33m.[39mid } })
+    [90m690|[39m     [35mawait[39m prisma[33m.[39mgameweek[33m.[39m[35mdelete[39m({ where[33m:[39m { id[33m:[39m skipGw[33m.[39mid } })
+    [90m   |[39m     [31m^[39m
+    [90m691|[39m   })
+    [90m692|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/ensure-lineups.test.ts[2m > [22mensureLineups - Unit Tests[2m > [22mAC2.2: assigns XI (top 11) and BENCH (bottom 4) by purchase price
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'fullname')[39m
+[36m [2m❯[22m Module.ensureLineups lib/scoring/pipeline.ts:[2m617:93[22m[39m
+    [90m615|[39m     })
+    [90m616|[39m
+    [90m617|[39m     console.log(`ensureLineups: auto-generated ${team.name} (captain: …
+    [90m   |[39m                                                                                             [31m^[39m
+    [90m618|[39m
+    [90m619|[39m     [90m// Push into team.lineups array so scoring loop picks it up[39m
+[90m [2m❯[22m tests/unit/ensure-lineups.test.ts:[2m347:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/ensure-lineups.test.ts[2m > [22mensureLineups - Unit Tests[2m > [22mAC2.3: assigns CAPTAIN to highest price and VC to second highest
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'fullname')[39m
+[36m [2m❯[22m Module.ensureLineups lib/scoring/pipeline.ts:[2m617:93[22m[39m
+    [90m615|[39m     })
+    [90m616|[39m
+    [90m617|[39m     console.log(`ensureLineups: auto-generated ${team.name} (captain: …
+    [90m   |[39m                                                                                             [31m^[39m
+    [90m618|[39m
+    [90m619|[39m     [90m// Push into team.lineups array so scoring loop picks it up[39m
+[90m [2m❯[22m tests/unit/ensure-lineups.test.ts:[2m411:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/ensure-lineups.test.ts[2m > [22mensureLineups - Unit Tests[2m > [22mAC2.4: assigns bench priorities 1-4 in descending price order
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'fullname')[39m
+[36m [2m❯[22m Module.ensureLineups lib/scoring/pipeline.ts:[2m617:93[22m[39m
+    [90m615|[39m     })
+    [90m616|[39m
+    [90m617|[39m     console.log(`ensureLineups: auto-generated ${team.name} (captain: …
+    [90m   |[39m                                                                                             [31m^[39m
+    [90m618|[39m
+    [90m619|[39m     [90m// Push into team.lineups array so scoring loop picks it up[39m
+[90m [2m❯[22m tests/unit/ensure-lineups.test.ts:[2m467:5[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m18 passed[39m[22m[90m (21)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m158 passed[39m[22m[90m (162)[39m
+[2m   Start at [22m 21:47:07
+[2m   Duration [22m 3.67s[2m (transform 655ms, setup 0ms, import 941ms, tests 7.89s, environment 1ms)[22m
+

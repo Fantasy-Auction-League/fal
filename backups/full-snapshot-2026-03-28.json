@@ -1,0 +1,1963 @@
+{
+  "exportedAt": "2026-03-28T05:23:19.979Z",
+  "description": "Full snapshot of all lineups and chip usages across all gameweeks — production database",
+  "gameweeks": [
+    {
+      "id": "cmn70t16o00008odx4hy39wtw",
+      "number": 1,
+      "status": "UPCOMING",
+      "lockTime": "2026-03-28T13:00:00.000Z"
+    },
+    {
+      "id": "cmn70t16p00018odx6bhn9mna",
+      "number": 2,
+      "status": "UPCOMING",
+      "lockTime": "2026-04-04T09:00:00.000Z"
+    },
+    {
+      "id": "cmn70t16p00028odxz7zpb152",
+      "number": 3,
+      "status": "UPCOMING",
+      "lockTime": "2026-04-11T09:00:00.000Z"
+    }
+  ],
+  "lineups": [
+    {
+      "lineupId": "cmn7dwe7g0001jp04mbgbsv8p",
+      "teamId": "cmn56b6x30001l4044dhtj6n2",
+      "teamName": "Cummin Side",
+      "userId": "cmn55zfwq0000l504alku87pf",
+      "userName": "Anshuman",
+      "userEmail": "anshul_misra@hotmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T11:23:33.484Z",
+      "updatedAt": "2026-03-26T11:23:33.484Z",
+      "slots": [
+        {
+          "playerId": "cmn4u255y00478ojfz16k3h91",
+          "playerName": "Jos Buttler",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22zy001m8ojfz3hf4634",
+          "playerName": "Angkrish Raghuvanshi",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u254z00458ojfzx34jh82",
+          "playerName": "Rashid Khan",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21ol00028ojf9ma6ypiz",
+          "playerName": "Suryakumar Yadav",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u242t002w8ojfaz2gev62",
+          "playerName": "Bhuvneshwar Kumar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24oq003s8ojfe8una2qs",
+          "playerName": "Azmatullah Omarzai",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21ue000b8ojfpggdgonb",
+          "playerName": "Mitchell Santner",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25nj004v8ojffqru04yb",
+          "playerName": "Pat Cummins",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u230t001n8ojfinzc46pj",
+          "playerName": "Rachin Ravindra",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u249800388ojfdfv8k8j0",
+          "playerName": "Romario Shepherd",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u257j004a8ojfvwzfzj9z",
+          "playerName": "Prasidh Krishna",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23hd00278ojft71lyfsu",
+          "playerName": "Shimron Hetmyer",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u21rn00078ojfx4byhfox",
+          "playerName": "Naman Dhir",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u22h0000y8ojfwthq5nvk",
+          "playerName": "Anshul Kamboj",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u26bh005v8ojfl0qywnbx",
+          "playerName": "Lungi Ngidi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn7ye8vl0001jv04zy0bgoyz",
+      "teamId": "cmn56b6y1001gl404iqghj85a",
+      "teamName": "Hollywood",
+      "userId": "cmn55zfxq0003l504iemaqn5y",
+      "userName": "Sanket Shah",
+      "userEmail": "sanket.signups+allin@gmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T20:57:18.706Z",
+      "updatedAt": "2026-03-26T20:57:18.706Z",
+      "slots": [
+        {
+          "playerId": "cmn4u26mo00688ojfx63q6mtz",
+          "playerName": "Nicholas Pooran",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26tg006k8ojfpy2evfld",
+          "playerName": "Aiden Markram",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24n1003p8ojf50tch2xx",
+          "playerName": "Priyansh Arya",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u227e000p8ojfnpzphy83",
+          "playerName": "Ruturaj Gaikwad",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u2586004b8ojfmr78c6fs",
+          "playerName": "Sai Sudharsan",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25oo004x8ojfhy9ah8hm",
+          "playerName": "Travis Head",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25o0004w8ojfvxxobk41",
+          "playerName": "Abhishek Sharma",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25rw00538ojfpao50y8m",
+          "playerName": "Eshan Malinga",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u256z00498ojfhwcb8av9",
+          "playerName": "Kagiso Rabada",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24rw003y8ojfk2n5q29w",
+          "playerName": "Xavier Bartlett",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22wb001h8ojf3dv5du2c",
+          "playerName": "Sunil Narine",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24jw003j8ojfd54z9dm3",
+          "playerName": "Marcus Stoinis",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u21x6000f8ojfshybgmvp",
+          "playerName": "Corbin Bosch",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u23mb002a8ojfal404yhy",
+          "playerName": "Sandeep Sharma",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u243a002x8ojfs6t8yq8f",
+          "playerName": "Venkatesh Iyer",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn7zlltm0052ic04w2vsgsna",
+      "teamId": "cmn56b6y9001xl404cvlakovc",
+      "teamName": "BashXI",
+      "userId": "cmn55zfy20004l504dl32gti1",
+      "userName": "Subash",
+      "userEmail": "subashunni@gmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T21:31:01.691Z",
+      "updatedAt": "2026-03-26T21:31:01.691Z",
+      "slots": [
+        {
+          "playerId": "cmn4u269c005r8ojfysvtohwh",
+          "playerName": "Abishek Porel",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26ag005t8ojfhvvl685b",
+          "playerName": "Ashutosh Sharma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25n1004u8ojfou6lxtu8",
+          "playerName": "Heinrich Klaasen",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23v2002q8ojfc70zv7uh",
+          "playerName": "Kyle Jamieson",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u227y000q8ojfseyc0g6e",
+          "playerName": "Sanju Samson",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u267a005n8ojfnzi05fk1",
+          "playerName": "Tristan Stubbs",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23gt00268ojf1wy9xt4i",
+          "playerName": "Jofra Archer",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26ci005x8ojfwejyo1v2",
+          "playerName": "David Miller",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u255h00468ojfib5vkc2o",
+          "playerName": "Shubman Gill",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u244d002z8ojfgbcy8sjf",
+          "playerName": "Krunal Pandya",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23gc00258ojfb5y2ugyn",
+          "playerName": "Ravindra Jadeja",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24kz003l8ojfr8kqz0qy",
+          "playerName": "Shashank Singh",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u23sr002m8ojf63vvee4s",
+          "playerName": "Vignesh Puthur",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u26bz005w8ojffpvcj5yh",
+          "playerName": "Ben Duckett",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u22gd000x8ojfxdtth9el",
+          "playerName": "Mahendra Singh Dhoni",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn7zomau0001l104lsv5tyog",
+      "teamId": "cmn56b6yj002el404iwjfipb2",
+      "teamName": "Sachani 24",
+      "userId": "cmn55zfyc0005l504adkopsk0",
+      "userName": "Tejas",
+      "userEmail": "tjsachani@gmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T21:33:22.279Z",
+      "updatedAt": "2026-03-26T21:33:22.279Z",
+      "slots": [
+        {
+          "playerId": "cmn4u24mh003o8ojfopsx2kbb",
+          "playerName": "Prabhsimran Singh",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22ie00108ojfab0plt0p",
+          "playerName": "Dewald Brevis",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u241n002u8ojf8nxzanzc",
+          "playerName": "Rajat Patidar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21p500038ojff9mihp8i",
+          "playerName": "Rohit Sharma",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u2599004d8ojfvaeaemut",
+          "playerName": "Shahrukh Khan",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23o3002d8ojfmq1zf4fu",
+          "playerName": "Vaibhav Suryavanshi",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21o300018ojfmasbssou",
+          "playerName": "Hardik Pandya",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24ki003k8ojfwj5lt6s9",
+          "playerName": "Marco Jansen",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26qe006f8ojf9l0j8z0j",
+          "playerName": "Mitchell Marsh",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22vr001g8ojfm19bfipc",
+          "playerName": "Varun Chakaravarthy",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u256i00488ojf7bnwa3pn",
+          "playerName": "Mohammed Siraj",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22eq000u8ojf1fxddcet",
+          "playerName": "Noor Ahmad",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u23lj00298ojfcm2hhzpc",
+          "playerName": "Tushar Deshpande",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u26tx006l8ojf5vf8ysen",
+          "playerName": "Anrich Nortje",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u24px003u8ojf788rv8dk",
+          "playerName": "Vijaykumar Vyshak",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn80vjb40001l204cuxugoyj",
+      "teamId": "cmn7z3cwn0028ic043hl57d45",
+      "teamName": "Pocket Rockets",
+      "userId": "cmn55zfxq0003l504iemaqn5y",
+      "userName": "Sanket Shah",
+      "userEmail": "sanket.signups+allin@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T22:06:44.608Z",
+      "updatedAt": "2026-03-26T22:06:44.608Z",
+      "slots": [
+        {
+          "playerId": "cmn4u2326001p8ojfa6yu9foj",
+          "playerName": "Vaibhav Arora",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25pl004z8ojfymwj80ka",
+          "playerName": "Ishan Kishan",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24mh003o8ojfopsx2kbb",
+          "playerName": "Prabhsimran Singh",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25q400508ojfqdkciy1n",
+          "playerName": "Harshal Patel",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26pd006d8ojfka659gnu",
+          "playerName": "Ayush Badoni",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24n1003p8ojf50tch2xx",
+          "playerName": "Priyansh Arya",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22v9001f8ojft78f1eve",
+          "playerName": "Rinku Singh",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u244d002z8ojfgbcy8sjf",
+          "playerName": "Krunal Pandya",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23gc00258ojfb5y2ugyn",
+          "playerName": "Ravindra Jadeja",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21qp00058ojf36w5tr8q",
+          "playerName": "Deepak Chahar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26od006b8ojf45kl0dk8",
+          "playerName": "Avesh Khan",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u2202000k8ojfx7x55gco",
+          "playerName": "Ashwani Kumar",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u243a002x8ojfs6t8yq8f",
+          "playerName": "Venkatesh Iyer",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u25x2005d8ojfou6gcfi9",
+          "playerName": "Aniket Verma",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u269c005r8ojfysvtohwh",
+          "playerName": "Abishek Porel",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn83xwa40002l404ggygvu6h",
+      "teamId": "cmn7z3cv1000cic04v0k5tocw",
+      "teamName": "Pandya Brothers",
+      "userId": "cmn7z3crw0004ic048vk5o7xc",
+      "userName": "Advait",
+      "userEmail": "advaittrivediwr10@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T23:32:33.581Z",
+      "updatedAt": "2026-03-26T23:32:33.581Z",
+      "slots": [
+        {
+          "playerId": "cmn4u2650005j8ojfgulz1d71",
+          "playerName": "Lokesh Rahul",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21wp000e8ojfcqt2iqcx",
+          "playerName": "Quinton de Kock",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26m600678ojfunz4qk1p",
+          "playerName": "Rishabh Pant",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u234e001s8ojfaiymnb6f",
+          "playerName": "Ajinkya Rahane",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25qo00518ojfi2iqa8st",
+          "playerName": "Nitish Kumar Reddy",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23fi00248ojf3wnm5wfc",
+          "playerName": "Riyan Parag",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u227e000p8ojfnpzphy83",
+          "playerName": "Ruturaj Gaikwad",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24ki003k8ojfwj5lt6s9",
+          "playerName": "Marco Jansen",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24jg003i8ojfybdux6p7",
+          "playerName": "Yuzvendra Chahal",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u265h005k8ojfgfsyzh3q",
+          "playerName": "Kuldeep Yadav",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22fs000w8ojf0y66hjlj",
+          "playerName": "Khaleel Ahmed",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u268t005q8ojf6vwkabmn",
+          "playerName": "Nitish Rana",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u266r005m8ojfea7wr9rt",
+          "playerName": "Thangarasu Natarajan",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u256i00488ojf7bnwa3pn",
+          "playerName": "Mohammed Siraj",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u26w5006p8ojfm16399qk",
+          "playerName": "Digvesh Rathi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn84d3tv000ijm04eigohqor",
+      "teamId": "cmn7z3cye004lic04jg0zc6q1",
+      "teamName": "weekend warrior",
+      "userId": "cmn50ub0i0001jo04j9xbr0dk",
+      "userName": "viiveek",
+      "userEmail": "viiveek@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-26T23:44:23.203Z",
+      "updatedAt": "2026-03-26T23:44:23.203Z",
+      "slots": [
+        {
+          "playerId": "cmn4u26ag005t8ojfhvvl685b",
+          "playerName": "Ashutosh Sharma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26ci005x8ojfwejyo1v2",
+          "playerName": "David Miller",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u247r00358ojfsv022btj",
+          "playerName": "Devdutt Padikkal",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25r400528ojfaedihx0v",
+          "playerName": "Salil Arora",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21tk000a8ojf0ockqopl",
+          "playerName": "Sherfane Rutherford",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22my00188ojfhp6qcz30",
+          "playerName": "Ayush Mhatre",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u249800388ojfdfv8k8j0",
+          "playerName": "Romario Shepherd",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24kz003l8ojfr8kqz0qy",
+          "playerName": "Shashank Singh",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24iy003h8ojf5ybcexh3",
+          "playerName": "Arshdeep Singh",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21m700008ojfpmd9dwof",
+          "playerName": "Jasprit Bumrah",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u2426002v8ojfuhspxcxd",
+          "playerName": "Jitesh Sharma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22kv00148ojfct0oi32v",
+          "playerName": "Jamie Overton",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u267q005o8ojfifw3udp2",
+          "playerName": "Auqib Nabi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u26nw006a8ojfcg9fxunh",
+          "playerName": "Mohammed Shami",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u26ee00618ojf7l1bpu9w",
+          "playerName": "Vipraj Nigam",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn85e6b80001l104mq76bun9",
+      "teamId": "cmn7z3cvn000tic041sob9tfp",
+      "teamName": "Sandpaper in my Pants",
+      "userId": "cmn7z3cs90005ic0487e1q87f",
+      "userName": "Mrugen ",
+      "userEmail": "mrugen.mehta@me.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T00:13:12.692Z",
+      "updatedAt": "2026-03-27T00:13:12.692Z",
+      "slots": [
+        {
+          "playerId": "cmn4u23oj002e8ojf2zhqem91",
+          "playerName": "Donovan Ferreira",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25bw004i8ojf3p5waik8",
+          "playerName": "Glenn Phillips",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u233h001r8ojfjfp5lsro",
+          "playerName": "Tim Seifert",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u267a005n8ojfnzi05fk1",
+          "playerName": "Tristan Stubbs",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23mb002a8ojfal404yhy",
+          "playerName": "Sandeep Sharma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21ol00028ojf9ma6ypiz",
+          "playerName": "Suryakumar Yadav",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21sj00088ojfwicyauwq",
+          "playerName": "Will Jacks",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22h0000y8ojfwthq5nvk",
+          "playerName": "Anshul Kamboj",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21ue000b8ojfpggdgonb",
+          "playerName": "Mitchell Santner",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u230t001n8ojfinzc46pj",
+          "playerName": "Rachin Ravindra",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21po00048ojfmjn2il2i",
+          "playerName": "Trent Boult",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22nw001a8ojfifaqar4c",
+          "playerName": "Urvil Patel",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u26x9006r8ojfue763h8q",
+          "playerName": "Prince Yadav",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u25w0005b8ojf61a31pta",
+          "playerName": "Shivang Kumar",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u25ds004l8ojfxu1j4eus",
+          "playerName": "Ashok Sharma",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn85he2v000jl104jcu16nb3",
+      "teamId": "cmn7z3cx1002pic04q20agkhp",
+      "teamName": "Buttler Call Saul",
+      "userId": "cmn7z3ctc0008ic046g4lfdgm",
+      "userName": "Kushan",
+      "userEmail": "kushan1985@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T00:15:42.727Z",
+      "updatedAt": "2026-03-27T00:15:42.727Z",
+      "slots": [
+        {
+          "playerId": "cmn4u255y00478ojfz16k3h91",
+          "playerName": "Jos Buttler",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25a6004f8ojfr81ywrj9",
+          "playerName": "Washington Sundar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u240z002t8ojfrh8g4xj0",
+          "playerName": "Philip Salt",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24ly003n8ojf8cv23231",
+          "playerName": "Nehal Wadhera",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22jt00128ojfwa3q8ssj",
+          "playerName": "Matt Henry",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23ej00228ojfrzqafwk5",
+          "playerName": "Yashasvi Jaiswal",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u258p004c8ojfcecdc7b1",
+          "playerName": "Jason Holder",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26px006e8ojfrfeqvd6u",
+          "playerName": "Mohsin Khan",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25p5004y8ojfv09q203y",
+          "playerName": "Liam Livingstone",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24jw003j8ojfd54z9dm3",
+          "playerName": "Marcus Stoinis",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22f9000v8ojfuczclygh",
+          "playerName": "Rahul Chahar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26rh006h8ojfhg0eymn3",
+          "playerName": "Shahbaz Ahmed",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u25tw00578ojfg8f71iow",
+          "playerName": "Kamindu Mendis",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u22yi001k8ojftuy5ih7w",
+          "playerName": "Ramandeep Singh",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u25g0004p8ojfj4c2m5zl",
+          "playerName": "Kumar Kushagra",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn85yhl90011l104jq5ttw30",
+      "teamId": "cmn7z3cxe0036ic041ythe2s8",
+      "teamName": "Lord of the swings",
+      "userId": "cmn7z3cto0009ic04fkxaaiho",
+      "userName": "Vinit",
+      "userEmail": "vinittech85@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T00:29:00.430Z",
+      "updatedAt": "2026-03-27T00:29:00.430Z",
+      "slots": [
+        {
+          "playerId": "cmn4u23f100238ojfs9jejwj8",
+          "playerName": "Dhruv Jurel",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u2586004b8ojfmr78c6fs",
+          "playerName": "Sai Sudharsan",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24ih003g8ojfkvbzdjbo",
+          "playerName": "Shreyas Iyer",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u236w001w8ojf67nklwli",
+          "playerName": "Anukul Roy",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u264j005i8ojfor98d5c8",
+          "playerName": "Axar Patel",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u268b005p8ojfycrmhgqg",
+          "playerName": "Mukesh Kumar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21o300018ojfmasbssou",
+          "playerName": "Hardik Pandya",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25su00558ojf24u97jqj",
+          "playerName": "Jaydev Unadkat",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23gt00268ojf1wy9xt4i",
+          "playerName": "Jofra Archer",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22eq000u8ojf1fxddcet",
+          "playerName": "Noor Ahmad",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u257j004a8ojfvwzfzj9z",
+          "playerName": "Prasidh Krishna",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24oq003s8ojfe8una2qs",
+          "playerName": "Azmatullah Omarzai",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u23hw00288ojfhd6ywgje",
+          "playerName": "Ravi Bishnoi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u238d001z8ojfgaqsjqs8",
+          "playerName": "Kartik Tyagi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u23v2002q8ojfc70zv7uh",
+          "playerName": "Kyle Jamieson",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn86enht0001l504e27l0a0y",
+      "teamId": "cmn56b6xi000il4043vnt5o82",
+      "teamName": "Sunflower Warriors",
+      "userId": "cmn55zfx50001l5046vhnblw2",
+      "userName": "jasmeet.singhbahl1984",
+      "userEmail": "jasmeet.singhbahl1984@gmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T00:41:34.578Z",
+      "updatedAt": "2026-03-27T00:41:34.578Z",
+      "slots": [
+        {
+          "playerId": "cmn4u25pl004z8ojfymwj80ka",
+          "playerName": "Ishan Kishan",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25x2005d8ojfou6gcfi9",
+          "playerName": "Aniket Verma",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26df005z8ojf2h4juzxo",
+          "playerName": "Prithvi Shaw",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22v9001f8ojft78f1eve",
+          "playerName": "Rinku Singh",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21r700068ojfy3kwskxr",
+          "playerName": "Tilak Varma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23zt002r8ojff0zv7oy2",
+          "playerName": "Virat Kohli",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u258p004c8ojfcecdc7b1",
+          "playerName": "Jason Holder",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26rh006h8ojfhg0eymn3",
+          "playerName": "Shahbaz Ahmed",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u229z000t8ojf1ans8c0b",
+          "playerName": "Shivam Dube",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26nw006a8ojfcg9fxunh",
+          "playerName": "Mohammed Shami",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21m700008ojfpmd9dwof",
+          "playerName": "Jasprit Bumrah",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u267q005o8ojfifw3udp2",
+          "playerName": "Auqib Nabi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u22mc00178ojf9ssw5pmj",
+          "playerName": "Aman Hakim Khan",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u22uq001e8ojf8gvipaqj",
+          "playerName": "Matheesha Pathirana",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u22jb00118ojfm4vhr14w",
+          "playerName": "Akeal Hosein",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn884bdd0005l404dhtv81us",
+      "teamId": "cmn56b6yt002vl404jo0dc6hq",
+      "teamName": "Warriors",
+      "userId": "cmn55zfyn0006l504udihkt82",
+      "userName": "Tejvir Monga",
+      "userEmail": "tejvir82@gmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T01:29:31.537Z",
+      "updatedAt": "2026-03-27T01:29:31.537Z",
+      "slots": [
+        {
+          "playerId": "cmn4u26ez00628ojfbby5lz6w",
+          "playerName": "Karun Nair",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25a6004f8ojfr81ywrj9",
+          "playerName": "Washington Sundar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26m600678ojfunz4qk1p",
+          "playerName": "Rishabh Pant",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u234e001s8ojfaiymnb6f",
+          "playerName": "Ajinkya Rahane",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24jg003i8ojfybdux6p7",
+          "playerName": "Yuzvendra Chahal",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24ih003g8ojfkvbzdjbo",
+          "playerName": "Shreyas Iyer",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u264j005i8ojfor98d5c8",
+          "playerName": "Axar Patel",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22u9001d8ojflmrxaxai",
+          "playerName": "Cameron Green",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u24iy003h8ojf5ybcexh3",
+          "playerName": "Arshdeep Singh",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25tw00578ojfg8f71iow",
+          "playerName": "Kamindu Mendis",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25qo00518ojfi2iqa8st",
+          "playerName": "Nitish Kumar Reddy",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u228f000r8ojfy31b9l5v",
+          "playerName": "Kartik Sharma",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn70l0v600008o6mvfjz9zi4",
+          "playerName": "Mohammad Nabi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u21qp00058ojf36w5tr8q",
+          "playerName": "Deepak Chahar",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4zien1000z8o47j61ca0p5",
+          "playerName": "Devon Conway",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn8azksy0001ld046epgprf7",
+      "teamId": "cmn7z3cy20044ic04amy09yxx",
+      "teamName": "Phenom_Underdog",
+      "userId": "cmn53kpk00000jp040tfpbhpu",
+      "userName": "Shaheel Dholakia",
+      "userEmail": "shaheeldholakia@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T02:49:49.331Z",
+      "updatedAt": "2026-03-27T02:49:49.331Z",
+      "slots": [
+        {
+          "playerId": "cmn4u21w3000d8ojfvpds7hgu",
+          "playerName": "Ryan Rickelton",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u231q001o8ojff8s6ljmc",
+          "playerName": "Finn Allen",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u241n002u8ojf8nxzanzc",
+          "playerName": "Rajat Patidar",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21p500038ojff9mihp8i",
+          "playerName": "Rohit Sharma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25sc00548ojf4zn7v7mm",
+          "playerName": "Brydon Carse",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u255h00468ojfib5vkc2o",
+          "playerName": "Shubman Gill",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26ov006c8ojfil1un282",
+          "playerName": "Abdul Samad",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u247800348ojfagtvhwrp",
+          "playerName": "Jacob Bethell",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21rn00078ojfx4byhfox",
+          "playerName": "Naman Dhir",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22p4001c8ojfmkkdz578",
+          "playerName": "Shreyas Gopal",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22jb00118ojfm4vhr14w",
+          "playerName": "Akeal Hosein",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26cz005y8ojfrn5aybec",
+          "playerName": "Sameer Rizvi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u24qy003w8ojfi3ukcfvj",
+          "playerName": "Harpreet Brar",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u240a002s8ojfb3uk1p55",
+          "playerName": "Josh Hazlewood",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u25tf00568ojfqasb9pcm",
+          "playerName": "Shivam Mavi",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn920b6v0001k004u8qfpkhy",
+      "teamId": "cmn7z3cwc001ric048qjk8w1x",
+      "teamName": "Willow Whisperers",
+      "userId": "cmn7z3csw0007ic04nfd7smls",
+      "userName": "Pratik Singh",
+      "userEmail": "pratiksingh01@yahoo.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T15:26:13.159Z",
+      "updatedAt": "2026-03-27T15:26:13.159Z",
+      "slots": [
+        {
+          "playerId": "cmn4u25n1004u8ojfou6lxtu8",
+          "playerName": "Heinrich Klaasen",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26tg006k8ojfpy2evfld",
+          "playerName": "Aiden Markram",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22zy001m8ojfz3hf4634",
+          "playerName": "Angkrish Raghuvanshi",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u269u005s8ojfzjuvlh4w",
+          "playerName": "Pathum Nissanka",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u246j00338ojfg3j94uic",
+          "playerName": "Suyash Sharma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21r700068ojfy3kwskxr",
+          "playerName": "Tilak Varma",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u254z00458ojfzx34jh82",
+          "playerName": "Rashid Khan",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25oo004x8ojfhy9ah8hm",
+          "playerName": "Travis Head",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25aw004g8ojft1lf7fgd",
+          "playerName": "Sai Kishore",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u229z000t8ojf1ans8c0b",
+          "playerName": "Shivam Dube",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22wb001h8ojf3dv5du2c",
+          "playerName": "Sunil Narine",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25bd004h8ojf0rck3j0r",
+          "playerName": "Tom Banton",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u25gk004q8ojfy3jxd1af",
+          "playerName": "Nishant Sindhu",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u25zb005h8ojfs8bnjb35",
+          "playerName": "Harsh Dubey",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u2599004d8ojfvaeaemut",
+          "playerName": "Shahrukh Khan",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn99zi0g0001l504qbvfjkmv",
+      "teamId": "cmn7z3cvz001aic04m9na05ix",
+      "teamName": "Spartans",
+      "userId": "cmn7z3csl0006ic04ofv6dcem",
+      "userName": "Kash",
+      "userEmail": "kashyapkapasi@gmail.com",
+      "leagueId": "cmn7z2e290001ic04mslbflbs",
+      "leagueName": "Ordinary Gentlemen",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T19:09:32.272Z",
+      "updatedAt": "2026-03-27T19:09:32.272Z",
+      "slots": [
+        {
+          "playerId": "cmn4u22ie00108ojfab0plt0p",
+          "playerName": "Dewald Brevis",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23hd00278ojft71lyfsu",
+          "playerName": "Shimron Hetmyer",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23qb002h8ojfzsi10sj3",
+          "playerName": "Shubham Dubey",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23zt002r8ojff0zv7oy2",
+          "playerName": "Virat Kohli",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u265x005l8ojfvrtr8nh7",
+          "playerName": "Mitchell Starc",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22u9001d8ojflmrxaxai",
+          "playerName": "Cameron Green",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21x6000f8ojfshybgmvp",
+          "playerName": "Corbin Bosch",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u244v00308ojfodt0wpsg",
+          "playerName": "Mangesh Yadav",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22vr001g8ojfm19bfipc",
+          "playerName": "Varun Chakaravarthy",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u22gd000x8ojfxdtth9el",
+          "playerName": "Mahendra Singh Dhoni",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u227y000q8ojfseyc0g6e",
+          "playerName": "Sanju Samson",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u259p004e8ojfctmg6oyf",
+          "playerName": "Rahul Tewatia",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u21zk000j8ojf1sqgyht8",
+          "playerName": "Raj Angad Bawa",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u26gx00668ojf9nchi6tv",
+          "playerName": "Ajay Mandal",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4u222c000o8ojfds1a0h36",
+          "playerName": "Mayank Rawat",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    },
+    {
+      "lineupId": "cmn9e8bl00001l804v4kp6cxr",
+      "teamId": "cmn56b6xr000zl4047i5n4pst",
+      "teamName": "Phenom_Underdog",
+      "userId": "cmn53kpk00000jp040tfpbhpu",
+      "userName": "Shaheel Dholakia",
+      "userEmail": "shaheeldholakia@gmail.com",
+      "leagueId": "cmn53lt4s0002jp045xqxb4t4",
+      "leagueName": "All In, All Out!",
+      "gameweekId": "cmn70t16o00008odx4hy39wtw",
+      "gameweekNumber": 1,
+      "createdAt": "2026-03-27T21:08:22.308Z",
+      "updatedAt": "2026-03-27T21:08:22.308Z",
+      "slots": [
+        {
+          "playerId": "cmn4u265x005l8ojfvrtr8nh7",
+          "playerName": "Mitchell Starc",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u2650005j8ojfgulz1d71",
+          "playerName": "Lokesh Rahul",
+          "slotType": "XI",
+          "role": "VC",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u240z002t8ojfrh8g4xj0",
+          "playerName": "Philip Salt",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21wp000e8ojfcqt2iqcx",
+          "playerName": "Quinton de Kock",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21w3000d8ojfvpds7hgu",
+          "playerName": "Ryan Rickelton",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u265h005k8ojfgfsyzh3q",
+          "playerName": "Kuldeep Yadav",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u21sj00088ojfwicyauwq",
+          "playerName": "Will Jacks",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u23ej00228ojfrzqafwk5",
+          "playerName": "Yashasvi Jaiswal",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u247800348ojfagtvhwrp",
+          "playerName": "Jacob Bethell",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u25p5004y8ojfv09q203y",
+          "playerName": "Liam Livingstone",
+          "slotType": "XI",
+          "role": null,
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u235k001u8ojf15qw81it",
+          "playerName": "Rahul Tripathi",
+          "slotType": "XI",
+          "role": "CAPTAIN",
+          "benchPriority": null
+        },
+        {
+          "playerId": "cmn4u26sy006j8ojfmxa6117u",
+          "playerName": "Wanindu Hasaranga",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 1
+        },
+        {
+          "playerId": "cmn4u21po00048ojfmjn2il2i",
+          "playerName": "Trent Boult",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 2
+        },
+        {
+          "playerId": "cmn4u259p004e8ojfctmg6oyf",
+          "playerName": "Rahul Tewatia",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 3
+        },
+        {
+          "playerId": "cmn4zigr7003r8o47j1ky01ch",
+          "playerName": "Josh Inglis",
+          "slotType": "BENCH",
+          "role": null,
+          "benchPriority": 4
+        }
+      ]
+    }
+  ],
+  "chipUsages": []
+}

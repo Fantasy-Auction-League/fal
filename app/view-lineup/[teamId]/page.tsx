@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { AppFrame } from '@/app/components/AppFrame'
 import { computeBattingBreakdown, computeBowlingBreakdown, computeFieldingBreakdown, computeParticipationBreakdown, type ScoringLine } from '@/lib/scoring/breakdown'
-import { trackEvent, GA_EVENTS } from '@/lib/analytics'
 
 /* ─── Types ─── */
 interface SquadPlayer {
@@ -301,7 +300,6 @@ export default function ViewLineupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const teamId = params?.teamId as string
-  useEffect(() => { if (teamId) trackEvent(GA_EVENTS.VIEW_LINEUP, { team_id: teamId }) }, [teamId])
   const gwFromUrl = searchParams?.get('gw')
 
   const [squad, setSquad] = useState<SquadData | null>(null)
