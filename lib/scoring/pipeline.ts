@@ -124,9 +124,14 @@ export async function scoreLiveMatches(): Promise<{
 
   if (liveMatches.length === 0) return result
 
-  // Ensure lineups exist for the GW before scoring live matches
+  // Activate GWs and ensure lineups exist before scoring live matches
   const gwIds = [...new Set(liveMatches.map((m) => m.gameweekId))]
   for (const gwId of gwIds) {
+    // Transition UPCOMING → ACTIVE when first match goes live
+    await prisma.gameweek.updateMany({
+      where: { id: gwId, status: 'UPCOMING' },
+      data: { status: 'ACTIVE' },
+    })
     const created = await ensureLineupsForGameweek(gwId)
     result.lineupsCreated += created
   }

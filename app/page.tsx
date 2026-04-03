@@ -512,12 +512,15 @@ export default function DashboardPage() {
   const leagueName = league?.name || 'Join a League'
   const seasonStarted = !gwNotFound && currentGw !== null
 
-  // Gameweek label
-  const gwLabel = seasonStarted ? `Gameweek ${currentGw!.number}` : 'Season not started'
-
-  // Score trio — during LIVE mode, show GW-level scores; during FINAL, show season totals
+  // Gameweek label — show the GW that scores are from, not necessarily the "current" GW
   const userId = session.user?.id
   const myStanding = standings.find(s => s.managerId === userId)
+
+  // Determine which GW's scores we're displaying
+  const displayGwNumber = gwStatus === 'LIVE' && activeGwNumber
+    ? activeGwNumber
+    : myStanding?.lastGwNumber ?? currentGw?.number ?? null
+  const gwLabel = displayGwNumber ? `Gameweek ${displayGwNumber}` : (seasonStarted ? `Gameweek ${currentGw!.number}` : 'Season not started')
 
   // GW-level scores from standings (liveGwPoints during LIVE, lastGwPoints during FINAL)
   const getGwPoints = (s: Standing) => gwStatus === 'LIVE' && s.liveGwPoints !== null ? s.liveGwPoints : (s.lastGwPoints ?? 0)
@@ -656,7 +659,7 @@ export default function DashboardPage() {
           {/* Your Points (center) — tappable to view lineup (PR #20 behavior) */}
           <Link
             data-testid="hero-your-points"
-            href={myStanding ? `/view-lineup/${myStanding.teamId}` : '#'}
+            href={myStanding ? `/view-lineup/${myStanding.teamId}${displayGwNumber ? `?gw=${displayGwNumber}` : ''}` : '#'}
             style={{ flex: 1.3, textAlign: 'center', position: 'relative', cursor: 'pointer', textDecoration: 'none' }}
           >
             {/* Left divider */}
@@ -671,7 +674,7 @@ export default function DashboardPage() {
 
           {/* Highest */}
           <Link
-            href={topGwStanding ? `/view-lineup/${topGwStanding.teamId}` : '#'}
+            href={topGwStanding ? `/view-lineup/${topGwStanding.teamId}${displayGwNumber ? `?gw=${displayGwNumber}` : ''}` : '#'}
             style={{ flex: 1, textAlign: 'center', textDecoration: 'none', cursor: topGwStanding ? 'pointer' : 'default' }}
           >
             <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
@@ -811,7 +814,7 @@ export default function DashboardPage() {
                 }
 
                 return (
-                  <Link href={`/view-lineup/${s.teamId}`} key={s.teamId} style={{...rowStyle, textDecoration: 'none'}}>
+                  <Link href={`/view-lineup/${s.teamId}${displayGwNumber ? `?gw=${displayGwNumber}` : ''}`} key={s.teamId} style={{...rowStyle, textDecoration: 'none'}}>
                     <div style={getRankStyle(s.rank, isYou)}>{s.rank}</div>
                     <div data-testid="rank-change" style={{ fontSize: 10, fontWeight: 600, color: rankChangeColor, width: 16, textAlign: 'center' }}>
                       {rankChangeContent}

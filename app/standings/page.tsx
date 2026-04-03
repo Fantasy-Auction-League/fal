@@ -75,7 +75,11 @@ export default function StandingsPage() {
           setGameweeks(gwData)
           if (gwData.length > 0) {
             // Default to the current active/upcoming GW, fall back to last
-            const currentGW = gwData.find(g => g.status === 'ACTIVE') || gwData.find(g => g.status === 'UPCOMING') || gwData[gwData.length - 1]
+            // Default to ACTIVE GW (live), or last COMPLETED GW (has scores), or first UPCOMING
+            const currentGW = gwData.find(g => g.status === 'ACTIVE')
+              || [...gwData].reverse().find(g => g.status === 'COMPLETED')
+              || gwData.find(g => g.status === 'UPCOMING')
+              || gwData[gwData.length - 1]
             setActiveGW(currentGW.number)
           }
         }
@@ -321,7 +325,7 @@ export default function StandingsPage() {
             return (
               <Link
                 key={team.teamId}
-                href={`/view-lineup/${team.teamId}`}
+                href={`/view-lineup/${team.teamId}${activeGW ? `?gw=${activeGW}` : ''}`}
                 style={{ textDecoration: 'none', display: 'block' }}
               >
                 {rowContent}
