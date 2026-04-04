@@ -535,10 +535,15 @@ export default function ViewLineupPage() {
       }
 
       // Override with ?gw= URL param if present
+      let targetGW = currentGW
       if (gwFromUrl) {
         const gwNum = parseInt(gwFromUrl)
         if (!isNaN(gwNum) && allGws.some(g => g.number === gwNum)) {
           setSelectedGWNumber(gwNum)
+          const gwMatch = allGws.find(g => g.number === gwNum)
+          if (gwMatch) {
+            targetGW = { id: gwMatch.id, number: gwMatch.number }
+          }
         }
       }
 
@@ -550,11 +555,11 @@ export default function ViewLineupPage() {
         const playerMap = new Map(players.map(p => [p.id, p]))
         let restored = false
 
-        if (currentGW) {
+        if (targetGW) {
           try {
             const [lineupRes, scoresRes] = await Promise.all([
-              fetch(`/api/teams/${teamId}/lineups/${currentGW.id}`),
-              fetch(`/api/teams/${teamId}/scores/${currentGW.id}`),
+              fetch(`/api/teams/${teamId}/lineups/${targetGW.id}`),
+              fetch(`/api/teams/${teamId}/scores/${targetGW.id}`),
             ])
 
             if (lineupRes.ok) {
