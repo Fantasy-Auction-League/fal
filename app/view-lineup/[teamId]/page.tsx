@@ -445,6 +445,26 @@ export default function ViewLineupPage() {
           for (const p of scoresData.players) {
             pointsMap[p.id] = p.multipliedPoints ?? 0
           }
+          // For FINAL mode, use scores API's effective slots (reflects bench subs + captain promotion)
+          if (scoresData.status === 'FINAL' && squad) {
+            const playerMap = new Map(squad.players.map(sp => [sp.id, sp]))
+            const effectiveXI = scoresData.players
+              .filter((p: { slotType: string }) => p.slotType === 'XI')
+              .map((p: { id: string }) => playerMap.get(p.id))
+              .filter(Boolean) as SquadPlayer[]
+            const effectiveBench = scoresData.players
+              .filter((p: { slotType: string }) => p.slotType === 'BENCH')
+              .map((p: { id: string }) => playerMap.get(p.id))
+              .filter(Boolean) as SquadPlayer[]
+            if (effectiveXI.length > 0) {
+              setXi(effectiveXI)
+              setBench(effectiveBench)
+              const cap = scoresData.players.find((p: { isCaptain: boolean }) => p.isCaptain)
+              const vc = scoresData.players.find((p: { isVC: boolean }) => p.isVC)
+              if (cap) setCaptainId(cap.id)
+              if (vc) setVcId(vc.id)
+            }
+          }
         } else if (Array.isArray(scoresData.performances) && scoresData.performances.length > 0) {
           // Mid-GW fallback: sum per-match fantasy points from PlayerPerformance
           for (const perf of scoresData.performances) {
@@ -553,8 +573,27 @@ export default function ViewLineupPage() {
                 for (const p of scoresData.players) {
                   pointsMap[p.id] = p.multipliedPoints ?? 0
                 }
+                // For FINAL mode, override lineup with effective slots (bench subs + captain promotion)
+                if (scoresData.status === 'FINAL') {
+                  const effectiveXI = scoresData.players
+                    .filter((p: { slotType: string }) => p.slotType === 'XI')
+                    .map((p: { id: string }) => playerMap.get(p.id))
+                    .filter(Boolean) as SquadPlayer[]
+                  const effectiveBench = scoresData.players
+                    .filter((p: { slotType: string }) => p.slotType === 'BENCH')
+                    .map((p: { id: string }) => playerMap.get(p.id))
+                    .filter(Boolean) as SquadPlayer[]
+                  if (effectiveXI.length > 0) {
+                    setXi(effectiveXI)
+                    setBench(effectiveBench)
+                    restored = true
+                    const cap = scoresData.players.find((p: { isCaptain: boolean }) => p.isCaptain)
+                    const vc = scoresData.players.find((p: { isVC: boolean }) => p.isVC)
+                    if (cap) setCaptainId(cap.id)
+                    if (vc) setVcId(vc.id)
+                  }
+                }
               } else if (Array.isArray(scoresData.performances) && scoresData.performances.length > 0) {
-                // Mid-GW fallback: sum per-match fantasy points from PlayerPerformance
                 for (const perf of scoresData.performances) {
                   const pid = perf.player.id
                   pointsMap[pid] = (pointsMap[pid] || 0) + perf.fantasyPoints

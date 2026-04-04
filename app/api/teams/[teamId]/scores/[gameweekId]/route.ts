@@ -99,26 +99,73 @@ export async function GET(
         }
       }
 
-      // Build per-player breakdown from stored PlayerScore data, merging with lineup slot info
+      // Recompute bench subs to reflect effective lineup in FINAL mode
+      const matchIds = scoredMatches.map((m) => m.id)
+      const playedRows = await prisma.playerPerformance.findMany({
+        where: {
+          matchId: { in: matchIds },
+          OR: [{ inStartingXI: true }, { isImpactPlayer: true }],
+        },
+        select: { playerId: true },
+        distinct: ['playerId'],
+      })
+      const playedSet = new Set(playedRows.map((r) => r.playerId))
+
+      // Determine effective slotType after subs
+      const effectiveSlotMap = new Map<string, 'XI' | 'BENCH'>()
+      if (lineup) {
+        const xiSlots = lineup.slots.filter((s) => s.slotType === 'XI')
+        const benchSlots = lineup.slots
+          .filter((s) => s.slotType === 'BENCH')
+          .sort((a, b) => (a.benchPriority ?? 99) - (b.benchPriority ?? 99))
+
+        const absentXI = xiSlots.filter((s) => !playedSet.has(s.playerId))
+        const availableBench = benchSlots.filter((s) => playedSet.has(s.playerId))
+
+        const subbedOut = new Set<string>()
+        const subbedIn = new Set<string>()
+        let benchIdx = 0
+        for (const absent of absentXI) {
+          if (benchIdx < availableBench.length) {
+            subbedOut.add(absent.playerId)
+            subbedIn.add(availableBench[benchIdx].playerId)
+            benchIdx++
+          }
+        }
+
+        for (const slot of lineup.slots) {
+          if (subbedOut.has(slot.playerId)) {
+            effectiveSlotMap.set(slot.playerId, 'BENCH')
+          } else if (subbedIn.has(slot.playerId)) {
+            effectiveSlotMap.set(slot.playerId, 'XI')
+          } else {
+            effectiveSlotMap.set(slot.playerId, slot.slotType as 'XI' | 'BENCH')
+          }
+        }
+      }
+
+      // Determine effective captain/VC (VC promoted if captain didn't play)
+      const captainSlot = lineup?.slots.find((s) => s.role === 'CAPTAIN')
+      const vcSlot = lineup?.slots.find((s) => s.role === 'VC')
+      const captainPlayed = captainSlot ? playedSet.has(captainSlot.playerId) : false
+      const effectiveCaptainId = captainPlayed ? captainSlot?.playerId : vcSlot?.playerId
+      const effectiveVcId = captainPlayed ? vcSlot?.playerId : null
+
+      // Build per-player breakdown from stored PlayerScore data
       const players = playerScores.map((ps) => {
         const slotInfo = slotMap.get(ps.playerId)
+        const effectiveSlot = effectiveSlotMap.get(ps.playerId) ?? slotInfo?.slotType ?? 'XI'
         return {
           id: ps.playerId,
           name: ps.player.fullname,
           role: ps.player.role,
           iplTeamCode: ps.player.iplTeamCode,
-          slotType: slotInfo?.slotType || 'XI',
-          // TODO: In FINAL mode, we store the total (basePoints * multiplier + chipBonus) as totalPoints.
-          // To properly break down basePoints vs multipliedPoints, we'd need separate fields in PlayerScore.
-          // For now, both are set to totalPoints as a known limitation.
+          slotType: effectiveSlot,
           basePoints: ps.totalPoints,
-          chipBonus: 0, // Not tracked separately in stored data; would need separate PlayerChipBonus table for granular tracking
-          isCaptain: slotInfo?.isCaptain ?? false,
-          isVC: slotInfo?.isVC ?? false,
+          chipBonus: 0,
+          isCaptain: ps.playerId === effectiveCaptainId,
+          isVC: ps.playerId === effectiveVcId,
           multipliedPoints: ps.totalPoints,
-          // TODO: matchesPlayed is not tracked in the current schema for FINAL mode.
-          // In LIVE mode, this is available from computeLiveTeamScore's matchesPlayedMap,
-          // but stored data does not preserve this per-player information.
           matchesPlayed: 1,
         }
       })
