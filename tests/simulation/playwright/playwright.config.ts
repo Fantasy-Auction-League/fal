@@ -68,5 +68,12 @@ export default defineConfig({
       use: { storageState: 'tests/simulation/playwright/.auth/user1.json' },
       dependencies: ['setup'],
     },
+    {
+      name: 'gw-transitions-user',
+      testMatch: 'gw-transitions.spec.ts',
+      grep: /@user/,
+      use: { storageState: 'tests/simulation/playwright/.auth/user1.json' },
+      dependencies: ['setup'],
+    },
   ],
 })
