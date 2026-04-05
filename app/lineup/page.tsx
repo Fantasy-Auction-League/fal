@@ -228,10 +228,11 @@ export default function LineupPage() {
   /* ─── Fetch GW fixtures for opponent display ─── */
   useEffect(() => {
     if (!currentGW?.id) return
-    fetch(`/api/gameweeks/current`)
+    // Fetch matches for the GW being edited (not necessarily the "current" GW)
+    fetch(`/api/gameweeks/${currentGW.id}/matches`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.matches) setGwFixtures(data.matches)
+        if (Array.isArray(data)) setGwFixtures(data)
       })
       .catch(() => {})
   }, [currentGW?.id])
