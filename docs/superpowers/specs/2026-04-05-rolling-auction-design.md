@@ -606,6 +606,12 @@ These are design decisions that were debated and may be revisited:
 |---|-----------|-------------------|-----------------|
 | 1 | Funding model | $25M one-time + $2M/week | $5M/week accumulating (no initial lump sum) |
 | 2 | Bid increment | Fixed $1M minimum | Variable (e.g., 10% of current highest) |
+| 3 | Anti-snipe scope | Global — any late bid extends deadline for all players | Per-player — only the player with late bid gets extended |
+| 4 | Auction cycle | Weekly (Saturday–Friday) | Continuous rolling with per-player 72hr windows |
+| 5 | Drop cooldown | 24 hours before player is available for bidding | Immediate availability (no cooldown) |
+| 6 | Bid visibility | Fully open — all bids and amounts visible to everyone | Sealed — only highest bid amount shown, bidder hidden |
+| 7 | Settlement timing | Friday 7 PM EST (single batch) | Rolling settlement as each player's window closes |
+| 8 | Fund top-up | Flat $2M/week regardless of activity | Performance-based (less for top teams, more for bottom) |
 
 ---
 
