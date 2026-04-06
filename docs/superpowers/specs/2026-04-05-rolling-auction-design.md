@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-05
 **Status:** Design complete, pending system architect review
-**Visual Mockups:** `.superpowers/brainstorm/66302-1775432271/content/full-walkthrough.html` (8 screens, interactive)
+**Visual Mockups:** `docs/superpowers/specs/mockups/rolling-auction-walkthrough.html` (8 screens, interactive — download and open in browser)
 
 ---
 
@@ -467,8 +467,8 @@ Settlement/cron endpoints use `Authorization: Bearer <CRON_SECRET>`.
 ## 8. UI Screens
 
 Interactive walkthrough with all 8 screens:
-**File:** `.superpowers/brainstorm/66302-1775432271/content/full-walkthrough.html`
-**Server:** Visual companion at localhost (during design session)
+**File:** `docs/superpowers/specs/mockups/rolling-auction-walkthrough.html`
+**Usage:** Download the HTML file and open in any browser to navigate between screens.
 
 ### Screen Map
 
