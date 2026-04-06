@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rolling Auction — Full Walkthrough</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background: #1a1d2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* Screen selector */
+  .screen-nav {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 500px;
+  }
+  .screen-btn {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .screen-btn.active {
+    background: #004BA0;
+    color: #fff;
+    border-color: #004BA0;
+    box-shadow: 0 2px 8px rgba(0,75,160,0.3);
+  }
+  .screen-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .screen-btn.active:hover { background: #004BA0; }
+
+  .screen-desc {
+    text-align: center;
+    color: rgba(255,255,255,0.4);
+    font-size: 11px;
+    margin-bottom: 16px;
+    max-width: 400px;
+  }
+
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: #f2f3f8;
+    border-radius: 24px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 0 60px rgba(0,75,160,0.15);
+    position: relative;
+  }
+  .phone-frame::-webkit-scrollbar { width: 0; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ═══ SHARED STYLES ═══ */
+  .hero {
+    background: linear-gradient(160deg, #1a0a3e 0%, #2d1b69 25%, #004BA0 50%, #0EB1A2 80%, #00AEEF 100%);
+    padding: 44px 18px 16px;
+    position: relative;
+  }
+  .hero-title {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #F9CD05, #FF822A);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.3px;
+  }
+  .hero-subtitle {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.2); }
+  .budget-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+  }
+  .budget-item { flex: 1; text-align: center; }
+  .budget-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .budget-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 3px;
+  }
+  .budget-value.locked { color: #FF822A; }
+  .budget-value.slots { color: #5FFFDA; }
+  .budget-value.spent { color: #0EB1A2; }
+  .budget-divider {
+    width: 1px;
+    height: 34px;
+    background: rgba(255,255,255,0.15);
+  }
+  .search-bar {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f2f3f8;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .search-icon { font-size: 14px; opacity: 0.4; }
+  .search-text { font-size: 13px; color: #aaa; }
+  .filters {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .pill-solid.active {
+    background: #004BA0;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,75,160,0.2);
+  }
+  .pill-solid.inactive {
+    background: #f2f3f8;
+    color: #888;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .timer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .timer-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .timer-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: #004BA0;
+  }
+  .timer-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .timer-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #0d9e5f;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .tabs {
+    display: flex;
+    padding: 10px 16px;
+    gap: 4px;
+    background: #fff;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: #004BA0;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,75,160,0.2);
+  }
+  .tab.inactive { background: transparent; color: #888; }
+  .tab:hover { opacity: 0.85; }
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 16px 4px;
+  }
+  .player-list {
+    padding: 8px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .player-card {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .player-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .team-accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+  }
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+  .player-info { flex: 1; margin-left: 10px; }
+  .player-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .player-meta { font-size: 10px; color: #888; margin-top: 2px; }
+  .role-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .bid-info { text-align: right; flex-shrink: 0; }
+  .bid-amount { font-size: 14px; font-weight: 800; color: #004BA0; }
+  .bid-status { font-size: 9px; font-weight: 600; margin-top: 2px; }
+  .bid-status.active-bid { color: #0d9e5f; }
+  .bid-status.no-bids { color: #aaa; }
+  .bid-status.your-bid { color: #FF822A; }
+  .bid-count { font-size: 9px; color: #aaa; margin-top: 1px; }
+  .hot-badge {
+    font-size: 8px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(214,48,96,0.1);
+    color: #d63060;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .cooldown-tag {
+    font-size: 8px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255,130,42,0.1);
+    color: #FF822A;
+  }
+
+  /* ═══ BID SHEET STYLES ═══ */
+  .player-hero { padding: 44px 18px 20px; }
+  .player-profile { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .player-avatar-lg {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 900; color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .player-name-lg { font-size: 18px; font-weight: 800; color: #fff; }
+  .player-meta-lg {
+    font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 3px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .role-pill {
+    font-size: 9px; font-weight: 700; padding: 2px 8px;
+    border-radius: 5px; background: rgba(249,205,5,0.2); color: #F9CD05;
+  }
+  .stat-row { display: flex; gap: 6px; margin-top: 14px; }
+  .stat-chip {
+    flex: 1; padding: 8px;
+    background: rgba(255,255,255,0.1); border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1); text-align: center;
+  }
+  .stat-label {
+    font-size: 9px; font-weight: 600;
+    color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .stat-val { font-size: 14px; font-weight: 800; color: #fff; margin-top: 2px; }
+  .bid-section { padding: 16px; }
+  .card-white {
+    background: #fff; border-radius: 16px; padding: 16px;
+    border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .bid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .bid-header-label {
+    font-size: 10px; font-weight: 700; color: #888;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .bid-count-badge {
+    font-size: 9px; font-weight: 700; padding: 3px 8px;
+    border-radius: 6px; background: rgba(214,48,96,0.1); color: #d63060;
+  }
+  .current-amount { font-size: 28px; font-weight: 900; color: #004BA0; letter-spacing: -0.5px; }
+  .current-bidder { font-size: 11px; color: #888; margin-top: 2px; }
+  .bid-timer-row {
+    display: flex; align-items: center; gap: 6px; margin-top: 10px;
+    padding: 8px 10px; background: rgba(0,75,160,0.04); border-radius: 8px;
+  }
+  .bid-timer-text { font-size: 11px; font-weight: 600; color: #004BA0; }
+  .section-title {
+    font-size: 10px; font-weight: 700; color: #888;
+    text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 10px;
+  }
+  .bid-amount-row { display: flex; align-items: center; gap: 8px; }
+  .bid-adjust-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #f2f3f8; border: 1px solid rgba(0,0,0,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #004BA0; cursor: pointer;
+  }
+  .bid-input-display {
+    flex: 1; text-align: center; font-size: 24px; font-weight: 900; color: #1a1a2e;
+  }
+  .increment-pills { display: flex; gap: 6px; margin-top: 12px; }
+  .inc-pill {
+    flex: 1; padding: 7px; border-radius: 8px;
+    background: #f2f3f8; border: 1px solid rgba(0,0,0,0.06);
+    text-align: center; font-size: 11px; font-weight: 600; color: #004BA0;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .inc-pill:hover { background: rgba(0,75,160,0.08); }
+  .fund-info-row {
+    display: flex; justify-content: space-between; margin-top: 12px;
+    padding-top: 12px; border-top: 1px solid #f0f0f4;
+  }
+  .fund-item { font-size: 11px; color: #888; }
+  .fund-val { font-weight: 700; color: #1a1a2e; }
+  .place-bid-btn {
+    width: 100%; padding: 14px; border-radius: 14px;
+    background: linear-gradient(135deg, #004BA0, #0066CC);
+    color: #fff; font-size: 15px; font-weight: 800; text-align: center;
+    border: none; cursor: pointer; margin-top: 16px;
+    box-shadow: 0 4px 12px rgba(0,75,160,0.3);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .place-bid-btn:hover { box-shadow: 0 6px 16px rgba(0,75,160,0.4); }
+  .minimum-note { text-align: center; font-size: 10px; color: #aaa; margin-top: 8px; }
+  .history-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f4;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-team { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+  .history-you {
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    background: rgba(0,75,160,0.08); color: #004BA0; margin-left: 6px;
+  }
+  .history-badge {
+    font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    background: rgba(13,158,95,0.1); color: #0d9e5f; text-transform: uppercase;
+  }
+  .history-amount { font-size: 13px; font-weight: 700; color: #004BA0; }
+  .history-time { font-size: 9px; color: #aaa; margin-top: 1px; }
+
+  /* ═══ MY BIDS STYLES ═══ */
+  .budget-overview { display: flex; gap: 8px; margin-top: 16px; }
+  .budget-card {
+    flex: 1; padding: 14px 10px;
+    background: rgba(255,255,255,0.1); border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1); text-align: center;
+  }
+  .budget-bar-visual {
+    margin-top: 14px; padding: 12px 14px;
+    background: rgba(255,255,255,0.08); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .bar-track {
+    height: 8px; border-radius: 4px;
+    background: rgba(255,255,255,0.1); display: flex; overflow: hidden;
+  }
+  .bar-spent { background: #0EB1A2; height: 100%; }
+  .bar-locked { background: #FF822A; height: 100%; }
+  .bar-available { background: rgba(255,255,255,0.3); height: 100%; }
+  .bar-legend { display: flex; justify-content: space-between; margin-top: 8px; }
+  .legend-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 9px; color: rgba(255,255,255,0.5); font-weight: 600;
+  }
+  .legend-dot { width: 6px; height: 6px; border-radius: 2px; }
+  .roster-status {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding: 10px 14px;
+    background: rgba(255,255,255,0.08); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .roster-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.6); }
+  .roster-slots { display: flex; gap: 3px; }
+  .slot-dot { width: 14px; height: 14px; border-radius: 4px; }
+  .slot-dot.filled { background: rgba(255,255,255,0.3); }
+  .slot-dot.open { background: rgba(14,177,162,0.5); border: 1px dashed rgba(14,177,162,0.8); }
+  .slot-dot.bidding { background: rgba(255,130,42,0.5); border: 1px solid rgba(255,130,42,0.8); }
+  .content-area { padding: 14px; }
+  .tabs-inner {
+    display: flex; gap: 4px; background: #fff; border-radius: 14px;
+    padding: 4px; border: 1px solid rgba(0,0,0,0.06);
+  }
+  .bid-card {
+    background: #fff; border-radius: 16px; padding: 14px;
+    border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    margin-bottom: 8px; position: relative; overflow: hidden; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .bid-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .bid-card-accent {
+    position: absolute; left: 0; top: 0; width: 3px; height: 100%;
+  }
+  .bid-card-top { display: flex; align-items: center; gap: 10px; }
+  .bid-avatar {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .bid-player-info { flex: 1; }
+  .bid-player-name { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .bid-player-meta { font-size: 10px; color: #888; margin-top: 2px; }
+  .bid-amount-col { text-align: right; flex-shrink: 0; }
+  .bid-your-amount { font-size: 15px; font-weight: 800; color: #004BA0; }
+  .bid-status-tag {
+    font-size: 9px; font-weight: 700; padding: 2px 6px;
+    border-radius: 4px; margin-top: 2px; display: inline-block;
+  }
+  .bid-status-tag.winning { background: rgba(13,158,95,0.1); color: #0d9e5f; }
+  .bid-status-tag.outbid { background: rgba(214,48,96,0.1); color: #d63060; }
+  .bid-status-tag.won { background: rgba(13,158,95,0.1); color: #0d9e5f; }
+  .bid-status-tag.lost { background: rgba(136,136,136,0.1); color: #888; }
+  .bid-card-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f4;
+  }
+  .bid-detail { font-size: 10px; color: #888; }
+  .bid-detail strong { color: #1a1a2e; font-weight: 700; }
+  .action-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 10px; font-weight: 700;
+    border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .action-btn.raise {
+    background: linear-gradient(135deg, #004BA0, #0066CC); color: #fff;
+    box-shadow: 0 2px 6px rgba(0,75,160,0.2);
+  }
+  .action-btn.view {
+    background: #f2f3f8; color: #004BA0; border: 1px solid rgba(0,75,160,0.1);
+  }
+
+  /* ═══ ACTIVITY FEED STYLES ═══ */
+  .feed { padding: 8px 14px; }
+  .day-divider { display: flex; align-items: center; gap: 10px; padding: 12px 0 6px; }
+  .day-divider-line { flex: 1; height: 1px; background: rgba(0,0,0,0.08); }
+  .day-divider-text {
+    font-size: 10px; font-weight: 700; color: #aaa;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .feed-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-icon-box {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .feed-body { flex: 1; min-width: 0; }
+  .feed-text { font-size: 12px; color: #1a1a2e; line-height: 1.4; }
+  .feed-text strong { font-weight: 700; }
+  .feed-text .tn { font-weight: 700; color: #004BA0; }
+  .feed-text .pn { font-weight: 700; }
+  .feed-text .am { font-weight: 800; color: #004BA0; }
+  .feed-text .you-tag {
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+    background: rgba(0,75,160,0.08); color: #004BA0; margin-left: 3px;
+  }
+  .feed-time { font-size: 9px; color: #aaa; margin-top: 2px; }
+  .feed-chip {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+    padding: 3px 8px; border-radius: 6px; background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .feed-chip-av {
+    width: 18px; height: 18px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 800; color: #fff;
+  }
+  .feed-chip-name { font-size: 10px; font-weight: 600; color: #1a1a2e; }
+  .feed-item.alert {
+    background: rgba(0,75,160,0.03); border-radius: 12px;
+    padding: 10px; margin: 0 -10px; border-left: 3px solid #004BA0;
+  }
+  .feed-item.alert-warn {
+    background: rgba(214,48,96,0.03); border-radius: 12px;
+    padding: 10px; margin: 0 -10px; border-left: 3px solid #d63060;
+  }
+  .activity-filters {
+    display: flex; gap: 6px; padding: 12px 16px; background: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.04); overflow-x: auto;
+  }
+
+  /* ═══ BOTTOM NAV ═══ */
+  .bottom-nav {
+    position: sticky; bottom: 0; left: 0; right: 0;
+    height: 56px; background: #fff;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 10px; flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; font-size: 10px; font-weight: 500; color: #8e8e93;
+    text-decoration: none; cursor: pointer;
+  }
+  .nav-item.active-nav { color: #004BA0; font-weight: 600; }
+  .nav-icon-box {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-item.active-nav .nav-icon-box { background: rgba(0,75,160,0.08); }
+</style>
+</head>
+<body>
+
+<!-- Screen Navigator -->
+<div class="screen-nav">
+  <button class="screen-btn active" onclick="showScreen('hub-available')">Auction Hub</button>
+  <button class="screen-btn" onclick="showScreen('hub-activity')">Hub: Activity Tab</button>
+  <button class="screen-btn" onclick="showScreen('bid-sheet')">Player Bid Sheet</button>
+  <button class="screen-btn" onclick="showScreen('my-bids')">My Bids</button>
+  <button class="screen-btn" onclick="showScreen('my-bids-pitch')">Pitch View</button>
+  <button class="screen-btn" onclick="showScreen('my-bids-list')">List View</button>
+  <button class="screen-btn" onclick="showScreen('drop-player')">Drop Player</button>
+</div>
+<div class="screen-desc" id="screen-desc">Main auction screen — browse available players, see active bids, filter by role. Tap a player to open bid sheet.</div>
+
+<div class="phone-frame">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 1: AUCTION HUB — AVAILABLE TAB
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen active" id="hub-available">
+  <div class="hero">
+    <div class="hero-title">Rolling Auction</div>
+    <div class="hero-subtitle">GW4 Auction Window  ·  Closes Fri 6:00 PM</div>
+    <div class="budget-bar">
+      <div class="budget-item">
+        <div class="budget-label">Available</div>
+        <div class="budget-value">$19M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Locked</div>
+        <div class="budget-value locked">$4M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Roster</div>
+        <div class="budget-value slots">13/15</div>
+      </div>
+    </div>
+  </div>
+  <div class="timer-bar">
+    <div class="timer-live"><div class="timer-dot"></div><span class="timer-label">Auction Open</span></div>
+    <div class="timer-value">2d 14h 23m remaining</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active">Available</div>
+    <div class="tab inactive" onclick="showScreen('my-bids')" style="cursor:pointer">My Bids (2)</div>
+    <div class="tab inactive" onclick="showScreen('hub-activity')" style="cursor:pointer">Activity</div>
+  </div>
+  <div class="search-filters" style="padding:10px 14px 0;background:#fff;">
+    <div class="search-bar" style="margin-top:0;background:#f2f3f8;border:1px solid rgba(0,0,0,0.06);backdrop-filter:none;">
+      <span class="search-icon" style="opacity:0.4;">&#x1F50D;</span>
+      <span class="search-text" style="color:#aaa;">Search players...</span>
+    </div>
+    <div class="filters" style="margin-top:10px;">
+      <div class="pill-solid active" style="background:#004BA0;color:#fff;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;">All</div>
+      <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">BAT</div>
+      <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">BOWL</div>
+      <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">ALL</div>
+      <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">WK</div>
+      <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">Hot Bids</div>
+      <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">New</div>
+    </div>
+  </div>
+  <div class="section-label">Players with Active Bids</div>
+  <div class="player-list">
+    <div class="player-card" onclick="showScreen('bid-sheet')">
+      <div class="team-accent" style="background:#EC1C24;"></div>
+      <div class="avatar" style="background:linear-gradient(135deg,#EC1C24,#B81820);">VK</div>
+      <div class="player-info">
+        <div class="player-name">Virat Kohli <span class="hot-badge">5 bids</span></div>
+        <div class="player-meta"><span class="role-badge" style="background:rgba(249,205,5,0.12);color:#9a7d00;">BAT</span> · RCB · 847 pts</div>
+      </div>
+      <div class="bid-info">
+        <div class="bid-amount">$7M</div>
+        <div class="bid-status active-bid">Highest: TeamB</div>
+        <div class="bid-count">Your bid: $5M</div>
+      </div>
+    </div>
+    <div class="player-card">
+      <div class="team-accent" style="background:#004BA0;"></div>
+      <div class="avatar" style="background:linear-gradient(135deg,#004BA0,#0066CC);">JB</div>
+      <div class="player-info">
+        <div class="player-name">Jasprit Bumrah</div>
+        <div class="player-meta"><span class="role-badge" style="background:rgba(0,75,160,0.1);color:#004BA0;">BOWL</span> · MI · 612 pts</div>
+      </div>
+      <div class="bid-info">
+        <div class="bid-amount">$4M</div>
+        <div class="bid-status your-bid">You're winning</div>
+        <div class="bid-count">2 bids</div>
+      </div>
+    </div>
+    <div class="player-card">
+      <div class="team-accent" style="background:#FF822A;"></div>
+      <div class="avatar" style="background:linear-gradient(135deg,#FF822A,#e06a1a);">TH</div>
+      <div class="player-info">
+        <div class="player-name">Travis Head</div>
+        <div class="player-meta"><span class="role-badge" style="background:rgba(249,205,5,0.12);color:#9a7d00;">BAT</span> · SRH · 534 pts</div>
+      </div>
+      <div class="bid-info">
+        <div class="bid-amount">$3M</div>
+        <div class="bid-status active-bid">Highest: TeamD</div>
+        <div class="bid-count">1 bid</div>
+      </div>
+    </div>
+  </div>
+  <div class="section-label">Available — No Bids Yet</div>
+  <div class="player-list">
+    <div class="player-card">
+      <div class="team-accent" style="background:#F9CD05;"></div>
+      <div class="avatar" style="background:linear-gradient(135deg,#F9CD05,#e0b800);"><span style="color:#1a1a1a;">RJ</span></div>
+      <div class="player-info">
+        <div class="player-name">Ravindra Jadeja <span class="cooldown-tag">Bids open in 18h</span></div>
+        <div class="player-meta"><span class="role-badge" style="background:rgba(14,177,162,0.1);color:#0a7a65;">ALL</span> · CSK · 489 pts</div>
+      </div>
+      <div class="bid-info">
+        <div class="bid-amount" style="color:#aaa;">—</div>
+        <div class="bid-status no-bids">Dropped by TeamC</div>
+      </div>
+    </div>
+    <div class="player-card">
+      <div class="team-accent" style="background:#3A225D;"></div>
+      <div class="avatar" style="background:linear-gradient(135deg,#3A225D,#5a3a8a);">SN</div>
+      <div class="player-info">
+        <div class="player-name">Sunil Narine</div>
+        <div class="player-meta"><span class="role-badge" style="background:rgba(14,177,162,0.1);color:#0a7a65;">ALL</span> · KKR · 423 pts</div>
+      </div>
+      <div class="bid-info">
+        <div class="bid-amount" style="color:#aaa;">—</div>
+        <div class="bid-status no-bids">No bids</div>
+      </div>
+    </div>
+    <div class="player-card">
+      <div class="team-accent" style="background:#EA1A85;"></div>
+      <div class="avatar" style="background:linear-gradient(135deg,#EA1A85,#c4166e);">SS</div>
+      <div class="player-info">
+        <div class="player-name">Sanju Samson</div>
+        <div class="player-meta"><span class="role-badge" style="background:rgba(234,26,133,0.08);color:#c0186e;">WK</span> · RR · 378 pts</div>
+      </div>
+      <div class="bid-info">
+        <div class="bid-amount" style="color:#aaa;">—</div>
+        <div class="bid-status no-bids">No bids</div>
+      </div>
+    </div>
+  </div>
+  <div style="height:70px;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 2: AUCTION HUB — ACTIVITY TAB
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="hub-activity">
+  <div class="hero">
+    <div class="hero-title">Rolling Auction</div>
+    <div class="hero-subtitle">GW4 Auction Window  ·  Closes Fri 6:00 PM</div>
+    <div class="budget-bar">
+      <div class="budget-item">
+        <div class="budget-label">Available</div>
+        <div class="budget-value">$19M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Locked</div>
+        <div class="budget-value locked">$4M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Roster</div>
+        <div class="budget-value slots">13/15</div>
+      </div>
+    </div>
+  </div>
+  <div class="timer-bar">
+    <div class="timer-live"><div class="timer-dot"></div><span class="timer-label">Auction Open</span></div>
+    <div class="timer-value">2d 14h 23m remaining</div>
+  </div>
+  <div class="tabs">
+    <div class="tab inactive" onclick="showScreen('hub-available')" style="cursor:pointer">Available</div>
+    <div class="tab inactive" onclick="showScreen('my-bids')" style="cursor:pointer">My Bids (2)</div>
+    <div class="tab active">Activity</div>
+  </div>
+  <div class="activity-filters">
+    <div class="pill-solid active" style="background:#004BA0;color:#fff;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;">All</div>
+    <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">My Activity</div>
+    <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">Bids</div>
+    <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">Drops</div>
+    <div class="pill-solid inactive" style="background:#f2f3f8;color:#888;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.06);">Results</div>
+  </div>
+  <div class="feed">
+    <div class="day-divider"><div class="day-divider-line"></div><div class="day-divider-text">Today</div><div class="day-divider-line"></div></div>
+    <div class="feed-item alert-warn">
+      <div class="feed-icon-box" style="background:rgba(214,48,96,0.08);color:#d63060;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text"><span class="tn">Thunderbolts</span> outbid you on <span class="pn">Virat Kohli</span> — <span class="am">$7M</span> <span class="you-tag">You</span></div>
+        <div class="feed-time">2:34 PM</div>
+      </div>
+    </div>
+    <div class="feed-item">
+      <div class="feed-icon-box" style="background:rgba(0,75,160,0.08);color:#004BA0;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text"><span class="tn">Mavericks</span> bid <span class="am">$3M</span> on <span class="pn">Travis Head</span></div>
+        <div class="feed-time">1:15 PM</div>
+      </div>
+    </div>
+    <div class="feed-item">
+      <div class="feed-icon-box" style="background:rgba(255,130,42,0.08);color:#FF822A;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text"><span class="tn">Warriors</span> dropped <span class="pn">Ravindra Jadeja</span></div>
+        <div class="feed-time">11:42 AM · Bids open Thu 11:42 AM</div>
+      </div>
+    </div>
+    <div class="feed-item alert">
+      <div class="feed-icon-box" style="background:rgba(0,75,160,0.08);color:#004BA0;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text">You bid <span class="am">$5M</span> on <span class="pn">Virat Kohli</span> <span class="you-tag">You</span></div>
+        <div class="feed-time">11:15 AM</div>
+      </div>
+    </div>
+    <div class="feed-item">
+      <div class="feed-icon-box" style="background:rgba(14,177,162,0.08);color:#0EB1A2;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text">Weekly budget top-up: <span class="am">+$2M</span> added to all managers</div>
+        <div class="feed-time">8:00 AM · GW4 start</div>
+      </div>
+    </div>
+    <div class="day-divider"><div class="day-divider-line"></div><div class="day-divider-text">Yesterday</div><div class="day-divider-line"></div></div>
+    <div class="feed-item">
+      <div class="feed-icon-box" style="background:rgba(249,205,5,0.1);color:#b58800;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text"><strong>GW3 Auction Settled</strong> — 4 players transferred</div>
+        <div class="feed-time">Fri 6:00 PM</div>
+      </div>
+    </div>
+    <div class="feed-item alert">
+      <div class="feed-icon-box" style="background:rgba(13,158,95,0.08);color:#0d9e5f;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text">You won <span class="pn">Rashid Khan</span> for <span class="am">$2M</span> <span class="you-tag">You</span></div>
+        <div class="feed-time">Fri 6:00 PM · Added to roster</div>
+      </div>
+    </div>
+    <div class="feed-item">
+      <div class="feed-icon-box" style="background:rgba(136,136,136,0.08);color:#888;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <div class="feed-body">
+        <div class="feed-text">Auction extended 30 min — bid on <span class="pn">Sunil Narine</span> at 5:48 PM</div>
+        <div class="feed-time">Fri 5:48 PM · Extension 1 of 3</div>
+      </div>
+    </div>
+  </div>
+  <div style="height:70px;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 3: PLAYER BID SHEET
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="bid-sheet">
+  <div class="hero player-hero">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="back-btn" onclick="showScreen('hub-available')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Auction
+      </div>
+      <div style="padding:6px 14px;border-radius:10px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(6px);font-size:11px;font-weight:700;color:rgba(255,255,255,0.85);cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Full Profile
+      </div>
+    </div>
+    <div class="player-profile">
+      <div class="player-avatar-lg" style="background:linear-gradient(135deg,#EC1C24,#B81820);">VK</div>
+      <div>
+        <div class="player-name-lg">Virat Kohli</div>
+        <div class="player-meta-lg"><span class="role-pill">BAT</span> Royal Challengers Bengaluru</div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-chip"><div class="stat-label">Season Pts</div><div class="stat-val">847</div></div>
+      <div class="stat-chip"><div class="stat-label">Avg/GW</div><div class="stat-val">141</div></div>
+      <div class="stat-chip"><div class="stat-label">Best GW</div><div class="stat-val">234</div></div>
+      <div class="stat-chip"><div class="stat-label">Matches</div><div class="stat-val">6</div></div>
+    </div>
+  </div>
+  <div class="bid-section">
+    <div class="card-white">
+      <div class="bid-header">
+        <span class="bid-header-label">Current Highest Bid</span>
+        <span class="bid-count-badge">5 bids</span>
+      </div>
+      <div class="current-amount">$7M</div>
+      <div class="current-bidder">by Team Thunderbolts (Manager B)</div>
+      <div class="bid-timer-row"><div class="timer-dot"></div><span class="bid-timer-text">Auction closes Fri 6:00 PM EST  ·  2d 14h left</span></div>
+    </div>
+    <div class="section-title">Place Your Bid</div>
+    <div class="card-white">
+      <div class="bid-amount-row">
+        <div class="bid-adjust-btn">-</div>
+        <div class="bid-input-display">$8M</div>
+        <div class="bid-adjust-btn">+</div>
+      </div>
+      <div class="increment-pills">
+        <div class="inc-pill">+$1M</div>
+        <div class="inc-pill">+$2M</div>
+        <div class="inc-pill">+$5M</div>
+      </div>
+      <div class="fund-info-row">
+        <div class="fund-item">Available: <span class="fund-val">$19M</span></div>
+        <div class="fund-item">After bid: <span class="fund-val" style="color:#0d9e5f;">$11M</span></div>
+      </div>
+    </div>
+    <button class="place-bid-btn">Place Bid  ·  $8M</button>
+    <div class="minimum-note">Minimum bid: $1M above current highest</div>
+    <div class="section-title">Bid History</div>
+    <div class="card-white">
+      <div class="history-row">
+        <div><div class="history-team">Team Thunderbolts <span class="history-badge">Highest</span></div><div class="history-time">Today, 2:34 PM</div></div>
+        <div class="history-amount">$7M</div>
+      </div>
+      <div class="history-row">
+        <div><div class="history-team">Team Spartans <span class="history-you">You</span></div><div class="history-time">Today, 11:15 AM</div></div>
+        <div class="history-amount" style="color:#aaa;text-decoration:line-through;">$5M</div>
+      </div>
+      <div class="history-row">
+        <div><div class="history-team">Team Thunderbolts</div><div class="history-time">Yesterday, 8:42 PM</div></div>
+        <div class="history-amount" style="color:#aaa;text-decoration:line-through;">$4M</div>
+      </div>
+      <div class="history-row">
+        <div><div class="history-team">Team Mavericks</div><div class="history-time">Yesterday, 3:10 PM</div></div>
+        <div class="history-amount" style="color:#aaa;text-decoration:line-through;">$3M</div>
+      </div>
+      <div class="history-row">
+        <div><div class="history-team">Team Spartans <span class="history-you">You</span></div><div class="history-time">Tue, 9:05 AM · Opening bid</div></div>
+        <div class="history-amount" style="color:#aaa;text-decoration:line-through;">$2M</div>
+      </div>
+    </div>
+  </div>
+  <div style="height:70px;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 4: MY BIDS & BUDGET
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="my-bids">
+  <div class="hero">
+    <div class="hero-title">Rolling Auction</div>
+    <div class="hero-subtitle">GW4 Auction Window  ·  Closes Fri 6:00 PM</div>
+    <div class="budget-bar">
+      <div class="budget-item">
+        <div class="budget-label">Available</div>
+        <div class="budget-value">$19M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Locked</div>
+        <div class="budget-value locked">$4M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Roster</div>
+        <div class="budget-value slots">13/15</div>
+      </div>
+    </div>
+  </div>
+  <div class="timer-bar">
+    <div class="timer-live"><div class="timer-dot"></div><span class="timer-label">Auction Open</span></div>
+    <div class="timer-value">2d 14h 23m remaining</div>
+  </div>
+  <div class="tabs">
+    <div class="tab inactive" onclick="showScreen('hub-available')" style="cursor:pointer">Available</div>
+    <div class="tab active">My Bids (2)</div>
+    <div class="tab inactive" onclick="showScreen('hub-activity')" style="cursor:pointer">Activity</div>
+  </div>
+  <div class="content-area">
+    <div class="tabs-inner">
+      <div class="tab active">Bids</div>
+      <div class="tab inactive" onclick="showScreen('my-bids-pitch')" style="cursor:pointer">Pitch View</div>
+      <div class="tab inactive" onclick="showScreen('my-bids-list')" style="cursor:pointer">List View</div>
+    </div>
+    <div class="section-title">Active Bids</div>
+    <div class="bid-card">
+      <div class="bid-card-accent" style="background:#004BA0;"></div>
+      <div class="bid-card-top">
+        <div class="bid-avatar" style="background:linear-gradient(135deg,#004BA0,#0066CC);">JB</div>
+        <div class="bid-player-info">
+          <div class="bid-player-name">Jasprit Bumrah</div>
+          <div class="bid-player-meta"><span class="role-badge" style="background:rgba(0,75,160,0.1);color:#004BA0;">BOWL</span> · MI · 612 pts</div>
+        </div>
+        <div class="bid-amount-col"><div class="bid-your-amount">$4M</div><div class="bid-status-tag winning">Winning</div></div>
+      </div>
+      <div class="bid-card-bottom">
+        <div class="bid-detail">1 other bid · <strong>$4M locked</strong></div>
+        <button class="action-btn view">View</button>
+      </div>
+    </div>
+    <div class="bid-card" onclick="showScreen('bid-sheet')">
+      <div class="bid-card-accent" style="background:#d63060;"></div>
+      <div class="bid-card-top">
+        <div class="bid-avatar" style="background:linear-gradient(135deg,#EC1C24,#B81820);">VK</div>
+        <div class="bid-player-info">
+          <div class="bid-player-name">Virat Kohli</div>
+          <div class="bid-player-meta"><span class="role-badge" style="background:rgba(249,205,5,0.12);color:#9a7d00;">BAT</span> · RCB · 847 pts</div>
+        </div>
+        <div class="bid-amount-col"><div class="bid-your-amount" style="color:#aaa;text-decoration:line-through;">$5M</div><div class="bid-status-tag outbid">Outbid</div></div>
+      </div>
+      <div class="bid-card-bottom">
+        <div class="bid-detail">Highest: <strong>$7M</strong> by Thunderbolts</div>
+        <button class="action-btn raise">Raise Bid</button>
+      </div>
+    </div>
+    <div class="section-title">Won</div>
+    <div class="bid-card" style="opacity:0.85;">
+      <div class="bid-card-accent" style="background:#0d9e5f;"></div>
+      <div class="bid-card-top">
+        <div class="bid-avatar" style="background:linear-gradient(135deg,#0EB1A2,#089e90);">RK</div>
+        <div class="bid-player-info">
+          <div class="bid-player-name">Rashid Khan</div>
+          <div class="bid-player-meta"><span class="role-badge" style="background:rgba(0,75,160,0.1);color:#004BA0;">BOWL</span> · GT · 534 pts</div>
+        </div>
+        <div class="bid-amount-col"><div class="bid-your-amount" style="color:#0d9e5f;">$2M</div><div class="bid-status-tag won">Won GW3</div></div>
+      </div>
+      <div class="bid-card-bottom">
+        <div class="bid-detail">Paid <strong>$2M</strong> · Added to roster</div>
+        <button class="action-btn view">View</button>
+      </div>
+    </div>
+    <div class="section-title">Lost</div>
+    <div class="bid-card" style="opacity:0.65;">
+      <div class="bid-card-accent" style="background:#aaa;"></div>
+      <div class="bid-card-top">
+        <div class="bid-avatar" style="background:linear-gradient(135deg,#3A225D,#5a3a8a);">SN</div>
+        <div class="bid-player-info">
+          <div class="bid-player-name">Sunil Narine</div>
+          <div class="bid-player-meta"><span class="role-badge" style="background:rgba(14,177,162,0.1);color:#0a7a65;">ALL</span> · KKR · 423 pts</div>
+        </div>
+        <div class="bid-amount-col"><div class="bid-your-amount" style="color:#aaa;text-decoration:line-through;">$3M</div><div class="bid-status-tag lost">Lost GW3</div></div>
+      </div>
+      <div class="bid-card-bottom">
+        <div class="bid-detail">Won by <strong>Thunderbolts</strong> for $5M</div>
+        <div style="font-size:10px;color:#aaa;">Refunded $3M</div>
+      </div>
+    </div>
+  </div>
+  <div style="height:70px;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 4B: MY BIDS — PITCH VIEW (GW4 Lineup)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="my-bids-pitch">
+  <div class="hero">
+    <div class="hero-title">Rolling Auction</div>
+    <div class="hero-subtitle">GW4 Auction Window  ·  Closes Fri 6:00 PM</div>
+    <div class="budget-bar">
+      <div class="budget-item">
+        <div class="budget-label">Available</div>
+        <div class="budget-value">$19M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Locked</div>
+        <div class="budget-value locked">$4M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Roster</div>
+        <div class="budget-value slots">13/15</div>
+      </div>
+    </div>
+  </div>
+  <div class="timer-bar">
+    <div class="timer-live"><div class="timer-dot"></div><span class="timer-label">Auction Open</span></div>
+    <div class="timer-value">2d 14h 23m remaining</div>
+  </div>
+  <div class="tabs">
+    <div class="tab inactive" onclick="showScreen('hub-available')" style="cursor:pointer">Available</div>
+    <div class="tab active">My Bids (2)</div>
+    <div class="tab inactive" onclick="showScreen('hub-activity')" style="cursor:pointer">Activity</div>
+  </div>
+  <div class="content-area">
+    <div class="tabs-inner">
+      <div class="tab inactive" onclick="showScreen('my-bids')" style="cursor:pointer">Bids</div>
+      <div class="tab active">Pitch View</div>
+      <div class="tab inactive" onclick="showScreen('my-bids-list')" style="cursor:pointer">List View</div>
+    </div>
+
+    <!-- GW label -->
+    <div style="text-align:center;padding:10px 0 4px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">GW4 Lineup · 11 Playing + 2 Bench</div>
+
+    <!-- Cricket pitch -->
+    <div style="position:relative;min-height:340px;margin:0 -14px;background:linear-gradient(180deg,#3aad5c 0%,#35a254 15%,#30964c 30%,#34a058 45%,#3aad5c 50%,#30964c 65%,#2b8a45 80%,#267f3e 100%);overflow:hidden;padding:16px 10px 0;">
+      <!-- Circle markings -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.07);"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100px;height:100px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.05);"></div>
+
+      <!-- Row 1: WK + BAT (4 players) -->
+      <div style="display:flex;justify-content:space-around;padding:0 8px;margin-bottom:16px;position:relative;z-index:1;">
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#EA1A85,#c4166e);display:flex;align-items:center;justify-content:center;margin:0 auto;">
+            <div style="font-size:10px;font-weight:800;color:#fff;">RR</div>
+          </div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#EA1A85,#c4166e);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">SS</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#EA1A85,#c4166e);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">S Samson</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">WK · vs DC</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#EC1C24,#B81820);display:flex;align-items:center;justify-content:center;margin:0 auto;">
+            <div style="font-size:10px;font-weight:800;color:#fff;">RCB</div>
+          </div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#EC1C24,#B81820);border:2.5px solid #F9CD05;display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">VK</div>
+          <div style="position:absolute;margin-top:-36px;margin-left:38px;width:22px;height:22px;border-radius:50%;background:#F9CD05;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#1a1a1a;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,0.2);">C</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#EC1C24,#B81820);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">V Kohli</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">BAT · vs MI</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#1C1C2E,#2d2d4e);display:flex;align-items:center;justify-content:center;margin:0 auto;">
+            <div style="font-size:10px;font-weight:800;color:#fff;">DC</div>
+          </div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#1C1C2E,#2d2d4e);border:2.5px solid #C0C7D0;display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">RP</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#1C1C2E,#2d2d4e);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">R Pant</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">WK · vs RR</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#FF822A,#e06a1a);display:flex;align-items:center;justify-content:center;margin:0 auto;">
+            <div style="font-size:10px;font-weight:800;color:#fff;">SRH</div>
+          </div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#FF822A,#e06a1a);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">TH</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#FF822A,#e06a1a);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">T Head</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">BAT · vs KKR</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: ALL (3 players) -->
+      <div style="display:flex;justify-content:space-evenly;padding:0 20px;margin-bottom:16px;position:relative;z-index:1;">
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#fff;">MI</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#004BA0,#0066CC);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">HP</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#004BA0,#0066CC);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">H Pandya</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">ALL · vs CSK</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#F9CD05,#e0b800);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#1a1a1a;">CSK</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#F9CD05,#e0b800);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#1a1a1a;position:relative;z-index:2;">RJ</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#F9CD05,#e0b800);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#1a1a1a;">R Jadeja</div>
+            <div style="font-size:7px;color:rgba(0,0,0,0.5);">ALL · vs MI</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#fff;">GT</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#0EB1A2,#089e90);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">RK</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#0EB1A2,#089e90);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">R Khan</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">ALL · vs PBKS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: BOWL (4 players) -->
+      <div style="display:flex;justify-content:space-around;padding:0 8px;margin-bottom:8px;position:relative;z-index:1;">
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#fff;">MI</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#004BA0,#0066CC);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">JB</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#004BA0,#0066CC);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">J Bumrah</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">BOWL · vs CSK</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#3A225D,#5a3a8a);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#fff;">KKR</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#3A225D,#5a3a8a);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">VK</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#3A225D,#5a3a8a);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">V Chakaravarthy</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">BOWL · vs SRH</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#EC1C24,#B81820);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#fff;">RCB</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#EC1C24,#B81820);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#fff;position:relative;z-index:2;">JH</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#EC1C24,#B81820);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#fff;">J Hazlewood</div>
+            <div style="font-size:7px;color:rgba(255,255,255,0.6);">BOWL · vs MI</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:56px;height:36px;border-radius:0 0 12px 12px;background:linear-gradient(180deg,#FFDA2B,#E8B800);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:10px;font-weight:800;color:#1a1a1a;">CSK</div></div>
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#FFDA2B,#E8B800);border:2.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;margin:-8px auto 0;font-size:10px;font-weight:800;color:#1a1a1a;position:relative;z-index:2;">DP</div>
+          <div style="min-width:70px;padding:2px 6px;border-radius:6px;background:linear-gradient(135deg,#FFDA2B,#E8B800);margin-top:2px;">
+            <div style="font-size:9px;font-weight:700;color:#1a1a1a;">D Pathirana</div>
+            <div style="font-size:7px;color:rgba(0,0,0,0.5);">BOWL · vs MI</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bench -->
+      <div style="background:linear-gradient(180deg,#1a5c32,#16502c);padding:8px 10px 12px;margin:0 -10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,0.15);"></div>
+          <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">BENCH</div>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,0.15);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-evenly;">
+          <div style="text-align:center;">
+            <div style="width:40px;height:28px;border-radius:0 0 10px 10px;background:linear-gradient(180deg,#3A225D,#5a3a8a);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:8px;font-weight:800;color:#fff;">KKR</div></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(180deg,#3A225D,#5a3a8a);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:-6px auto 0;font-size:8px;font-weight:800;color:#fff;position:relative;z-index:2;">AR</div>
+            <div style="min-width:52px;padding:2px 4px;border-radius:5px;background:linear-gradient(135deg,#3A225D,#5a3a8a);margin-top:2px;">
+              <div style="font-size:8px;font-weight:700;color:#fff;">A Russell</div>
+              <div style="font-size:6px;color:rgba(255,255,255,0.5);">ALL · vs SRH</div>
+            </div>
+          </div>
+          <div style="text-align:center;">
+            <div style="width:40px;height:28px;border-radius:0 0 10px 10px;background:linear-gradient(180deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;margin:0 auto;"><div style="font-size:8px;font-weight:800;color:#fff;">MI</div></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(180deg,#004BA0,#0066CC);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:-6px auto 0;font-size:8px;font-weight:800;color:#fff;position:relative;z-index:2;">IS</div>
+            <div style="min-width:52px;padding:2px 4px;border-radius:5px;background:linear-gradient(135deg,#004BA0,#0066CC);margin-top:2px;">
+              <div style="font-size:8px;font-weight:700;color:#fff;">I Sharma</div>
+              <div style="font-size:6px;color:rgba(255,255,255,0.5);">BAT · vs CSK</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="height:70px;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 4C: MY BIDS — LIST VIEW (GW4 Lineup)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="my-bids-list">
+  <div class="hero">
+    <div class="hero-title">Rolling Auction</div>
+    <div class="hero-subtitle">GW4 Auction Window  ·  Closes Fri 6:00 PM</div>
+    <div class="budget-bar">
+      <div class="budget-item">
+        <div class="budget-label">Available</div>
+        <div class="budget-value">$19M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Locked</div>
+        <div class="budget-value locked">$4M</div>
+      </div>
+      <div class="budget-divider"></div>
+      <div class="budget-item">
+        <div class="budget-label">Roster</div>
+        <div class="budget-value slots">13/15</div>
+      </div>
+    </div>
+  </div>
+  <div class="timer-bar">
+    <div class="timer-live"><div class="timer-dot"></div><span class="timer-label">Auction Open</span></div>
+    <div class="timer-value">2d 14h 23m remaining</div>
+  </div>
+  <div class="tabs">
+    <div class="tab inactive" onclick="showScreen('hub-available')" style="cursor:pointer">Available</div>
+    <div class="tab active">My Bids (2)</div>
+    <div class="tab inactive" onclick="showScreen('hub-activity')" style="cursor:pointer">Activity</div>
+  </div>
+  <div class="content-area">
+    <div class="tabs-inner">
+      <div class="tab inactive" onclick="showScreen('my-bids')" style="cursor:pointer">Bids</div>
+      <div class="tab inactive" onclick="showScreen('my-bids-pitch')" style="cursor:pointer">Pitch View</div>
+      <div class="tab active">List View</div>
+    </div>
+
+    <!-- Summary bar -->
+    <div style="display:flex;gap:6px;padding:10px 0;">
+      <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;background:#fff;">
+        <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">XI</div>
+        <div style="font-size:14px;font-weight:800;color:#333;">11/11</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;background:#fff;">
+        <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">Bench</div>
+        <div style="font-size:14px;font-weight:800;color:#333;">2/4</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;background:#fff;">
+        <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">Capt</div>
+        <div style="font-size:12px;font-weight:700;color:#b58800;">Kohli</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;background:#fff;">
+        <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">VC</div>
+        <div style="font-size:12px;font-weight:700;color:#666;">Pant</div>
+      </div>
+    </div>
+
+    <!-- Playing XI -->
+    <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:6px 0 6px;">PLAYING XI — 11 Selected</div>
+
+    <div style="background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,0.04);overflow:hidden;">
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#EA1A85,#c4166e);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">WK</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">S Samson</div><div style="font-size:10px;color:#888;">RR · vs DC</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">489 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#F9CD05,#004BA0);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BAT</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">V Kohli <span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:#F9CD05;color:#1a1a1a;">C</span></div><div style="font-size:10px;color:#888;">RCB · vs MI</div></div>
+        <div style="font-size:12px;font-weight:700;color:#004BA0;">847 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#EA1A85,#c4166e);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">WK</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">R Pant <span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:#C0C7D0;color:#1a1a1a;">VC</span></div><div style="font-size:10px;color:#888;">DC · vs RR</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">623 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#F9CD05,#004BA0);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BAT</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">T Head</div><div style="font-size:10px;color:#888;">SRH · vs KKR</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">534 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">ALL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">H Pandya</div><div style="font-size:10px;color:#888;">MI · vs CSK</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">456 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">ALL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">R Jadeja</div><div style="font-size:10px;color:#888;">CSK · vs MI</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">489 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">ALL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">R Khan</div><div style="font-size:10px;color:#888;">GT · vs PBKS</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">534 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BOWL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">J Bumrah</div><div style="font-size:10px;color:#888;">MI · vs CSK</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">612 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BOWL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">V Chakaravarthy</div><div style="font-size:10px;color:#888;">KKR · vs SRH</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">478 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BOWL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">J Hazlewood</div><div style="font-size:10px;color:#888;">RCB · vs MI</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">401 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;">
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#004BA0,#0066CC);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BOWL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">D Pathirana</div><div style="font-size:10px;color:#888;">CSK · vs MI</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">367 pts</div>
+      </div>
+    </div>
+
+    <!-- Bench -->
+    <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:14px 0 6px;">BENCH — Auto-Sub Order</div>
+
+    <div style="background:#fafbfd;border-radius:14px;border:1px solid rgba(0,0,0,0.04);overflow:hidden;">
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #f2f3f8;">
+        <div style="width:22px;height:22px;border-radius:7px;background:#f2f3f8;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#888;margin-right:8px;">1</div>
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">ALL</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">A Russell</div><div style="font-size:10px;color:#888;">KKR · vs SRH</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">423 pts</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:10px 12px;">
+        <div style="width:22px;height:22px;border-radius:7px;background:#f2f3f8;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#888;margin-right:8px;">2</div>
+        <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#F9CD05,#004BA0);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BAT</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">I Sharma</div><div style="font-size:10px;color:#888;">MI · vs CSK</div></div>
+        <div style="font-size:12px;font-weight:700;color:#888;">312 pts</div>
+      </div>
+    </div>
+
+    <!-- Open slots indicator -->
+    <div style="display:flex;align-items:center;gap:8px;padding:12px;margin-top:10px;border-radius:12px;background:rgba(14,177,162,0.06);border:1px solid rgba(14,177,162,0.12);">
+      <svg width="14" height="14" fill="none" stroke="#0EB1A2" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <div style="font-size:11px;font-weight:600;color:#0a7a65;">2 open roster slots — you can place up to 2 active bids</div>
+    </div>
+  </div>
+  <div style="height:70px;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 5: DROP PLAYER — Stats Bottom Sheet with Drop Button
+     (Matches current lineup page stats sheet exactly)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="drop-player">
+  <!-- Pick Team top bar (matches real page) -->
+  <div style="display:flex;align-items:center;gap:10px;padding:44px 16px 12px;background:#fff;">
+    <div style="width:30px;height:30px;border-radius:50%;background:#f2f3f8;display:flex;align-items:center;justify-content:center;">
+      <svg width="14" height="14" fill="none" stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:16px;font-weight:800;color:#1a1a2e;">Pick Team</div>
+      <div style="font-size:10px;color:#888;margin-top:1px;">GW4 · Deadline: Sat 2:00 PM</div>
+    </div>
+  </div>
+
+  <!-- View toggle (matches real page) -->
+  <div style="display:flex;margin:0 14px 8px;background:#f2f3f8;border-radius:10px;padding:3px;">
+    <div style="flex:1;padding:7px;border-radius:8px;text-align:center;font-size:11px;font-weight:600;color:#888;">Pitch View</div>
+    <div style="flex:1;padding:7px;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.1);text-align:center;font-size:11px;font-weight:700;color:#1a1a2e;">List View</div>
+  </div>
+
+  <!-- Summary bar (matches real page) -->
+  <div style="display:flex;gap:6px;padding:8px 14px;background:#fff;border-bottom:1px solid #eef0f5;">
+    <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;">
+      <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">XI</div>
+      <div style="font-size:14px;font-weight:800;color:#333;">11/11</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;">
+      <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">Bench</div>
+      <div style="font-size:14px;font-weight:800;color:#333;">2/4</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;">
+      <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">Capt</div>
+      <div style="font-size:12px;font-weight:700;color:#b58800;">Kohli</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:8px 4px;border:1px solid #eef0f5;border-radius:10px;">
+      <div style="font-size:9px;font-weight:600;color:#aaa;text-transform:uppercase;">VC</div>
+      <div style="font-size:12px;font-weight:700;color:#666;">Pant</div>
+    </div>
+  </div>
+
+  <!-- Dimmed player list behind the sheet -->
+  <div style="opacity:0.3;pointer-events:none;padding:0 14px;">
+    <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:10px 2px 6px;">PLAYING XI — 11 Selected</div>
+    <div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f2f3f8;">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#F9CD05,#004BA0);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BAT</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">V Kohli <span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:#F9CD05;color:#1a1a1a;">C</span></div><div style="font-size:10px;color:#888;">RCB · vs MI</div></div>
+    </div>
+    <div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f2f3f8;">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#EA1A85,#c4166e);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">WK</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">R Pant <span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:#C0C7D0;color:#1a1a1a;">VC</span></div><div style="font-size:10px;color:#888;">DC · vs RR</div></div>
+    </div>
+  </div>
+
+  <!-- Backdrop overlay -->
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:200;"></div>
+
+  <!-- Stats Bottom Sheet (matches real page exactly) -->
+  <div style="position:absolute;bottom:56px;left:0;right:0;max-height:80vh;overflow-y:auto;background:#fff;border-radius:20px 20px 0 0;z-index:210;padding-bottom:36px;box-shadow:0 -4px 20px rgba(0,0,0,0.15);">
+    <!-- Close button -->
+    <div style="display:flex;justify-content:flex-end;padding:8px 8px 0;">
+      <div style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f2f3f8;font-size:16px;color:#666;cursor:pointer;">&#10005;</div>
+    </div>
+
+    <!-- Player header -->
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 20px 10px;">
+      <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;">ALL</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;color:#1a1a2e;">Ravindra Jadeja</div>
+        <div style="font-size:10px;color:#888;font-weight:500;">CSK · All-Rounder · 12 matches</div>
+      </div>
+      <div style="font-size:24px;font-weight:800;color:#004BA0;letter-spacing:-1px;font-variant-numeric:tabular-nums;">489</div>
+    </div>
+
+    <!-- Key stats row -->
+    <div style="display:flex;gap:4px;padding:6px 20px 10px;">
+      <div style="flex:1;padding:8px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+        <div style="font-size:9px;font-weight:600;color:#888;text-transform:uppercase;">Avg</div>
+        <div style="font-size:14px;font-weight:800;color:#1a1a2e;margin-top:2px;">40.8</div>
+      </div>
+      <div style="flex:1;padding:8px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+        <div style="font-size:9px;font-weight:600;color:#888;text-transform:uppercase;">Last 3</div>
+        <div style="font-size:14px;font-weight:800;color:#0d9e5f;margin-top:2px;">52.3</div>
+      </div>
+      <div style="flex:1;padding:8px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+        <div style="font-size:9px;font-weight:600;color:#888;text-transform:uppercase;">High</div>
+        <div style="font-size:14px;font-weight:800;color:#1a1a2e;margin-top:2px;">87</div>
+      </div>
+      <div style="flex:1;padding:8px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+        <div style="font-size:9px;font-weight:600;color:#888;text-transform:uppercase;">Low</div>
+        <div style="font-size:14px;font-weight:800;color:#d63060;margin-top:2px;">12</div>
+      </div>
+    </div>
+
+    <!-- GW performance chips -->
+    <div style="padding:4px 20px 10px;">
+      <div style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;">Gameweek Performance</div>
+      <div style="display:flex;gap:4px;overflow-x:auto;">
+        <div style="min-width:44px;padding:6px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+          <div style="font-size:9px;font-weight:700;color:#1a1a2e;">MI</div>
+          <div style="font-size:12px;font-weight:800;color:#0d9e5f;margin-top:1px;">62</div>
+        </div>
+        <div style="min-width:44px;padding:6px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+          <div style="font-size:9px;font-weight:700;color:#1a1a2e;">RCB</div>
+          <div style="font-size:12px;font-weight:800;color:#0d9e5f;margin-top:1px;">87</div>
+        </div>
+        <div style="min-width:44px;padding:6px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+          <div style="font-size:9px;font-weight:700;color:#1a1a2e;">DC</div>
+          <div style="font-size:12px;font-weight:800;color:#d63060;margin-top:1px;">12</div>
+        </div>
+        <div style="min-width:44px;padding:6px 4px;background:#f8f9fb;border-radius:8px;text-align:center;border:1px solid #eef0f5;">
+          <div style="font-size:9px;font-weight:700;color:#888;">SRH</div>
+          <div style="font-size:12px;font-weight:800;color:#666;margin-top:1px;">Apr 5</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #f2f3f8;"></div>
+
+    <!-- C/VC checkboxes (bench player — shows message) -->
+    <div style="padding:12px 20px;text-align:center;color:#888;font-size:13px;font-weight:500;line-height:1.5;">
+      Move to Playing XI to assign Captain/VC
+    </div>
+
+    <!-- Buttons row: Substitute + Full Profile (matches real page) -->
+    <div style="display:flex;gap:8px;padding:0 20px;">
+      <div style="flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,#0d9e5f,#07c472);color:#fff;font-size:13px;font-weight:700;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(13,158,95,0.25);">Substitute</div>
+      <div style="flex:1;padding:13px;border-radius:12px;border:2px solid #e0e2ea;background:#fff;color:#1a1a2e;font-size:13px;font-weight:700;text-align:center;cursor:pointer;">Full Profile</div>
+    </div>
+
+    <!-- NEW: Drop Player button -->
+    <div style="padding:10px 20px 0;">
+      <div onclick="showScreen('drop-confirm')" style="width:100%;padding:13px;border-radius:12px;background:rgba(214,48,96,0.06);border:1.5px solid rgba(214,48,96,0.2);color:#d63060;font-size:13px;font-weight:700;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <svg width="14" height="14" fill="none" stroke="#d63060" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        Drop from Roster
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 6: DROP PLAYER — CONFIRMATION POPUP
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="drop-confirm">
+  <!-- Same Pick Team top bar -->
+  <div style="display:flex;align-items:center;gap:10px;padding:44px 16px 12px;background:#fff;">
+    <div style="width:30px;height:30px;border-radius:50%;background:#f2f3f8;display:flex;align-items:center;justify-content:center;">
+      <svg width="14" height="14" fill="none" stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:16px;font-weight:800;color:#1a1a2e;">Pick Team</div>
+      <div style="font-size:10px;color:#888;margin-top:1px;">GW4 · Deadline: Sat 2:00 PM</div>
+    </div>
+  </div>
+
+  <!-- Dimmed list behind -->
+  <div style="opacity:0.15;pointer-events:none;padding:0 14px;">
+    <div style="display:flex;margin:0 0 8px;background:#f2f3f8;border-radius:10px;padding:3px;">
+      <div style="flex:1;padding:7px;text-align:center;font-size:11px;font-weight:600;color:#888;">Pitch View</div>
+      <div style="flex:1;padding:7px;border-radius:8px;background:#fff;text-align:center;font-size:11px;font-weight:700;color:#1a1a2e;">List View</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f2f3f8;">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#F9CD05,#004BA0);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">BAT</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">V Kohli</div></div>
+    </div>
+    <div style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f2f3f8;">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#EA1A85,#c4166e);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-right:10px;">WK</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#1a1a2e;">R Pant</div></div>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:200;"></div>
+
+  <!-- Confirmation popup (centered modal) -->
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 40px);max-width:350px;background:#fff;border-radius:20px;z-index:210;padding:24px 20px;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+    <!-- Warning icon -->
+    <div style="width:52px;height:52px;border-radius:16px;background:rgba(214,48,96,0.08);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+      <svg width="28" height="28" fill="none" stroke="#d63060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    </div>
+
+    <div style="text-align:center;font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">Drop Ravindra Jadeja?</div>
+    <div style="text-align:center;font-size:12px;color:#888;margin-bottom:16px;line-height:1.4;">This removes the player from your roster permanently for this cycle.</div>
+
+    <!-- Player card -->
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:#f2f3f8;margin-bottom:14px;">
+      <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#0EB1A2,#089e90);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;">ALL</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:#1a1a2e;">Ravindra Jadeja</div>
+        <div style="font-size:10px;color:#888;margin-top:1px;">CSK · 489 pts · Bench #1</div>
+      </div>
+    </div>
+
+    <!-- What happens -->
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f2f3f8;">
+        <div style="width:20px;height:20px;border-radius:6px;background:rgba(255,130,42,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="10" height="10" fill="none" stroke="#FF822A" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div style="font-size:11px;color:#1a1a2e;"><strong>24hr cooldown</strong> before auction bids open</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f2f3f8;">
+        <div style="width:20px;height:20px;border-radius:6px;background:rgba(14,177,162,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="10" height="10" fill="none" stroke="#0EB1A2" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div style="font-size:11px;color:#1a1a2e;">Roster <strong>13/15 &#8594; 12/15</strong> · Frees 1 bid slot</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;">
+        <div style="width:20px;height:20px;border-radius:6px;background:rgba(214,48,96,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="10" height="10" fill="none" stroke="#d63060" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </div>
+        <div style="font-size:11px;color:#1a1a2e;"><strong>No fund refund</strong> — original price not returned</div>
+      </div>
+    </div>
+
+    <!-- Deadline warning -->
+    <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;background:rgba(255,130,42,0.06);border:1px solid rgba(255,130,42,0.12);margin-bottom:16px;">
+      <svg width="12" height="12" fill="none" stroke="#FF822A" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div style="font-size:10px;color:#FF822A;font-weight:600;">Drop before Thu 6:00 PM for same-cycle auction</div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px;">
+      <div onclick="showScreen('drop-player')" style="flex:1;padding:13px;border-radius:12px;background:#f2f3f8;text-align:center;font-size:13px;font-weight:700;color:#1a1a2e;cursor:pointer;">Cancel</div>
+      <div style="flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,#d63060,#a82048);text-align:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(214,48,96,0.3);">Drop Player</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM NAV (shared) ═══ -->
+<div class="bottom-nav">
+  <div class="nav-item"><div class="nav-icon-box"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span>Home</span></div>
+  <div class="nav-item"><div class="nav-icon-box"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><span>Lineup</span></div>
+  <div class="nav-item active-nav"><div class="nav-icon-box"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><path d="M8 2l1 3M16 2l-1 3M2 8l3 1M2 16l3-1M22 8l-3 1M22 16l-3-1M8 22l1-3M16 22l-1-3"/></svg></div><span>Auction</span></div>
+  <div class="nav-item"><div class="nav-icon-box"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><span>Players</span></div>
+  <div class="nav-item"><div class="nav-icon-box"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><span>League</span></div>
+</div>
+
+</div><!-- end phone-frame -->
+
+<script>
+const descriptions = {
+  'hub-available': 'Main auction screen — browse available players, see active bids, filter by role. Tap Virat Kohli to open bid sheet.',
+  'hub-activity': 'Activity tab — real-time feed of all league auction events. Use "Results" filter to see settlement outcomes.',
+  'bid-sheet': 'Player bid sheet — Full Profile button top-right. Place or raise bids. Shows current highest, bid history, funds.',
+  'my-bids': 'My Bids tab — active bids, won/lost history. Switch to Pitch View or List View to see your GW4 lineup.',
+  'my-bids-pitch': 'Pitch View — your GW4 lineup on a cricket field. 4-3-4 formation (WK/BAT, ALL, BOWL) with bench below.',
+  'my-bids-list': 'List View — your GW4 lineup as a list with role badges, C/VC indicators, opponent info, and season points.',
+  'drop-player': 'Player stats bottom sheet (from Edit Lineup). Below Substitute + Full Profile, a new "Drop from Roster" button.',
+  'drop-confirm': 'Drop confirmation popup — 24hr cooldown, roster impact (13→12), no fund refund, Thursday deadline warning.'
+};
+
+const screenToNav = {
+  'hub-available':'Auction Hub','hub-activity':'Hub: Activity Tab','bid-sheet':'Player Bid Sheet',
+  'my-bids':'My Bids','my-bids-pitch':'Pitch View','my-bids-list':'List View',
+  'drop-player':'Drop Player','drop-confirm':'Drop Player'
+};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen-btn').forEach(b => b.classList.remove('active'));
+  // Update top nav buttons
+  const navName = screenToNav[id];
+  document.querySelectorAll('.screen-btn').forEach(b => {
+    if (b.textContent === navName) b.classList.add('active');
+  });
+  document.getElementById('screen-desc').textContent = descriptions[id];
+  // Update bottom nav — Lineup active for drop/lineup screens, Auction for others
+  const isLineup = (id === 'drop-player' || id === 'drop-confirm');
+  document.querySelectorAll('.nav-item').forEach((n,i) => {
+    n.classList.toggle('active-nav', isLineup ? i === 1 : i === 2);
+  });
+  // Scroll phone to top
+  document.querySelector('.phone-frame').scrollTop = 0;
+}
+</script>
+</body>
+</html>
