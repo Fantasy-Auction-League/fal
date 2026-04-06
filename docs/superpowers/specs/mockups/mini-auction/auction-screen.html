@@ -1,0 +1,186 @@
+<h2>Live Auction Screen — Mobile Layout (v3)</h2>
+<p class="subtitle">Managers purse below action buttons, above bid history</p>
+
+<div class="split" style="gap: 32px; align-items: flex-start;">
+
+  <!-- Mockup 1: Normal State -->
+  <div class="mockup">
+    <div class="mockup-header">Normal State — 7 seconds left</div>
+    <div class="mockup-body" style="background: #0f172a; padding: 0; max-width: 380px; margin: 0 auto;">
+
+      <!-- Top bar -->
+      <div style="background: #1e293b; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+        <span style="color: #94a3b8;">Mini Auction — GW4</span>
+        <span style="color: #10b981; font-weight: 600;">LIVE</span>
+      </div>
+
+      <!-- Your budget bar -->
+      <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #1a1a2e; font-size: 12px;">
+        <span style="color: #94a3b8;">Your Budget: <span style="color: #f9cd05; font-weight: 700;">$38M</span></span>
+        <span style="color: #94a3b8;">Players: <span style="color: #e2e8f0; font-weight: 600;">3/10</span></span>
+      </div>
+
+      <!-- Timer -->
+      <div style="text-align: center; padding: 16px 0 8px;">
+        <div style="font-size: 48px; font-weight: 800; color: #e2e8f0; font-family: monospace; letter-spacing: 2px;">07</div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">seconds remaining</div>
+      </div>
+
+      <!-- Player card -->
+      <div style="margin: 8px 12px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; border-radius: 12px; padding: 16px; text-align: center;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: #334155; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #64748b;">VK</div>
+        <div style="font-size: 18px; font-weight: 700; color: #e2e8f0;">Virat Kohli</div>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 6px; font-size: 12px;">
+          <span style="color: #ef4444; background: #450a0a; padding: 2px 8px; border-radius: 4px; font-weight: 600;">BAT</span>
+          <span style="color: #94a3b8;">RCB</span>
+          <span style="color: #94a3b8;">Avg: <span style="color: #10b981; font-weight: 600;">82.1 pts</span></span>
+        </div>
+      </div>
+
+      <!-- Current bid -->
+      <div style="text-align: center; padding: 8px 0;">
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Current Bid</div>
+        <div style="font-size: 32px; font-weight: 800; color: #f9cd05;">$12M</div>
+        <div style="font-size: 12px; color: #94a3b8;">by <span style="color: #f59e0b; font-weight: 600;">Amit's Team</span></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display: flex; gap: 8px; padding: 12px; margin-top: 4px;">
+        <button style="flex: 1; padding: 14px; border-radius: 10px; border: 2px solid #334155; background: transparent; color: #94a3b8; font-size: 16px; font-weight: 700; cursor: pointer;">PASS</button>
+        <button style="flex: 2; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; font-size: 16px; font-weight: 700; cursor: pointer;">BID $13M</button>
+      </div>
+
+      <!-- Managers purse — moved here -->
+      <div style="padding: 8px 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <div style="font-size: 10px; color: #64748b; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Managers</div>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #10b981; color: white;">You — $38M (3)</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #6366f1; color: white;">Rahul — $32M (4)</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #f59e0b; color: white;">Amit — $29M (5)</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #64748b; color: white;">Priya — $44M (2) PASS</span>
+      </div>
+
+      <!-- Bid history -->
+      <div style="padding: 8px 12px; font-size: 12px;">
+        <div style="color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Bid History</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #f59e0b;">Amit's Team</span> — $12M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #10b981;">You</span> — $11M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #6366f1;">Rahul's XI</span> — $10M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #f59e0b;">Amit's Team</span> — $9M</div>
+      </div>
+
+      <!-- Previous sale -->
+      <div style="margin: 4px 12px 8px; padding: 10px; background: linear-gradient(135deg, #065f46, #064e3b); border-radius: 8px; text-align: center; border: 1px solid #10b981;">
+        <div style="font-size: 10px; color: #6ee7b7; text-transform: uppercase; letter-spacing: 1px;">Previous</div>
+        <div style="font-size: 13px; color: #e2e8f0; font-weight: 600; margin-top: 2px;">Jasprit Bumrah → <span style="color: #6366f1;">Rahul's XI</span> for $8M</div>
+      </div>
+
+      <!-- Unsold players -->
+      <div style="padding: 0 12px 12px;">
+        <div style="font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Unsold Players</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; cursor: pointer;">KL Rahul <span style="color: #6366f1; font-size: 10px; margin-left: 4px;">NOMINATE</span></span>
+          <span style="font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; cursor: pointer;">Shreyas Iyer <span style="color: #6366f1; font-size: 10px; margin-left: 4px;">NOMINATE</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mockup 2: Alert State -->
+  <div class="mockup">
+    <div class="mockup-header">Alert State — 2 seconds left</div>
+    <div class="mockup-body" style="background: #0f172a; padding: 0; max-width: 380px; margin: 0 auto;">
+
+      <!-- Top bar -->
+      <div style="background: #1e293b; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+        <span style="color: #94a3b8;">Mini Auction — GW4</span>
+        <span style="color: #ef4444; font-weight: 600;">GOING...</span>
+      </div>
+
+      <!-- Your budget bar -->
+      <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #1a1a2e; font-size: 12px;">
+        <span style="color: #94a3b8;">Your Budget: <span style="color: #f9cd05; font-weight: 700;">$38M</span></span>
+        <span style="color: #94a3b8;">Players: <span style="color: #e2e8f0; font-weight: 600;">3/10</span></span>
+      </div>
+
+      <!-- Timer - ALERT -->
+      <div style="text-align: center; padding: 16px 0 8px; background: linear-gradient(180deg, rgba(239,68,68,0.15), transparent);">
+        <div style="font-size: 48px; font-weight: 800; color: #ef4444; font-family: monospace; letter-spacing: 2px; text-shadow: 0 0 20px rgba(239,68,68,0.5);">02</div>
+        <div style="font-size: 11px; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">GOING GOING...</div>
+      </div>
+
+      <!-- Player card - urgent -->
+      <div style="margin: 8px 12px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 0 16px rgba(239,68,68,0.2);">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: #334155; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #64748b;">VK</div>
+        <div style="font-size: 18px; font-weight: 700; color: #e2e8f0;">Virat Kohli</div>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 6px; font-size: 12px;">
+          <span style="color: #ef4444; background: #450a0a; padding: 2px 8px; border-radius: 4px; font-weight: 600;">BAT</span>
+          <span style="color: #94a3b8;">RCB</span>
+          <span style="color: #94a3b8;">Avg: <span style="color: #10b981; font-weight: 600;">82.1 pts</span></span>
+        </div>
+      </div>
+
+      <!-- Current bid -->
+      <div style="text-align: center; padding: 8px 0;">
+        <div style="font-size: 11px; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Current Bid</div>
+        <div style="font-size: 32px; font-weight: 800; color: #f9cd05;">$12M</div>
+        <div style="font-size: 12px; color: #94a3b8;">by <span style="color: #f59e0b; font-weight: 600;">Amit's Team</span></div>
+      </div>
+
+      <!-- Action buttons - urgent -->
+      <div style="display: flex; gap: 8px; padding: 12px; margin-top: 4px;">
+        <button style="flex: 1; padding: 14px; border-radius: 10px; border: 2px solid #334155; background: transparent; color: #94a3b8; font-size: 16px; font-weight: 700;">PASS</button>
+        <button style="flex: 2; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; font-size: 16px; font-weight: 700; box-shadow: 0 0 16px rgba(239,68,68,0.4);">BID $13M</button>
+      </div>
+
+      <!-- Managers purse — same position -->
+      <div style="padding: 8px 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <div style="font-size: 10px; color: #64748b; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Managers</div>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #10b981; color: white;">You — $38M (3)</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #6366f1; color: white;">Rahul — $32M (4)</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #f59e0b; color: white;">Amit — $29M (5)</span>
+        <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #64748b; color: white;">Priya — $44M (2) PASS</span>
+      </div>
+
+      <!-- Bid history -->
+      <div style="padding: 8px 12px; font-size: 12px;">
+        <div style="color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Bid History</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #f59e0b;">Amit's Team</span> — $12M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #10b981;">You</span> — $11M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #6366f1;">Rahul's XI</span> — $10M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #f59e0b;">Amit's Team</span> — $9M</div>
+      </div>
+
+      <!-- Previous sale -->
+      <div style="margin: 4px 12px 8px; padding: 10px; background: linear-gradient(135deg, #065f46, #064e3b); border-radius: 8px; text-align: center; border: 1px solid #10b981;">
+        <div style="font-size: 10px; color: #6ee7b7; text-transform: uppercase; letter-spacing: 1px;">Previous</div>
+        <div style="font-size: 13px; color: #e2e8f0; font-weight: 600; margin-top: 2px;">Jasprit Bumrah → <span style="color: #6366f1;">Rahul's XI</span> for $8M</div>
+      </div>
+
+      <!-- Unsold players -->
+      <div style="padding: 0 12px 12px;">
+        <div style="font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Unsold Players</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; cursor: pointer;">KL Rahul <span style="color: #6366f1; font-size: 10px; margin-left: 4px;">NOMINATE</span></span>
+          <span style="font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; cursor: pointer;">Shreyas Iyer <span style="color: #6366f1; font-size: 10px; margin-left: 4px;">NOMINATE</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: #1e293b; border-radius: 8px;">
+  <h3 style="margin: 0 0 8px 0; color: #e2e8f0; font-size: 14px;">Layout order (top to bottom)</h3>
+  <div style="font-size: 13px; color: #94a3b8; line-height: 1.8;">
+    1. Top bar (league name + LIVE status)<br>
+    2. Your budget + player count<br>
+    3. Timer<br>
+    4. Player card (name, role, team, avg points)<br>
+    5. Current bid (amount + who)<br>
+    6. <strong style="color: #e2e8f0;">PASS / BID buttons</strong><br>
+    7. <strong style="color: #e2e8f0;">Managers purse (all managers' budgets + player counts)</strong><br>
+    8. Bid history<br>
+    9. Previous sale result<br>
+    10. Unsold players with nominate
+  </div>
+</div>
