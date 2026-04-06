@@ -1,0 +1,155 @@
+<h2>Bidding Controls — Adapted from Rolling Auction</h2>
+<p class="subtitle">+/- stepper with quick increment pills for fast-paced live bidding</p>
+
+<div style="max-width: 380px; margin: 0 auto;">
+
+  <div class="mockup">
+    <div class="mockup-header">Live Auction — Bidding Controls</div>
+    <div class="mockup-body" style="background: #0f172a; padding: 0;">
+
+      <!-- Top bar -->
+      <div style="background: #1e293b; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+        <span style="color: #94a3b8;">Mini Auction — GW4</span>
+        <span style="color: #10b981; font-weight: 600;">LIVE</span>
+      </div>
+
+      <!-- Your budget bar -->
+      <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #1a1a2e; font-size: 12px;">
+        <span style="color: #94a3b8;">Your Budget: <span style="color: #f9cd05; font-weight: 700;">$38M</span></span>
+        <span style="color: #94a3b8;">Players: <span style="color: #e2e8f0; font-weight: 600;">3/10</span></span>
+      </div>
+
+      <!-- Timer -->
+      <div style="text-align: center; padding: 14px 0 6px;">
+        <div style="font-size: 44px; font-weight: 800; color: #e2e8f0; font-family: monospace; letter-spacing: 2px;">07</div>
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">seconds remaining</div>
+      </div>
+
+      <!-- Player card -->
+      <div style="margin: 8px 12px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; border-radius: 12px; padding: 14px; text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: #334155; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #64748b;">VK</div>
+        <div style="font-size: 17px; font-weight: 700; color: #e2e8f0;">Virat Kohli</div>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 5px; font-size: 12px;">
+          <span style="color: #ef4444; background: #450a0a; padding: 2px 8px; border-radius: 4px; font-weight: 600;">BAT</span>
+          <span style="color: #94a3b8;">RCB</span>
+          <span style="color: #94a3b8;">Avg: <span style="color: #10b981; font-weight: 600;">82.1 pts</span></span>
+        </div>
+      </div>
+
+      <!-- Current bid -->
+      <div style="text-align: center; padding: 6px 0;">
+        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Current Bid</div>
+        <div style="font-size: 28px; font-weight: 800; color: #f9cd05;">$8M</div>
+        <div style="font-size: 12px; color: #94a3b8;">by <span style="color: #f59e0b; font-weight: 600;">Amit's Team</span></div>
+      </div>
+
+      <!-- === BIDDING CONTROLS (from Rolling Auction style) === -->
+      <div style="margin: 8px 12px; background: #1e293b; border-radius: 12px; padding: 14px;">
+
+        <!-- Stepper -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: #334155; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 24px; font-weight: 700; cursor: pointer; user-select: none;">-</div>
+          <div style="min-width: 100px; text-align: center; font-size: 32px; font-weight: 800; color: #e2e8f0;">$9M</div>
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: #334155; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 24px; font-weight: 700; cursor: pointer; user-select: none;">+</div>
+        </div>
+
+        <!-- Increment pills -->
+        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 10px;">
+          <div style="padding: 6px 14px; border-radius: 20px; background: #10b981; color: white; font-size: 12px; font-weight: 700; cursor: pointer;">+$1M</div>
+          <div style="padding: 6px 14px; border-radius: 20px; background: #334155; color: #94a3b8; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid #475569;">+$2M</div>
+          <div style="padding: 6px 14px; border-radius: 20px; background: #334155; color: #94a3b8; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid #475569;">+$5M</div>
+          <div style="padding: 6px 14px; border-radius: 20px; background: #334155; color: #94a3b8; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid #475569;">+$10M</div>
+        </div>
+
+        <!-- Fund info -->
+        <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 12px;">
+          <span style="color: #64748b;">Available: <span style="color: #e2e8f0; font-weight: 600;">$38M</span></span>
+          <span style="color: #64748b;">After bid: <span style="color: #10b981; font-weight: 600;">$29M</span></span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display: flex; gap: 8px; padding: 8px 12px;">
+        <button style="flex: 1; padding: 14px; border-radius: 10px; border: 2px solid #334155; background: transparent; color: #94a3b8; font-size: 16px; font-weight: 700; cursor: pointer;">PASS</button>
+        <button style="flex: 2; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #10b981, #059669); color: white; font-size: 16px; font-weight: 700; cursor: pointer;">BID $9M</button>
+      </div>
+
+      <!-- Managers purse (budget bars) -->
+      <div style="padding: 10px 12px; font-size: 12px;">
+        <div style="color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; margin-bottom: 8px;">Manager Budgets</div>
+
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #10b981; font-weight: 600; font-size: 11px;">You</span>
+            <span style="color: #f9cd05; font-weight: 700; font-size: 11px;">$38M <span style="color: #64748b; font-weight: 400;">/ $50M</span></span>
+          </div>
+          <div style="height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
+            <div style="width: 76%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 3px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">3/10 players</div>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #6366f1; font-weight: 600; font-size: 11px;">Rahul's XI</span>
+            <span style="color: #f9cd05; font-weight: 700; font-size: 11px;">$32M <span style="color: #64748b; font-weight: 400;">/ $50M</span></span>
+          </div>
+          <div style="height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
+            <div style="width: 64%; height: 100%; background: linear-gradient(90deg, #6366f1, #4f46e5); border-radius: 3px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">4/10 players</div>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #f59e0b; font-weight: 600; font-size: 11px;">Amit's Team</span>
+            <span style="color: #f9cd05; font-weight: 700; font-size: 11px;">$12M <span style="color: #64748b; font-weight: 400;">/ $50M</span></span>
+          </div>
+          <div style="height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
+            <div style="width: 24%; height: 100%; background: linear-gradient(90deg, #ef4444, #dc2626); border-radius: 3px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">7/10 players — <span style="color: #ef4444;">running low</span></div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span style="color: #ec4899; font-weight: 600; font-size: 11px;">Priya's Squad</span>
+            <span style="color: #f9cd05; font-weight: 700; font-size: 11px;">$44M <span style="color: #64748b; font-weight: 400;">/ $50M</span></span>
+          </div>
+          <div style="height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
+            <div style="width: 88%; height: 100%; background: linear-gradient(90deg, #ec4899, #db2777); border-radius: 3px;"></div>
+          </div>
+          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">2/10 players</div>
+        </div>
+      </div>
+
+      <!-- Bid history -->
+      <div style="padding: 4px 12px 8px; font-size: 12px;">
+        <div style="color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;">Bid History</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #f59e0b;">Amit's Team</span> — $8M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #10b981;">You</span> — $5M</div>
+        <div style="color: #94a3b8; padding: 3px 0;"><span style="color: #6366f1;">Rahul's XI</span> — $4M</div>
+      </div>
+
+      <!-- Unsold -->
+      <div style="padding: 0 12px 12px;">
+        <div style="font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Unsold Players</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; cursor: pointer;">KL Rahul <span style="color: #6366f1; font-size: 10px; margin-left: 4px;">NOMINATE</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: #1e293b; border-radius: 8px;">
+  <h3 style="margin: 0 0 8px 0; color: #e2e8f0; font-size: 14px;">Bidding Controls Breakdown</h3>
+  <div style="font-size: 13px; color: #94a3b8; line-height: 1.8;">
+    <strong style="color: #e2e8f0;">Stepper (+/-)</strong>: Each tap adjusts by $1M. Hold for rapid increment.<br>
+    <strong style="color: #e2e8f0;">Quick pills</strong>: +$1M (active/highlighted), +$2M, +$5M, +$10M — jump fast when you want to make a statement bid.<br>
+    <strong style="color: #e2e8f0;">Fund info</strong>: "Available" and "After bid" update live as you adjust the stepper.<br>
+    <strong style="color: #e2e8f0;">BID button</strong>: Shows the exact amount — one tap to confirm. No extra confirmation dialog (speed matters).<br>
+    <strong style="color: #e2e8f0;">Minimum</strong>: Stepper can't go below current bid + $1M. Max capped at your budget minus reserved slots.
+  </div>
+</div>

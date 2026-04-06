@@ -1,0 +1,87 @@
+<h2>Mini Auction Lifecycle</h2>
+<p class="subtitle">End-to-end flow from creation to results</p>
+
+<div style="max-width: 700px; margin: 0 auto; padding: 20px 0;">
+
+  <!-- Phase 1: Create -->
+  <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">1</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">Create Mini League</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">Creator signs in, hits "Create Mini Auction." System auto-detects this weekend's matches (Sat/Sun/Mon), generates player pool ranked by fantasy points. Creator gets invite code + shareable link.</p>
+    </div>
+  </div>
+  <div style="width: 2px; height: 24px; background: #334155; margin-left: 21px;"></div>
+
+  <!-- Phase 2: Invite -->
+  <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">2</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">Lobby &amp; Invite</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">Managers join via code or link. New users auto-register on join. Lobby shows who's in (2-5 managers). Creator sees "Start Auction" button (enabled when 2+ joined).</p>
+    </div>
+  </div>
+  <div style="width: 2px; height: 24px; background: #334155; margin-left: 21px;"></div>
+
+  <!-- Phase 3: Countdown -->
+  <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">3</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">30s Countdown</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">Creator hits start. 30-second countdown with visual timer. All managers see it. No new joins after countdown begins.</p>
+    </div>
+  </div>
+  <div style="width: 2px; height: 24px; background: #334155; margin-left: 21px;"></div>
+
+  <!-- Phase 4: Live Auction -->
+  <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #ef4444, #dc2626); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">4</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">Live Auction</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px; margin-bottom: 12px;">Players appear one at a time, ranked by fantasy points. For each player:</p>
+      <div style="background: #1e293b; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #cbd5e1;">
+        <div style="margin-bottom: 6px;"><span style="color: #6366f1; font-weight: 600;">a.</span> Player card shown with stats + base price ($1M)</div>
+        <div style="margin-bottom: 6px;"><span style="color: #6366f1; font-weight: 600;">b.</span> 10s timer starts. Managers bid ($1M increments) or pass</div>
+        <div style="margin-bottom: 6px;"><span style="color: #6366f1; font-weight: 600;">c.</span> Timer resets on each new bid. Last 3s = audio/visual alert</div>
+        <div style="margin-bottom: 6px;"><span style="color: #6366f1; font-weight: 600;">d.</span> Timer expires → sold to highest bidder (or unsold if all pass / no bids)</div>
+        <div><span style="color: #6366f1; font-weight: 600;">e.</span> Any manager can nominate an unsold player → queued next</div>
+      </div>
+    </div>
+  </div>
+  <div style="width: 2px; height: 24px; background: #334155; margin-left: 21px;"></div>
+
+  <!-- Phase 5: Auction Complete -->
+  <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">5</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">Auction Complete → Set Lineups</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">Auction ends when all managers have 10 players. Managers set their Day 1 lineup (7 XI + 3 bench, captain, VC). Lock time = 1 hour before first match of the day.</p>
+    </div>
+  </div>
+  <div style="width: 2px; height: 24px; background: #334155; margin-left: 21px;"></div>
+
+  <!-- Phase 6: Match Days -->
+  <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #0ea5e9, #0284c7); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">6</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">Match Days (Sat → Sun → Mon)</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">Each day: lineup locks before first match, existing scoring engine runs (live + post-match), daily scores shown. Before each new day, managers can adjust XI/bench/captain/VC.</p>
+    </div>
+  </div>
+  <div style="width: 2px; height: 24px; background: #334155; margin-left: 21px;"></div>
+
+  <!-- Phase 7: Results -->
+  <div style="display: flex; align-items: flex-start;">
+    <div style="min-width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #f9cd05, #d4a800); display: flex; align-items: center; justify-content: center; color: #1a1a2e; font-weight: 700; font-size: 16px;">7</div>
+    <div style="margin-left: 16px; flex: 1;">
+      <h3 style="margin: 0 0 4px 0; color: #e2e8f0;">Results &amp; Archive</h3>
+      <p style="margin: 0; color: #94a3b8; font-size: 14px;">Monday matches scored → total points summed across all days → winner declared. League archived. Managers can view history but league is complete.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 32px; padding: 16px; background: #1e293b; border-radius: 8px; border-left: 3px solid #f59e0b;">
+  <p style="margin: 0; color: #fbbf24; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">End Condition</p>
+  <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 14px;">Auction ends when all managers have 10 players. If the ranked list is exhausted and managers still need players, unsold players cycle back. A manager who fills 10 early is removed from bidding — auction continues for remaining managers.</p>
+</div>
